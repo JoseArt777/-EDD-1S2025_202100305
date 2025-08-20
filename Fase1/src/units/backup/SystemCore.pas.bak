@@ -1,0 +1,97 @@
+unit SystemCore;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, DataStructures, DateUtils;
+
+type
+  TSystemCore = class
+  private
+    FUsers: TUserList;
+    FUserEmails: array of TEmailList; // Un inbox por usuario
+    FUserContacts: array of TContactList; // Contactos por usuario
+    FUserTrash: array of TEmailStack; // Papelera por usuario
+    FScheduledEmails: TEmailQueue;
+    FCommunities: TCommunityList;
+    FEmailMatrix: TSparseMatrix;
+    FCurrentUser: PUser;
+    FEmailIdCounter: Integer;
+    FUserIdCounter: Integer;
+    FCommunityIdCounter: Integer;
+    FContactIdCounter: Integer;
+
+    procedure InitializeRootUser;
+    function GetUserIndex(Email: String): Integer;
+    procedure EnsureUserArrays(UserCount: Integer);
+
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    // User Management
+    function RegisterUser(Nombre, Usuario, Email, Telefono, Password: String): Boolean;
+    function LoginUser(Email, Password: String): Boolean;
+    procedure LogoutUser;
+    function GetCurrentUser: PUser;
+    function IsUserLoggedIn: Boolean;
+    function IsRootUser: Boolean;
+
+    // Email Management
+    function SendEmail(Destinatario, Asunto, Mensaje: String): Boolean;
+    function ScheduleEmail(Destinatario, Asunto, Mensaje: String; FechaHora: TDateTime): Boolean;
+    function GetUserInbox(UserEmail: String): TEmailList;
+    function GetUserTrash(UserEmail: String): TEmailStack;
+    procedure DeleteEmail(EmailId: Integer);
+    procedure MarkEmailAsRead(EmailId: Integer);
+    function ProcessScheduledEmails: Integer; // Retorna cantidad procesada
+
+    // Contact Management
+    function AddContact(ContactEmail: String): Boolean;
+    function GetUserContacts(UserEmail: String): TContactList;
+    function IsContact(UserEmail, ContactEmail: String): Boolean;
+
+    // Community Management (Root only)
+    function CreateCommunity(Nombre: String): Boolean;
+    function AddUserToCommunity(CommunityId: Integer; UserEmail: String): Boolean;
+    function GetCommunities: TCommunityList;
+
+    // File Operations
+    function LoadUsersFromJSON(FileName: String): Boolean;
+
+    // Profile Management
+    function UpdateProfile(NewNombre, NewUsuario, NewTelefono: String): Boolean;
+
+    // Reports and Matrix
+    function GetEmailMatrix: TSparseMatrix;
+    procedure UpdateEmailMatrix(Remitente, Destinatario: String);
+
+    // Statistics
+    function GetUserCount: Integer;
+    function GetTotalEmails: Integer;
+    function GetScheduledEmailsQueue: TEmailQueue;
+
+    // System Operations
+    procedure InitializeSystem;
+    function GetNextEmailId: Integer;
+    function GetNextUserId: Integer;
+    function GetNextCommunityId: Integer;
+    function GetNextContactId: Integer;
+  end;
+
+var
+  SystemCore: TSystemCore;
+
+implementation
+
+uses
+  fpjson, jsonparser;
+
+constructor TSystemCore.Create;
+begin
+  FUsers := TUserList.Create;
+  FScheduledEmails := TEmailQueue.Create;
+  FCommunities := TCommun
+
