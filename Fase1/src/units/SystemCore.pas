@@ -39,6 +39,9 @@ type
     function IsUserLoggedIn: Boolean;
     function IsRootUser: Boolean;
 
+    // AGREGADO: Método para acceder a la lista de usuarios
+    function GetUsers: TUserList;
+
     // Email Management
     function SendEmail(Destinatario, Asunto, Mensaje: String): Boolean;
     function ScheduleEmail(Destinatario, Asunto, Mensaje: String; FechaHora: TDateTime): Boolean;
@@ -133,6 +136,11 @@ end;
 procedure TSystemCore.InitializeRootUser;
 begin
   RegisterUser('Root Administrator', 'root', 'root@edd.com', '00000000', 'root123');
+end;
+
+function TSystemCore.GetUsers: TUserList;
+begin
+  Result := FUsers;
 end;
 
 function TSystemCore.GetUserIndex(Email: String): Integer;
@@ -592,3 +600,5 @@ initialization
 
 finalization
   SystemCore.Free;
+
+end.
