@@ -76,6 +76,7 @@ var
   DirName, FileName, Content: String;
   User: PUser;
   NodeCount: Integer;
+  Users: TUserList;
 begin
   Result := False;
 
@@ -90,7 +91,9 @@ begin
              '    node [shape=box, style=filled, fillcolor=lightblue];' + LineEnding +
              LineEnding;
 
-  User := SystemCore.FUsers.GetFirst;
+  // CORREGIDO: Usar método público
+  Users := SystemCore.GetUsers;
+  User := Users.GetFirst;
   NodeCount := 0;
 
   while User <> nil do
@@ -119,6 +122,7 @@ var
   Value: Integer;
   UserArray: array of PUser;
   UserCount, i, j: Integer;
+  Users: TUserList;
 begin
   Result := False;
 
@@ -133,10 +137,11 @@ begin
              '    node [shape=circle, style=filled];' + LineEnding +
              LineEnding;
 
-  // Crear array de usuarios para acceso fácil
-  UserCount := SystemCore.FUsers.GetCount;
+  // CORREGIDO: Usar método público
+  Users := SystemCore.GetUsers;
+  UserCount := Users.GetCount;
   SetLength(UserArray, UserCount);
-  User1 := SystemCore.FUsers.GetFirst;
+  User1 := Users.GetFirst;
   i := 0;
   while (User1 <> nil) and (i < UserCount) do
   begin
@@ -192,6 +197,7 @@ var
   Inbox: TEmailList;
   Email: PEmail;
   NodeCount: Integer;
+  fillcolor: String;
 begin
   Result := False;
 
@@ -217,7 +223,6 @@ begin
 
     while Email <> nil do
     begin
-      var fillcolor: String;
       if Email^.Estado = 'NL' then
         fillcolor := 'yellow'
       else
@@ -468,4 +473,3 @@ begin
 end;
 
 end.
-
