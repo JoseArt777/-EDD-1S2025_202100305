@@ -1,0 +1,74 @@
+{
+  "usuarios": [
+    {
+      "id": 2,
+      "nombre": "Luis Garcia",
+      "usuario": "auxluis",
+      "email": "aux-luis@edd.com",
+      "telefono": "12345678"
+    },
+    {
+      "id": 3,
+      "nombre": "Marcos Itzep",
+      "usuario": "auxmarcos",
+      "email": "aux-marcosg@edd.com",
+      "telefono": "87654321"
+    },
+    {
+      "id": 4,
+      "nombre": "Steven Mejía",
+      "usuario": "auxsteven",
+      "email": "steven.mejia@edd.com",
+      "telefono": "11223344"
+    },
+    {
+      "id": 5,
+      "nombre": "Ana Rodriguez",
+      "usuario": "ana_rodriguez",
+      "email": "ana.rodriguez@edd.com",
+      "telefono": "55667788"
+    },
+    {
+      "id": 6,
+      "nombre": "Carlos Mendez",
+      "usuario": "cmendez",
+      "email": "carlos.mendez@edd.com",
+      "telefono": "99887766"
+    },
+    {
+      "id": 7,
+      "nombre": "Maria Gonzalez",
+      "usuario": "mgonzalez",
+      "email": "maria.gonzalez@edd.com",
+      "telefono": "44332211"
+    },
+    {
+      "id": 8,
+      "nombre": "Pedro Ramirez",
+      "usuario": "pedro_r",
+      "email": "pedro.ramirez@edd.com",
+      "telefono": "33445566"
+    },
+    {
+      "id": 9,
+      "nombre": "Sofia Martinez",
+      "usuario": "sofia_m",
+      "email": "sofia.martinez@edd.com",
+      "telefono": "77889900"
+    },
+    {
+      "id": 10,
+      "nombre": "Roberto Silva",
+      "usuario": "rsilva",
+      "email": "roberto.silva@edd.com",
+      "telefono": "66554433"
+    },
+    {
+      "id": 11,
+      "nombre": "Elena Vargas",
+      "usuario": "elena_v",
+      "email": "elena.vargas@edd.com",
+      "telefono": "22113344"
+    }
+  ]
+}
