@@ -1,0 +1,11 @@
+REPORTE DE CORREOS RECIBIDOS
+============================
+Usuario: anajose@test.com
+Fecha: 21-8-25 00:35:23
+
+No hay correos en la bandeja de entrada.
+
+RESUMEN:
+Total de correos: 0
+Correos no leídos: 0
+Correos leídos: 0

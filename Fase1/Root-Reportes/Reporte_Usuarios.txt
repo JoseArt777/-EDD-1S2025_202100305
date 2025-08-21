@@ -1,0 +1,35 @@
+REPORTE DE USUARIOS REGISTRADOS
+===============================
+Fecha: 21-8-25 00:14:38
+
+Usuario #1
+  ID: 4
+  Nombre: Carlos LÛpez
+  Usuario: clopez
+  Email: carlos@test.com
+  Tel√©fono: 11223344
+  ----------------------
+Usuario #2
+  ID: 3
+  Nombre: MarÌa GarcÌa
+  Usuario: mgarcia
+  Email: maria@test.com
+  Tel√©fono: 87654321
+  ----------------------
+Usuario #3
+  ID: 2
+  Nombre: Juan PÈrez
+  Usuario: jperez
+  Email: juan@test.com
+  Tel√©fono: 12345678
+  ----------------------
+Usuario #4
+  ID: 1
+  Nombre: Administrador
+  Usuario: root
+  Email: root@edd.com
+  Tel√©fono: 00000000
+  ----------------------
+
+RESUMEN:
+Total de usuarios: 4

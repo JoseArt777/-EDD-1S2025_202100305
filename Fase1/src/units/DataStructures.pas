@@ -102,7 +102,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
-                  Programado: Boolean = False; Fecha: TDateTime = 0);
+                  Programado: Boolean = False; Fecha: TDateTime = -1);
     procedure Remove(Email: PEmail);
     function Find(Id: Integer): PEmail;
     procedure SortBySubject;
@@ -317,6 +317,7 @@ begin
   inherited;
 end;
 
+// Reemplaza la función TEmailList.Add en DataStructures.pas
 procedure TEmailList.Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
                         Programado: Boolean; Fecha: TDateTime);
 var
@@ -329,10 +330,13 @@ begin
   NewEmail^.Estado := 'NL'; // No Leído por defecto
   NewEmail^.Programado := Programado;
   NewEmail^.Asunto := Asunto;
-  if Fecha = 0 then
+
+  // Corregir manejo de fecha - usar Now por defecto si la fecha es 0 o inválida
+  if (Fecha <= 0) or (Fecha > 73050) then  // 73050 = aproximadamente año 2100
     NewEmail^.Fecha := Now
   else
     NewEmail^.Fecha := Fecha;
+
   NewEmail^.Mensaje := Mensaje;
   NewEmail^.Next := nil;
   NewEmail^.Prev := FTail;
@@ -345,7 +349,6 @@ begin
   FTail := NewEmail;
   Inc(FCount);
 end;
-
 procedure TEmailList.Remove(Email: PEmail);
 begin
   if Email = nil then Exit;
@@ -606,6 +609,7 @@ begin
   inherited;
 end;
 
+// En TEmailQueue.Enqueue, asegúrate de que la fecha sea válida:
 procedure TEmailQueue.Enqueue(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String; Fecha: TDateTime);
 var
   NewEmail: PEmail;
@@ -614,26 +618,28 @@ begin
   NewEmail^.Id := Id;
   NewEmail^.Remitente := Remitente;
   NewEmail^.Destinatario := Destinatario;
-  NewEmail^.Estado := 'P'; // Programado
+  NewEmail^.Estado := 'NL';
   NewEmail^.Programado := True;
   NewEmail^.Asunto := Asunto;
-  NewEmail^.Fecha := Fecha;
+
+  // Validar fecha antes de asignar
+  if (Fecha <= Now) or (Fecha > 73050) then  // Fecha debe ser futura y válida
+    NewEmail^.Fecha := Now + 1  // Default: mañana
+  else
+    NewEmail^.Fecha := Fecha;
+
   NewEmail^.Mensaje := Mensaje;
   NewEmail^.Next := nil;
   NewEmail^.Prev := nil;
 
   if FTail <> nil then
-  begin
-    FTail^.Next := NewEmail;
-    NewEmail^.Prev := FTail;
-  end
+    FTail^.Next := NewEmail
   else
     FHead := NewEmail;
 
   FTail := NewEmail;
   Inc(FCount);
 end;
-
 function TEmailQueue.Dequeue: PEmail;
 begin
   Result := FHead;

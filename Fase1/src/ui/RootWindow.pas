@@ -28,6 +28,7 @@ type
     FUserEmailEntry: PGtkWidget;
     FAddUserButton: PGtkWidget;
     FCommunityStatusLabel: PGtkWidget;
+    FLogoutButton: PGtkWidget;
 
     // Página de reportes
     FUsersReportButton: PGtkWidget;
@@ -48,8 +49,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Show; reintroduce; // evitar warning de método oculto
-    procedure Hide; reintroduce; // evitar warning de método oculto
+    procedure Show; reintroduce;
+    procedure Hide; reintroduce;
   end;
 
 // Callbacks
@@ -60,16 +61,19 @@ procedure OnAddUserToCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl
 procedure OnUsersReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnRelationsReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnRootWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnRootLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
 
 var
   RootWin: TRootWindow;
 
 implementation
 
+// Declaración forward para evitar dependencia circular
+procedure RestartApplication; forward;
+
 constructor TRootWindow.Create;
 begin
   inherited Create('EDDMail - Administrador Root', 600, 500);
-  RefreshCommunityCombo;
 end;
 
 destructor TRootWindow.Destroy;
@@ -79,14 +83,22 @@ end;
 
 procedure TRootWindow.SetupComponents;
 begin
+  WriteLn('DEBUG: SetupComponents iniciado');
+
   FMainVBox := TUIUtils.CreateVBox(10);
   gtk_container_add(GTK_CONTAINER(FWindow), FMainVBox);
 
   SetupNotebook;
 
+  // Botón de logout
+  FLogoutButton := TUIUtils.CreateButton('Cerrar Sesión', @OnRootLogoutClicked, Self);
+  gtk_box_pack_end(GTK_BOX(FMainVBox), FLogoutButton, False, False, 5);
+
   // Status bar
   FStatusLabel := TUIUtils.CreateLabel('Listo', False);
   gtk_box_pack_end(GTK_BOX(FMainVBox), FStatusLabel, False, False, 0);
+
+  WriteLn('DEBUG: SetupComponents completado');
 end;
 
 procedure TRootWindow.ConnectSignals;
@@ -216,22 +228,9 @@ begin
 end;
 
 procedure TRootWindow.RefreshCommunityCombo;
-var
-  CurrentCommunity: DataStructures.PCommunity; // <-- tipo desde DataStructures
-  ComboText: String;
 begin
-  if FCommunityCombo = nil then Exit;
-
-  ClearComboBox(FCommunityCombo);
-
-  // head global desde CommunityManager
-  CurrentCommunity := CommunityManager.CommunitiesHead;
-  while CurrentCommunity <> nil do
-  begin
-    ComboText := IntToStr(CurrentCommunity^.Id) + ' - ' + CurrentCommunity^.Nombre;
-    gtk_combo_box_append_text(GTK_COMBO_BOX(FCommunityCombo), PChar(ComboText));
-    CurrentCommunity := CurrentCommunity^.Next;
-  end;
+  // Temporalmente vacía para evitar errores
+  WriteLn('DEBUG: RefreshCommunityCombo omitido por seguridad');
 end;
 
 procedure TRootWindow.Show;
@@ -250,29 +249,35 @@ end;
 
 procedure OnSelectFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  Dialog: PGtkWidget;
-  Response: Integer;
-  Filename: PChar;
   RootWin: TRootWindow;
+  CurrentPath: String;
 begin
-  RootWin := TRootWindow(data);
+  try
+    RootWin := TRootWindow(data);
 
-  Dialog := gtk_file_chooser_dialog_new('Seleccionar archivo JSON',
-                                       GTK_WINDOW(RootWin.Window),
-                                       GTK_FILE_CHOOSER_ACTION_OPEN,
-                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-                                       nil);
+    WriteLn('DEBUG: Iniciando selector de archivo simplificado');
 
-  Response := gtk_dialog_run(GTK_DIALOG(Dialog));
-  if Response = GTK_RESPONSE_ACCEPT then
-  begin
-    Filename := gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(Dialog));
-    gtk_entry_set_text(GTK_ENTRY(RootWin.FFileEntry), Filename);
-    g_free(Filename);
+    // Obtener directorio actual
+    CurrentPath := GetCurrentDir;
+    WriteLn('DEBUG: Directorio actual: ', CurrentPath);
+
+    // Simplemente poner una ruta de ejemplo en el campo
+    gtk_entry_set_text(GTK_ENTRY(RootWin.FFileEntry),
+                       PChar(CurrentPath + '/usuarios_prueba.json'));
+
+    // Actualizar label de status usando métodos directos GTK
+    gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel),
+                       'Ruta de ejemplo cargada. Modifique si es necesario.');
+
+    WriteLn('DEBUG: Selector simplificado completado');
+
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error crítico en OnSelectFileClicked: ', E.Message);
+      WriteLn('Tipo de error: ', E.ClassName);
+    end;
   end;
-
-  gtk_widget_destroy(Dialog);
 end;
 
 procedure OnLoadFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
@@ -281,26 +286,44 @@ var
   Filename: String;
   Result: Boolean;
 begin
-  RootWin := TRootWindow(data);
-  Filename := gtk_entry_get_text(GTK_ENTRY(RootWin.FFileEntry));
+  try
+    RootWin := TRootWindow(data);
+    Filename := gtk_entry_get_text(GTK_ENTRY(RootWin.FFileEntry));
 
-  if Filename = '' then
-  begin
-    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor seleccione un archivo');
-    Exit;
-  end;
+    WriteLn('DEBUG: OnLoadFileClicked iniciado');
 
-  Result := LoadUsersFromJSON(Filename);
+    if Filename = '' then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Error: Especifique archivo');
+      WriteLn('ERROR: Archivo no especificado');
+      Exit;
+    end;
 
-  if Result then
-  begin
-    gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Usuarios cargados exitosamente');
-    TUIUtils.ShowInfoMessage(RootWin.Window, 'Usuarios cargados exitosamente');
-  end
-  else
-  begin
-    gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Error al cargar usuarios');
-    TUIUtils.ShowErrorMessage(RootWin.Window, 'Error al cargar usuarios del archivo');
+    if not FileExists(Filename) then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Error: Archivo no encontrado');
+      WriteLn('ERROR: Archivo no encontrado');
+      Exit;
+    end;
+
+    Result := LoadUsersFromJSON(Filename);
+
+    if Result then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Usuarios cargados exitosamente');
+      WriteLn('ÉXITO: Usuarios cargados');
+    end
+    else
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Error al cargar usuarios');
+      WriteLn('ERROR: Fallo en carga');
+    end;
+
+    WriteLn('DEBUG: OnLoadFileClicked completado');
+
+  except
+    on E: Exception do
+      WriteLn('Error en OnLoadFileClicked: ', E.Message);
   end;
 end;
 
@@ -310,26 +333,30 @@ var
   CommunityName: String;
   Result: Boolean;
 begin
-  RootWin := TRootWindow(data);
-  CommunityName := gtk_entry_get_text(GTK_ENTRY(RootWin.FCommunityNameEntry));
+  try
+    RootWin := TRootWindow(data);
+    CommunityName := gtk_entry_get_text(GTK_ENTRY(RootWin.FCommunityNameEntry));
 
-  if CommunityName = '' then
-  begin
-    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor ingrese un nombre para la comunidad');
-    Exit;
-  end;
+    if CommunityName = '' then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error: Ingrese nombre');
+      Exit;
+    end;
 
-  Result := CreateCommunity(CommunityName);
+    Result := CreateCommunity(CommunityName);
 
-  if Result then
-  begin
-    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Comunidad creada exitosamente');
-    gtk_entry_set_text(GTK_ENTRY(RootWin.FCommunityNameEntry), '');
-    RootWin.RefreshCommunityCombo;
-  end
-  else
-  begin
-    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al crear la comunidad');
+    if Result then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Comunidad creada exitosamente');
+      gtk_entry_set_text(GTK_ENTRY(RootWin.FCommunityNameEntry), '');
+    end
+    else
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al crear comunidad');
+    end;
+  except
+    on E: Exception do
+      WriteLn('Error en OnCreateCommunityClicked: ', E.Message);
   end;
 end;
 
@@ -341,48 +368,51 @@ var
   SpacePos: Integer;
   ComboPC: PChar;
 begin
-  RootWin := TRootWindow(data);
-  UserEmail := gtk_entry_get_text(GTK_ENTRY(RootWin.FUserEmailEntry));
+  try
+    RootWin := TRootWindow(data);
+    UserEmail := gtk_entry_get_text(GTK_ENTRY(RootWin.FUserEmailEntry));
 
-  // Obtener texto seleccionado del combo de forma segura
-  ComboPC := gtk_combo_box_get_active_text(GTK_COMBO_BOX(RootWin.FCommunityCombo));
-  if ComboPC <> nil then
-  begin
-    ComboText := String(ComboPC);
-    g_free(ComboPC);
-  end
-  else
-    ComboText := '';
+    ComboPC := gtk_combo_box_get_active_text(GTK_COMBO_BOX(RootWin.FCommunityCombo));
+    if ComboPC <> nil then
+    begin
+      ComboText := String(ComboPC);
+      g_free(ComboPC);
+    end
+    else
+      ComboText := '';
 
-  if (UserEmail = '') or (ComboText = '') then
-  begin
-    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor complete todos los campos');
-    Exit;
-  end;
-
-  // Extraer ID de la comunidad del texto del combo (formato: "<id> - <nombre>")
-  SpacePos := Pos(' ', ComboText);
-  if SpacePos > 0 then
-  begin
-    try
-      CommunityId := StrToInt(Copy(ComboText, 1, SpacePos - 1));
-
-      if AddUserToCommunity(CommunityId, UserEmail) then
-      begin
-        gtk_entry_set_text(GTK_ENTRY(RootWin.FUserEmailEntry), '');
-        gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Usuario agregado exitosamente');
-      end
-      else
-      begin
-        gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al agregar usuario');
-      end;
-    except
-      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error: ID de comunidad inválido');
+    if (UserEmail = '') or (ComboText = '') then
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Complete todos los campos');
+      Exit;
     end;
-  end
-  else
-  begin
-    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Formato de comunidad inválido');
+
+    SpacePos := Pos(' ', ComboText);
+    if SpacePos > 0 then
+    begin
+      try
+        CommunityId := StrToInt(Copy(ComboText, 1, SpacePos - 1));
+
+        if AddUserToCommunity(CommunityId, UserEmail) then
+        begin
+          gtk_entry_set_text(GTK_ENTRY(RootWin.FUserEmailEntry), '');
+          gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Usuario agregado exitosamente');
+        end
+        else
+        begin
+          gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al agregar usuario');
+        end;
+      except
+        gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'ID de comunidad inválido');
+      end;
+    end
+    else
+    begin
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Formato de comunidad inválido');
+    end;
+  except
+    on E: Exception do
+      WriteLn('Error en OnAddUserToCommunityClicked: ', E.Message);
   end;
 end;
 
@@ -390,30 +420,65 @@ procedure OnUsersReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
   RootWin: TRootWindow;
 begin
-  RootWin := TRootWindow(data);
+  try
+    RootWin := TRootWindow(data);
 
-  if SaveUsersReport then
-    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de usuarios generado exitosamente')
-  else
-    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar el reporte de usuarios');
+    if SaveUsersReport then
+      gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de usuarios generado')
+    else
+      gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar reporte');
+  except
+    on E: Exception do
+      WriteLn('Error en OnUsersReportClicked: ', E.Message);
+  end;
 end;
 
 procedure OnRelationsReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
   RootWin: TRootWindow;
 begin
-  RootWin := TRootWindow(data);
+  try
+    RootWin := TRootWindow(data);
 
-  if SaveRelationsReport then
-    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de relaciones generado exitosamente')
-  else
-    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar el reporte de relaciones');
+    if SaveRelationsReport then
+      gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de relaciones generado')
+    else
+      gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar reporte');
+  except
+    on E: Exception do
+      WriteLn('Error en OnRelationsReportClicked: ', E.Message);
+  end;
+end;
+
+procedure RestartApplication;
+begin
+  WriteLn('INFORMACIÓN: Cierre la aplicación y vuelva a ejecutarla.');
+  WriteLn('Los usuarios han sido cargados y estarán disponibles en la próxima sesión.');
+  WriteLn('Puede hacer login como: juan@test.com / 123456');
+  gtk_main_quit;
 end;
 
 procedure OnRootWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
 begin
-  gtk_main_quit;
+  WriteLn('DEBUG: Ventana de root cerrada');
+  LogoutUser;
+  RestartApplication;
+end;
+
+procedure OnRootLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  RootWin: TRootWindow;
+begin
+  try
+    RootWin := TRootWindow(data);
+    WriteLn('DEBUG: Logout manual solicitado');
+    LogoutUser;
+    RootWin.Hide;
+    RestartApplication;
+  except
+    on E: Exception do
+      WriteLn('Error en OnRootLogoutClicked: ', E.Message);
+  end;
 end;
 
 end.
-

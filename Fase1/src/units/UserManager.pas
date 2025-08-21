@@ -79,10 +79,12 @@ begin
   Result := True;
 end;
 
+// Reemplaza la función LoadUsersFromJSON en src/units/UserManager.pas
+
 function LoadUsersFromJSON(FileName: String): Boolean;
 var
   JSONFile: TextFile;
-  JSONString: String;
+  JSONString, Line: String;
   JSONData: TJSONData;
   JSONObject: TJSONObject;
   UsersArray: TJSONArray;
@@ -102,15 +104,21 @@ begin
       Exit;
     end;
 
-    // Leer archivo JSON
+    WriteLn('DEBUG: Leyendo archivo JSON: ', FileName);
+
+    // Leer archivo JSON completo - CORREGIDO
     AssignFile(JSONFile, FileName);
     Reset(JSONFile);
     JSONString := '';
     while not EOF(JSONFile) do
     begin
-      ReadLn(JSONFile, JSONString);
+      ReadLn(JSONFile, Line);
+      JSONString := JSONString + Line + LineEnding;  // CONCATENAR, no sobrescribir
     end;
     CloseFile(JSONFile);
+
+    WriteLn('DEBUG: Contenido JSON leído (', Length(JSONString), ' caracteres)');
+    WriteLn('DEBUG: Primeros 100 caracteres: ', Copy(JSONString, 1, 100));
 
     // Parsear JSON
     JSONData := GetJSON(JSONString);
@@ -118,7 +126,16 @@ begin
       if JSONData is TJSONObject then
       begin
         JSONObject := TJSONObject(JSONData);
+
+        // Verificar que existe la clave "usuarios"
+        if not JSONObject.Find('usuarios', JSONData) then
+        begin
+          WriteLn('Error: No se encontró la clave "usuarios" en el JSON');
+          Exit;
+        end;
+
         UsersArray := JSONObject.Arrays['usuarios'];
+        WriteLn('DEBUG: Array de usuarios encontrado con ', UsersArray.Count, ' elementos');
 
         for i := 0 to UsersArray.Count - 1 do
         begin
@@ -130,17 +147,29 @@ begin
           Email := UserObject.Strings['email'];
           Telefono := UserObject.Strings['telefono'];
 
+          WriteLn('DEBUG: Procesando usuario: ', Email);
+
           // Verificar si el usuario ya existe
           if not UserExists(Email) then
           begin
             UserList.Add(Id, Nombre, Usuario, Email, Telefono, DefaultPassword);
             if Id >= NextUserId then
               NextUserId := Id + 1;
+            WriteLn('DEBUG: Usuario agregado: ', Email);
+          end
+          else
+          begin
+            WriteLn('DEBUG: Usuario ya existe, omitiendo: ', Email);
           end;
         end;
 
         WriteLn('Usuarios cargados exitosamente desde: ', FileName);
+        WriteLn('Total de usuarios en el sistema: ', UserList.GetCount);
         Result := True;
+      end
+      else
+      begin
+        WriteLn('Error: El JSON no es un objeto válido');
       end;
     finally
       JSONData.Free;
@@ -150,10 +179,10 @@ begin
     on E: Exception do
     begin
       WriteLn('Error al cargar usuarios desde JSON: ', E.Message);
+      WriteLn('Clase de error: ', E.ClassName);
     end;
   end;
 end;
-
 function UserExists(Email: String): Boolean;
 begin
   Result := UserList.Find(Email) <> nil;
