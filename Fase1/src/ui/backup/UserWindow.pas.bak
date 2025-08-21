@@ -1,1 +1,400 @@
+unit UserWindow;
 
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  InboxWindow, ComposeWindow, ContactWindow, TrashWindow, ScheduleWindow,
+  ScheduledWindow, ProfileWindow, ReportsWindow;
+
+type
+  TUserWindow = class(TBaseWindow)
+  private
+    FMainVBox: PGtkWidget;
+    FMenuBar: PGtkWidget;
+    FStatusBar: PGtkWidget;
+    FWelcomeLabel: PGtkWidget;
+    FUnreadLabel: PGtkWidget;
+
+    // Botones del menú principal
+    FInboxButton: PGtkWidget;
+    FComposeButton: PGtkWidget;
+    FContactsButton: PGtkWidget;
+    FTrashButton: PGtkWidget;
+    FScheduleButton: PGtkWidget;
+    FScheduledButton: PGtkWidget;
+    FProfileButton: PGtkWidget;
+    FReportsButton: PGtkWidget;
+    FLogoutButton: PGtkWidget;
+
+    // Ventanas secundarias
+    FInboxWin: TInboxWindow;
+    FComposeWin: TComposeWindow;
+    FContactWin: TContactWindow;
+    FTrashWin: TTrashWindow;
+    FScheduleWin: TScheduleWindow;
+    FScheduledWin: TScheduledWindow;
+    FProfileWin: TProfileWindow;
+    FReportsWin: TReportsWindow;
+
+    procedure CreateMenuButtons;
+    procedure UpdateUnreadCount;
+    procedure UpdateWelcomeMessage;
+
+  protected
+    procedure SetupComponents; override;
+    procedure ConnectSignals; override;
+
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure RefreshData;
+    procedure CloseAllSubWindows;
+  end;
+
+// Callbacks
+procedure OnInboxClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnComposeClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnContactsClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnTrashClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnScheduleClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnScheduledClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnProfileClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnUserWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+
+var
+  UserWin: TUserWindow;
+
+implementation
+
+uses EmailManager, ContactManager, LoginWindow;
+
+constructor TUserWindow.Create;
+begin
+  inherited Create('EDDMail - ' + CurrentUser^.Nombre, 800, 600);
+  UpdateWelcomeMessage;
+  UpdateUnreadCount;
+end;
+
+destructor TUserWindow.Destroy;
+begin
+  CloseAllSubWindows;
+  inherited;
+end;
+
+procedure TUserWindow.SetupComponents;
+var
+  ButtonsHBox, ButtonsVBox1, ButtonsVBox2: PGtkWidget;
+  Separator: PGtkWidget;
+begin
+  // Contenedor principal
+  FMainVBox := TUIUtils.CreateVBox(10);
+  gtk_container_add(GTK_CONTAINER(FWindow), FMainVBox);
+  gtk_container_set_border_width(GTK_CONTAINER(FMainVBox), 10);
+
+  // Mensaje de bienvenida
+  FWelcomeLabel := TUIUtils.CreateLabel('', True);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FWelcomeLabel, False, False, 10);
+
+  // Contador de correos no leídos
+  FUnreadLabel := TUIUtils.CreateLabel('');
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FUnreadLabel, False, False, 5);
+
+  // Separador
+  Separator := gtk_hseparator_new;
+  gtk_box_pack_start(GTK_BOX(FMainVBox), Separator, False, False, 10);
+
+  // Contenedor para botones
+  ButtonsHBox := TUIUtils.CreateHBox(20);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), ButtonsHBox, True, True, 10);
+
+  // Primera columna de botones
+  ButtonsVBox1 := TUIUtils.CreateVBox(10);
+  gtk_box_pack_start(GTK_BOX(ButtonsHBox), ButtonsVBox1, True, True, 10);
+
+  // Segunda columna de botones
+  ButtonsVBox2 := TUIUtils.CreateVBox(10);
+  gtk_box_pack_start(GTK_BOX(ButtonsHBox), ButtonsVBox2, True, True, 10);
+
+  // Crear botones del menú
+  CreateMenuButtons;
+
+  // Agrupar botones en columnas
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FInboxButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FComposeButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FContactsButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FTrashButton, False, False, 5);
+
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FScheduleButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FScheduledButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FProfileButton, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FReportsButton, False, False, 5);
+
+  // Separador y botón de logout
+  Separator := gtk_hseparator_new;
+  gtk_box_pack_start(GTK_BOX(FMainVBox), Separator, False, False, 10);
+
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FLogoutButton, False, False, 5);
+
+  // Barra de estado
+  FStatusBar := gtk_statusbar_new;
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FStatusBar, False, False, 0);
+  gtk_statusbar_push(GTK_STATUSBAR(FStatusBar), 0, 'Listo');
+end;
+
+procedure TUserWindow.CreateMenuButtons;
+begin
+  FInboxButton := TUIUtils.CreateButton('📥 Bandeja de Entrada', @OnInboxClicked, Self);
+  FComposeButton := TUIUtils.CreateButton('✉️ Enviar Correo', @OnComposeClicked, Self);
+  FContactsButton := TUIUtils.CreateButton('👥 Contactos', @OnContactsClicked, Self);
+  FTrashButton := TUIUtils.CreateButton('🗑️ Papelera', @OnTrashClicked, Self);
+  FScheduleButton := TUIUtils.CreateButton('⏰ Programar Correo', @OnScheduleClicked, Self);
+  FScheduledButton := TUIUtils.CreateButton('📅 Correos Programados', @OnScheduledClicked, Self);
+  FProfileButton := TUIUtils.CreateButton('👤 Actualizar Perfil', @OnProfileClicked, Self);
+  FReportsButton := TUIUtils.CreateButton('📊 Generar Reportes', @OnReportsClicked, Self);
+  FLogoutButton := TUIUtils.CreateButton('🚪 Cerrar Sesión', @OnLogoutClicked, Self);
+
+  // Configurar tamaños de botones
+  gtk_widget_set_size_request(FInboxButton, 200, 40);
+  gtk_widget_set_size_request(FComposeButton, 200, 40);
+  gtk_widget_set_size_request(FContactsButton, 200, 40);
+  gtk_widget_set_size_request(FTrashButton, 200, 40);
+  gtk_widget_set_size_request(FScheduleButton, 200, 40);
+  gtk_widget_set_size_request(FScheduledButton, 200, 40);
+  gtk_widget_set_size_request(FProfileButton, 200, 40);
+  gtk_widget_set_size_request(FReportsButton, 200, 40);
+  gtk_widget_set_size_request(FLogoutButton, 300, 40);
+end;
+
+procedure TUserWindow.ConnectSignals;
+begin
+  inherited;
+  g_signal_connect(G_OBJECT(FWindow), 'destroy', G_CALLBACK(@OnUserWindowDestroy), Self);
+end;
+
+procedure TUserWindow.UpdateUnreadCount;
+var
+  UserInbox: TEmailList;
+  UnreadCount: Integer;
+  Text: String;
+begin
+  if not IsUserLoggedIn then Exit;
+
+  UserInbox := GetUserInbox(CurrentUser^.Email);
+  UnreadCount := UserInbox.GetUnreadCount;
+
+  if UnreadCount > 0 then
+    Text := Format('📬 Tienes %d correos no leídos', [UnreadCount])
+  else
+    Text := '✅ No tienes correos no leídos';
+
+  gtk_label_set_text(GTK_LABEL(FUnreadLabel), PChar(Text));
+end;
+
+procedure TUserWindow.UpdateWelcomeMessage;
+var
+  WelcomeText: String;
+begin
+  if IsUserLoggedIn then
+  begin
+    WelcomeText := Format('Bienvenido, %s (%s)', [CurrentUser^.Nombre, CurrentUser^.Email]);
+    gtk_label_set_markup(GTK_LABEL(FWelcomeLabel),
+                        PChar('<span size="large" weight="bold">' + WelcomeText + '</span>'));
+  end;
+end;
+
+procedure TUserWindow.RefreshData;
+begin
+  UpdateUnreadCount;
+  // Refrescar otras ventanas si están abiertas
+  if FInboxWin <> nil then
+    FInboxWin.RefreshInbox;
+  if FScheduledWin <> nil then
+    FScheduledWin.RefreshScheduled;
+end;
+
+procedure TUserWindow.CloseAllSubWindows;
+begin
+  if FInboxWin <> nil then
+  begin
+    FInboxWin.Free;
+    FInboxWin := nil;
+  end;
+
+  if FComposeWin <> nil then
+  begin
+    FComposeWin.Free;
+    FComposeWin := nil;
+  end;
+
+  if FContactWin <> nil then
+  begin
+    FContactWin.Free;
+    FContactWin := nil;
+  end;
+
+  if FTrashWin <> nil then
+  begin
+    FTrashWin.Free;
+    FTrashWin := nil;
+  end;
+
+  if FScheduleWin <> nil then
+  begin
+    FScheduleWin.Free;
+    FScheduleWin := nil;
+  end;
+
+  if FScheduledWin <> nil then
+  begin
+    FScheduledWin.Free;
+    FScheduledWin := nil;
+  end;
+
+  if FProfileWin <> nil then
+  begin
+    FProfileWin.Free;
+    FProfileWin := nil;
+  end;
+
+  if FReportsWin <> nil then
+  begin
+    FReportsWin.Free;
+    FReportsWin := nil;
+  end;
+end;
+
+// ============================================================================
+// Callbacks
+// ============================================================================
+
+procedure OnInboxClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FInboxWin = nil then
+    UserWindow.FInboxWin := TInboxWindow.Create(UserWindow.Window);
+
+  UserWindow.FInboxWin.Show;
+  UserWindow.FInboxWin.RefreshInbox;
+end;
+
+procedure OnComposeClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FComposeWin = nil then
+    UserWindow.FComposeWin := TComposeWindow.Create(UserWindow.Window);
+
+  UserWindow.FComposeWin.Show;
+end;
+
+procedure OnContactsClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FContactWin = nil then
+    UserWindow.FContactWin := TContactWindow.Create(UserWindow.Window);
+
+  UserWindow.FContactWin.Show;
+end;
+
+procedure OnTrashClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FTrashWin = nil then
+    UserWindow.FTrashWin := TTrashWindow.Create(UserWindow.Window);
+
+  UserWindow.FTrashWin.Show;
+  UserWindow.FTrashWin.RefreshTrash;
+end;
+
+procedure OnScheduleClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FScheduleWin = nil then
+    UserWindow.FScheduleWin := TScheduleWindow.Create(UserWindow.Window);
+
+  UserWindow.FScheduleWin.Show;
+end;
+
+procedure OnScheduledClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FScheduledWin = nil then
+    UserWindow.FScheduledWin := TScheduledWindow.Create(UserWindow.Window);
+
+  UserWindow.FScheduledWin.Show;
+  UserWindow.FScheduledWin.RefreshScheduled;
+end;
+
+procedure OnProfileClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FProfileWin = nil then
+    UserWindow.FProfileWin := TProfileWindow.Create(UserWindow.Window);
+
+  UserWindow.FProfileWin.Show;
+  UserWindow.FProfileWin.LoadCurrentUser;
+end;
+
+procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if UserWindow.FReportsWin = nil then
+    UserWindow.FReportsWin := TReportsWindow.Create(UserWindow.Window);
+
+  UserWindow.FReportsWin.Show;
+end;
+
+procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  UserWindow: TUserWindow;
+begin
+  UserWindow := TUserWindow(data);
+
+  if TUIUtils.ShowConfirmDialog(UserWindow.Window, 'Cerrar Sesión',
+                               '¿Está seguro que desea cerrar sesión?') then
+  begin
+    UserWindow.CloseAllSubWindows;
+    LogoutUser;
+    UserWindow.Hide;
+
+    // Mostrar ventana de login
+    if LoginWin = nil then
+      LoginWin := TLoginWindow.Create;
+    LoginWin.Show;
+  end;
+end;
+
+procedure OnUserWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  gtk_main_quit;
+end;
+
+end.

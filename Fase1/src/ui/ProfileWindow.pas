@@ -5,7 +5,7 @@ unit ProfileWindow;
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UIBase, UserManager;
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase, UserManager;
 
 type
   TProfileWindow = class(TBaseWindow)
@@ -198,7 +198,7 @@ begin
   end;
 
   // Validar que el teléfono contenga solo números
-  var i: Integer;
+  // Línea corregida
   for i := 1 to Length(Phone) do
   begin
     if not (Phone[i] in ['0'..'9']) then

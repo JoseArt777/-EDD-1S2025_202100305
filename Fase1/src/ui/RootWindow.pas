@@ -5,18 +5,20 @@ unit RootWindow;
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UserManager,
-  ReportGenerator, FileManager, CommunityManager;
+  GTK2, GDK2, GLib2, UIBase, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  UserManager, EmailManager, ContactManager, CommunityManager, ReportGenerator;
 
 type
-  TRootWindow = class
+  TRootWindow = class(TBaseWindow)
   private
-    FWindow: PGtkWidget;
+    FMainVBox: PGtkWidget;
     FNotebook: PGtkWidget;
+    FStatusLabel: PGtkWidget;
 
     // Página de carga masiva
-    FLoadFileButton: PGtkWidget;
-    FLoadStatusLabel: PGtkWidget;
+    FFileEntry: PGtkWidget;
+    FSelectFileButton: PGtkWidget;
+    FLoadButton: PGtkWidget;
 
     // Página de comunidades
     FCommunityNameEntry: PGtkWidget;
@@ -31,20 +33,23 @@ type
     FRelationsReportButton: PGtkWidget;
     FReportsStatusLabel: PGtkWidget;
 
-    procedure SetupMainWindow;
-    procedure SetupLoadMassivePage;
-    procedure SetupCommunitiesPage;
+    procedure SetupNotebook;
+    procedure SetupLoadPage;
+    procedure SetupCommunityPage;
     procedure SetupReportsPage;
     procedure RefreshCommunityCombo;
+
+  protected
+    procedure SetupComponents; override;
+    procedure ConnectSignals; override;
 
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Show;
-    procedure Hide;
   end;
 
 // Callbacks
+procedure OnSelectFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnLoadFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnCreateCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnAddUserToCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl;
@@ -59,7 +64,8 @@ implementation
 
 constructor TRootWindow.Create;
 begin
-  SetupMainWindow;
+  inherited Create('EDDMail - Administrador Root', 600, 500);
+  
   SetupLoadMassivePage;
   SetupCommunitiesPage;
   SetupReportsPage;
@@ -73,19 +79,14 @@ begin
   inherited;
 end;
 
-procedure TRootWindow.SetupMainWindow;
+procedure TRootWindow.SetupComponents;
 var
   VBox: PGtkWidget;
   Label1: PGtkWidget;
 begin
   // Crear ventana principal
-  FWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(FWindow), 'EDDMail - Administrador Root');
-  gtk_window_set_default_size(GTK_WINDOW(FWindow), 600, 500);
-  gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
 
   // Conectar señal de destrucción
-  g_signal_connect(G_OBJECT(FWindow), 'destroy', G_CALLBACK(@OnRootWindowDestroy), nil);
 
   // Crear contenedor vertical
   VBox := gtk_vbox_new(False, 10);
@@ -177,7 +178,7 @@ begin
   Label1 := gtk_label_new('Comunidad:');
   gtk_box_pack_start(GTK_BOX(HBox), Label1, False, False, 5);
 
-  FCommunityCombo := gtk_combo_box_text_new;
+  FCommunityCombo := gtk_combo_box_new_text;
   gtk_box_pack_start(GTK_BOX(HBox), FCommunityCombo, True, True, 5);
 
   HBox := gtk_hbox_new(False, 10);
@@ -246,14 +247,14 @@ var
   ComboText: String;
 begin
   // Limpiar combo
-  gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(FCommunityCombo));
+  //   ClearComboBox(FCommunityCombo);
 
   // Agregar comunidades existentes
   CurrentCommunity := CommunityList.GetFirst;
   while CurrentCommunity <> nil do
   begin
     ComboText := IntToStr(CurrentCommunity^.Id) + ' - ' + CurrentCommunity^.Nombre;
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(FCommunityCombo), PChar(ComboText));
+    gtk_combo_box_append_text(GTK_COMBO_BOX(FCommunityCombo), PChar(ComboText));
     CurrentCommunity := CurrentCommunity^.Next;
   end;
 end;
@@ -341,7 +342,7 @@ begin
   RootWindow := TRootWindow(data);
 
   UserEmail := gtk_entry_get_text(GTK_ENTRY(RootWindow.FUserEmailEntry));
-  ComboText := gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(RootWindow.FCommunityCombo));
+  ComboText := gtk_combo_box_get_active_text(GTK_COMBO_BOX(RootWindow.FCommunityCombo));
 
   if (Length(UserEmail) = 0) or (Length(ComboText) = 0) then
   begin
@@ -401,3 +402,21 @@ begin
 end;
 
 end.
+
+// Función auxiliar para limpiar combo box en GTK2
+procedure ClearComboBox(ComboBox: PGtkWidget);
+var
+  Model: PGtkTreeModel;
+  Count: Integer;
+  i: Integer;
+begin
+  Model := gtk_combo_box_get_model(GTK_COMBO_BOX(ComboBox));
+  if Model <> nil then
+  begin
+    Count := gtk_tree_model_iter_n_children(Model, nil);
+    for i := Count - 1 downto 0 do
+    begin
+      gtk_combo_box_remove_text(GTK_COMBO_BOX(ComboBox), i);
+    end;
+  end;
+end;

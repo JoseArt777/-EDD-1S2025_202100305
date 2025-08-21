@@ -5,7 +5,7 @@ unit UIBase;
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore;
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore;
 
 type
   // Clase base para todas las ventanas
@@ -39,7 +39,7 @@ type
   TUIUtils = class
   public
     class function CreateLabel(Text: String; Bold: Boolean = False): PGtkWidget;
-    class function CreateButton(Text: String; Callback: Pointer; Data: gpointer = nil): PGtkWidget;
+    class function CreateButton(Text: String; Callback: Pointer; Data: Pointer = nil): PGtkWidget;
     class function CreateEntry(Placeholder: String = ''): PGtkWidget;
     class function CreateTextView: PGtkWidget;
     class function CreateFrame(Title: String): PGtkWidget;
@@ -63,6 +63,7 @@ implementation
 
 constructor TBaseWindow.Create(ATitle: String; AWidth: Integer; AHeight: Integer; AParent: PGtkWidget);
 begin
+  inherited Create;
   FTitle := ATitle;
   FWidth := AWidth;
   FHeight := AHeight;
@@ -85,45 +86,49 @@ begin
   FWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(FWindow), PChar(FTitle));
   gtk_window_set_default_size(GTK_WINDOW(FWindow), FWidth, FHeight);
-  gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable(GTK_WINDOW(FWindow), True);
 
   if FParentWindow <> nil then
   begin
     gtk_window_set_transient_for(GTK_WINDOW(FWindow), GTK_WINDOW(FParentWindow));
-    gtk_window_set_modal(GTK_WINDOW(FWindow), True);
-  end;
+    gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER_ON_PARENT);
+  end
+  else
+    gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
 end;
 
 procedure TBaseWindow.ConnectSignals;
 begin
-  // Señales básicas se pueden agregar aquí si es necesario
+  // Las clases derivadas pueden sobrescribir este método
 end;
 
 procedure TBaseWindow.Show;
 begin
-  gtk_widget_show_all(FWindow);
+  if FWindow <> nil then
+    gtk_widget_show_all(FWindow);
 end;
 
 procedure TBaseWindow.Hide;
 begin
-  gtk_widget_hide(FWindow);
+  if FWindow <> nil then
+    gtk_widget_hide(FWindow);
 end;
 
 procedure TBaseWindow.SetModal(Modal: Boolean);
 begin
-  gtk_window_set_modal(GTK_WINDOW(FWindow), Modal);
+  if FWindow <> nil then
+    gtk_window_set_modal(GTK_WINDOW(FWindow), Modal);
 end;
 
 procedure TBaseWindow.SetPosition(Position: TGtkWindowPosition);
 begin
-  gtk_window_set_position(GTK_WINDOW(FWindow), Position);
+  if FWindow <> nil then
+    gtk_window_set_position(GTK_WINDOW(FWindow), Position);
 end;
 
 procedure TBaseWindow.CenterOnParent;
 begin
-  if FParentWindow <> nil then
-    gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER_ON_PARENT)
-  else
+  if FWindow <> nil then
     gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
 end;
 
@@ -139,7 +144,7 @@ begin
   gtk_misc_set_alignment(GTK_MISC(Result), 0.0, 0.5);
 end;
 
-class function TUIUtils.CreateButton(Text: String; Callback: Pointer; Data: gpointer): PGtkWidget;
+class function TUIUtils.CreateButton(Text: String; Callback: Pointer; Data: Pointer): PGtkWidget;
 begin
   Result := gtk_button_new_with_label(PChar(Text));
   if Callback <> nil then
@@ -242,4 +247,3 @@ begin
 end;
 
 end.
-
