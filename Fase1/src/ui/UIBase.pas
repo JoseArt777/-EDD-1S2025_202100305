@@ -39,7 +39,7 @@ type
   TUIUtils = class
   public
     class function CreateLabel(Text: String; Bold: Boolean = False): PGtkWidget;
-    class function CreateButton(Text: String; Callback: Pointer; Data: gpointer = nil): PGtkWidget;
+    class function CreateButton(Text: String; Callback: Pointer; Data: Pointer = nil): PGtkWidget;
     class function CreateEntry(Placeholder: String = ''): PGtkWidget;
     class function CreateTextView: PGtkWidget;
     class function CreateFrame(Title: String): PGtkWidget;
