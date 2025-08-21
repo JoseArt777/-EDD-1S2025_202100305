@@ -5,8 +5,8 @@ unit ReportsWindow;
 interface
 
 uses
-  GTK2, GDK2, GLib2, GLib2.  SysUtils, Classes, DataStructures, SystemCore, UIBase,
-  ReportGenerator, FileManager;
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  ReportGenerator, FileManager, pango;  // <-- añadido pango
 
 type
   TReportsWindow = class(TBaseWindow)
@@ -73,6 +73,7 @@ var
   Label1: PGtkWidget;
   Buffer: PGtkTextBuffer;
   WelcomeText: String;
+  FontDesc: PPangoFontDescription;    // <-- mover var aquí
 begin
   // Contenedor principal
   FMainVBox := TUIUtils.CreateVBox(10);
@@ -81,12 +82,15 @@ begin
 
   // Título
   Label1 := TUIUtils.CreateLabel('Generador de Reportes de Usuario', True);
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Generador de Reportes de Usuario</span>');
+  gtk_label_set_markup(GTK_LABEL(Label1),
+    Pgchar(UTF8String('<span size="large" weight="bold">Generador de Reportes de Usuario</span>'))); // <-- Pgchar
   gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 10);
 
   // Información
   Label1 := TUIUtils.CreateLabel('Los reportes se guardarán en la carpeta: ' + GetUserReportsPath(CurrentUser^.Email));
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span style="italic">Los reportes se guardarán en la carpeta: ' + GetUserReportsPath(CurrentUser^.Email) + '</span>');
+  gtk_label_set_markup(GTK_LABEL(Label1),
+    Pgchar(UTF8String('<span style="italic">Los reportes se guardarán en la carpeta: ' +
+      GetUserReportsPath(CurrentUser^.Email) + '</span>'))); // <-- Pgchar
   gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 5);
 
   // Contenedor horizontal para botones y preview
@@ -139,8 +143,7 @@ begin
   gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(FPreviewTextView), False);
 
   // Configurar fuente monospace para mejor visualización
-  var FontDesc: PPangoFontDescription;
-  FontDesc := pango_font_description_from_string('Monospace 10');
+  FontDesc := pango_font_description_from_string(Pgchar(UTF8String('Monospace 10'))); // <-- Pgchar
   gtk_widget_modify_font(FPreviewTextView, FontDesc);
   pango_font_description_free(FontDesc);
 
@@ -157,7 +160,7 @@ begin
                  'Los reportes se guardarán automáticamente en tu carpeta de reportes.';
 
   Buffer := gtk_text_view_get_buffer(GTK_TEXT_VIEW(FPreviewTextView));
-  gtk_text_buffer_set_text(Buffer, PChar(WelcomeText), -1);
+  gtk_text_buffer_set_text(Buffer, Pgchar(UTF8String(WelcomeText)), -1); // <-- Pgchar
 
   // Label de estado
   FStatusLabel := TUIUtils.CreateLabel('Listo para generar reportes');
@@ -173,6 +176,7 @@ procedure TReportsWindow.ShowReportPreview(ReportTitle, ReportContent: String);
 var
   Buffer: PGtkTextBuffer;
   PreviewText: String;
+  StartIter: TGtkTextIter;  // <-- mover var aquí
 begin
   FCurrentReportType := ReportTitle;
 
@@ -182,10 +186,9 @@ begin
                  'Nota: Esta es solo una vista previa. El reporte completo se ha guardado en archivo.';
 
   Buffer := gtk_text_view_get_buffer(GTK_TEXT_VIEW(FPreviewTextView));
-  gtk_text_buffer_set_text(Buffer, PChar(PreviewText), -1);
+  gtk_text_buffer_set_text(Buffer, Pgchar(UTF8String(PreviewText)), -1); // <-- Pgchar
 
   // Hacer scroll al inicio
-  var StartIter: TGtkTextIter;
   gtk_text_buffer_get_start_iter(Buffer, @StartIter);
   gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(FPreviewTextView), @StartIter, 0.0, False, 0.0, 0.0);
 end;
@@ -197,7 +200,7 @@ var
 begin
   if not IsUserLoggedIn then Exit;
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generando reporte de correos recibidos...');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generando reporte de correos recibidos...'))); // <-- Pgchar
 
   Report := ReportGenerator.GenerateUserInboxReport(CurrentUser^.Email);
   Success := SaveUserReport(CurrentUser^.Email, 'Reporte_Correos_Recibidos', Report);
@@ -205,12 +208,12 @@ begin
   if Success then
   begin
     ShowReportPreview('REPORTE DE CORREOS RECIBIDOS', Report);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Reporte de correos recibidos generado exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Reporte de correos recibidos generado exitosamente'))); // <-- Pgchar
     TUIUtils.ShowInfoMessage(FWindow, 'Reporte de correos recibidos generado y guardado exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al generar reporte de correos recibidos');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error al generar reporte de correos recibidos'))); // <-- Pgchar
     TUIUtils.ShowErrorMessage(FWindow, 'Error al guardar el reporte de correos recibidos');
   end;
 end;
@@ -222,7 +225,7 @@ var
 begin
   if not IsUserLoggedIn then Exit;
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generando reporte de papelera...');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generando reporte de papelera...'))); // <-- Pgchar
 
   Report := ReportGenerator.GenerateUserTrashReport(CurrentUser^.Email);
   Success := SaveUserReport(CurrentUser^.Email, 'Reporte_Papelera', Report);
@@ -230,12 +233,12 @@ begin
   if Success then
   begin
     ShowReportPreview('REPORTE DE PAPELERA', Report);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Reporte de papelera generado exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Reporte de papelera generado exitosamente'))); // <-- Pgchar
     TUIUtils.ShowInfoMessage(FWindow, 'Reporte de papelera generado y guardado exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al generar reporte de papelera');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error al generar reporte de papelera'))); // <-- Pgchar
     TUIUtils.ShowErrorMessage(FWindow, 'Error al guardar el reporte de papelera');
   end;
 end;
@@ -247,7 +250,7 @@ var
 begin
   if not IsUserLoggedIn then Exit;
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generando reporte de correos programados...');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generando reporte de correos programados...'))); // <-- Pgchar
 
   Report := ReportGenerator.GenerateUserScheduledReport(CurrentUser^.Email);
   Success := SaveUserReport(CurrentUser^.Email, 'Reporte_Correos_Programados', Report);
@@ -255,12 +258,12 @@ begin
   if Success then
   begin
     ShowReportPreview('REPORTE DE CORREOS PROGRAMADOS', Report);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Reporte de correos programados generado exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Reporte de correos programados generado exitosamente'))); // <-- Pgchar
     TUIUtils.ShowInfoMessage(FWindow, 'Reporte de correos programados generado y guardado exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al generar reporte de correos programados');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error al generar reporte de correos programados'))); // <-- Pgchar
     TUIUtils.ShowErrorMessage(FWindow, 'Error al guardar el reporte de correos programados');
   end;
 end;
@@ -272,7 +275,7 @@ var
 begin
   if not IsUserLoggedIn then Exit;
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generando reporte de contactos...');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generando reporte de contactos...'))); // <-- Pgchar
 
   Report := ReportGenerator.GenerateUserContactsReport(CurrentUser^.Email);
   Success := SaveUserReport(CurrentUser^.Email, 'Reporte_Contactos', Report);
@@ -280,12 +283,12 @@ begin
   if Success then
   begin
     ShowReportPreview('REPORTE DE CONTACTOS', Report);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Reporte de contactos generado exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Reporte de contactos generado exitosamente'))); // <-- Pgchar
     TUIUtils.ShowInfoMessage(FWindow, 'Reporte de contactos generado y guardado exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al generar reporte de contactos');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error al generar reporte de contactos'))); // <-- Pgchar
     TUIUtils.ShowErrorMessage(FWindow, 'Error al guardar el reporte de contactos');
   end;
 end;
@@ -296,6 +299,7 @@ var
   SuccessCount: Integer;
   ErrorCount: Integer;
   ResultMessage: String;
+  SummaryReport: String;  // <-- mover var aquí
 begin
   if not IsUserLoggedIn then Exit;
 
@@ -303,11 +307,11 @@ begin
                                    '¿Está seguro que desea generar todos los reportes? ' +
                                    'Esto creará 4 archivos en su carpeta de reportes.') then
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generación de reportes cancelada');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generación de reportes cancelada'))); // <-- Pgchar
     Exit;
   end;
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Generando todos los reportes...');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Generando todos los reportes...'))); // <-- Pgchar
   SuccessCount := 0;
   ErrorCount := 0;
 
@@ -353,7 +357,7 @@ begin
     ResultMessage := Format('✅ Todos los reportes generados exitosamente!' + LineEnding +
                            'Se crearon %d archivos en la carpeta: %s',
                            [SuccessCount, GetUserReportsPath(CurrentUser^.Email)]);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Todos los reportes generados exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Todos los reportes generados exitosamente'))); // <-- Pgchar
   end
   else if SuccessCount > 0 then
   begin
@@ -361,7 +365,8 @@ begin
                            'Exitosos: %d | Errores: %d' + LineEnding +
                            'Revise la carpeta: %s',
                            [SuccessCount, ErrorCount, GetUserReportsPath(CurrentUser^.Email)]);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Format('Generación parcial: %d exitosos, %d errores', [SuccessCount, ErrorCount]));
+    gtk_label_set_text(GTK_LABEL(FStatusLabel),
+      Pgchar(UTF8String(Format('Generación parcial: %d exitosos, %d errores', [SuccessCount, ErrorCount])))); // <-- Pgchar
   end
   else
   begin
@@ -369,13 +374,12 @@ begin
                            'No se pudo generar ningún reporte.' + LineEnding +
                            'Verifique los permisos de la carpeta: %s',
                            [GetUserReportsPath(CurrentUser^.Email)]);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: No se pudo generar ningún reporte');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: No se pudo generar ningún reporte'))); // <-- Pgchar
   end;
 
   TUIUtils.ShowInfoMessage(FWindow, ResultMessage);
 
   // Mostrar vista previa del resumen
-  var SummaryReport: String;
   SummaryReport := 'RESUMEN DE GENERACIÓN DE REPORTES' + LineEnding +
                    '=================================' + LineEnding +
                    'Usuario: ' + CurrentUser^.Email + LineEnding +

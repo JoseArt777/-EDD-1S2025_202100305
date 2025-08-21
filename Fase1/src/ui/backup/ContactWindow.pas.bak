@@ -5,7 +5,7 @@ unit ContactWindow;
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
   ContactManager;
 
 type
@@ -268,7 +268,7 @@ begin
   if ContactManager.AddContact(ContactEmail) then
   begin
     gtk_entry_set_text(GTK_ENTRY(FAddEmailEntry), '');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Contacto agregado: ' + ContactEmail);
+      CommunitySelected := PChar(gtk_combo_box_get_active_text(GTK_COMBO_BOX(FCommunityCombo)));
     RefreshContactsList;
     TUIUtils.ShowInfoMessage(FWindow, 'Contacto agregado exitosamente');
   end

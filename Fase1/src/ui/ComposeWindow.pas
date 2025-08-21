@@ -77,7 +77,8 @@ begin
 
   // Título
   Label1 := TUIUtils.CreateLabel('Redactar Nuevo Correo', True);
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Redactar Nuevo Correo</span>');
+  gtk_label_set_markup(GTK_LABEL(Label1),
+    Pgchar(UTF8String('<span size="large" weight="bold">Redactar Nuevo Correo</span>')));
   gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 10);
 
   // Tabla para organizar campos
@@ -251,13 +252,13 @@ procedure TComposeWindow.ClearForm;
 var
   Buffer: PGtkTextBuffer;
 begin
-  gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), '');
-  gtk_entry_set_text(GTK_ENTRY(FSubjectEntry), '');
+  gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), Pgchar(UTF8String('')));
+  gtk_entry_set_text(GTK_ENTRY(FSubjectEntry),   Pgchar(UTF8String('')));
 
   Buffer := gtk_text_view_get_buffer(GTK_TEXT_VIEW(FMessageTextView));
-  gtk_text_buffer_set_text(Buffer, '', -1);
+  gtk_text_buffer_set_text(Buffer, Pgchar(UTF8String('')), -1);
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), '');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('')));
 end;
 
 function TComposeWindow.ValidateForm: Boolean;
@@ -269,8 +270,8 @@ var
 begin
   Result := False;
 
-  Recipient := gtk_entry_get_text(GTK_ENTRY(FRecipientEntry));
-  Subject := gtk_entry_get_text(GTK_ENTRY(FSubjectEntry));
+  Recipient := UTF8String(gtk_entry_get_text(GTK_ENTRY(FRecipientEntry)));
+  Subject   := UTF8String(gtk_entry_get_text(GTK_ENTRY(FSubjectEntry)));
 
   Buffer := gtk_text_view_get_buffer(GTK_TEXT_VIEW(FMessageTextView));
   gtk_text_buffer_get_bounds(Buffer, @StartIter, @EndIter);
@@ -279,21 +280,23 @@ begin
   if Length(Recipient) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese el destinatario');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Destinatario requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Destinatario requerido')));
+    g_free(Message);
     Exit;
   end;
 
   if Length(Subject) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese el asunto');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Asunto requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Asunto requerido')));
+    g_free(Message);
     Exit;
   end;
 
   if Length(String(Message)) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese el mensaje');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Mensaje requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Mensaje requerido')));
     g_free(Message);
     Exit;
   end;
@@ -312,8 +315,8 @@ var
 begin
   if not ValidateForm then Exit;
 
-  Recipient := gtk_entry_get_text(GTK_ENTRY(FRecipientEntry));
-  Subject := gtk_entry_get_text(GTK_ENTRY(FSubjectEntry));
+  Recipient := UTF8String(gtk_entry_get_text(GTK_ENTRY(FRecipientEntry)));
+  Subject   := UTF8String(gtk_entry_get_text(GTK_ENTRY(FSubjectEntry)));
 
   Buffer := gtk_text_view_get_buffer(GTK_TEXT_VIEW(FMessageTextView));
   gtk_text_buffer_get_bounds(Buffer, @StartIter, @EndIter);
@@ -327,7 +330,7 @@ begin
     TUIUtils.ShowErrorMessage(FWindow,
       'Error: Solo puedes enviar correos a tus contactos. ' +
       'Agrega primero a ' + Recipient + ' como contacto.');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Destinatario no es contacto');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Destinatario no es contacto')));
     Exit;
   end;
 
@@ -335,20 +338,21 @@ begin
   if EmailManager.SendEmail(Recipient, Subject, MessageStr) then
   begin
     TUIUtils.ShowInfoMessage(FWindow, 'Correo enviado exitosamente a ' + Recipient);
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Correo enviado exitosamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Correo enviado exitosamente')));
     ClearForm;
   end
   else
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Error al enviar el correo');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al enviar correo');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error al enviar correo')));
   end;
 end;
 
 procedure TComposeWindow.LoadContactIntoRecipient(ContactEmail: String);
 begin
-  gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), PChar(ContactEmail));
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Contacto seleccionado: ' + ContactEmail);
+  // ← Aquí estaba la referencia a CommunitySelected/FCommunityCombo.
+  // Solo cargamos el email en el campo.
+  gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), Pgchar(UTF8String(ContactEmail)));
 end;
 
 // ============================================================================

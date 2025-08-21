@@ -1,4 +1,4 @@
-                   unit LoginWindow;
+unit LoginWindow;
 
 {$mode objfpc}{$H+}
 

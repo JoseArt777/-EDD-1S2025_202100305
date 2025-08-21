@@ -5,7 +5,7 @@ unit ReportsWindow;
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
   ReportGenerator, FileManager;
 
 type

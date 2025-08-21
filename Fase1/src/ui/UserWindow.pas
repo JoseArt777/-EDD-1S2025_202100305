@@ -143,31 +143,31 @@ begin
   // Barra de estado
   FStatusBar := gtk_statusbar_new;
   gtk_box_pack_start(GTK_BOX(FMainVBox), FStatusBar, False, False, 0);
-  gtk_statusbar_push(GTK_STATUSBAR(FStatusBar), 0, 'Listo');
+  gtk_statusbar_push(GTK_STATUSBAR(FStatusBar), 0, Pgchar(UTF8String('Listo')));
 end;
 
 procedure TUserWindow.CreateMenuButtons;
 begin
-  FInboxButton := TUIUtils.CreateButton('📥 Bandeja de Entrada', @OnInboxClicked, Self);
-  FComposeButton := TUIUtils.CreateButton('✉️ Enviar Correo', @OnComposeClicked, Self);
-  FContactsButton := TUIUtils.CreateButton('👥 Contactos', @OnContactsClicked, Self);
-  FTrashButton := TUIUtils.CreateButton('🗑️ Papelera', @OnTrashClicked, Self);
-  FScheduleButton := TUIUtils.CreateButton('⏰ Programar Correo', @OnScheduleClicked, Self);
-  FScheduledButton := TUIUtils.CreateButton('📅 Correos Programados', @OnScheduledClicked, Self);
-  FProfileButton := TUIUtils.CreateButton('👤 Actualizar Perfil', @OnProfileClicked, Self);
-  FReportsButton := TUIUtils.CreateButton('📊 Generar Reportes', @OnReportsClicked, Self);
-  FLogoutButton := TUIUtils.CreateButton('🚪 Cerrar Sesión', @OnLogoutClicked, Self);
+  FInboxButton     := TUIUtils.CreateButton('📥 Bandeja de Entrada',   @OnInboxClicked,      Self);
+  FComposeButton   := TUIUtils.CreateButton('✉️ Enviar Correo',        @OnComposeClicked,    Self);
+  FContactsButton  := TUIUtils.CreateButton('👥 Contactos',            @OnContactsClicked,   Self);
+  FTrashButton     := TUIUtils.CreateButton('🗑️ Papelera',             @OnTrashClicked,      Self);
+  FScheduleButton  := TUIUtils.CreateButton('⏰ Programar Correo',      @OnScheduleClicked,   Self);
+  FScheduledButton := TUIUtils.CreateButton('📅 Correos Programados',  @OnScheduledClicked,  Self);
+  FProfileButton   := TUIUtils.CreateButton('👤 Actualizar Perfil',     @OnProfileClicked,    Self);
+  FReportsButton   := TUIUtils.CreateButton('📊 Generar Reportes',      @OnReportsClicked,    Self);
+  FLogoutButton    := TUIUtils.CreateButton('🚪 Cerrar Sesión',         @OnLogoutClicked,     Self);
 
   // Configurar tamaños de botones
-  gtk_widget_set_size_request(FInboxButton, 200, 40);
-  gtk_widget_set_size_request(FComposeButton, 200, 40);
-  gtk_widget_set_size_request(FContactsButton, 200, 40);
-  gtk_widget_set_size_request(FTrashButton, 200, 40);
-  gtk_widget_set_size_request(FScheduleButton, 200, 40);
+  gtk_widget_set_size_request(FInboxButton,     200, 40);
+  gtk_widget_set_size_request(FComposeButton,   200, 40);
+  gtk_widget_set_size_request(FContactsButton,  200, 40);
+  gtk_widget_set_size_request(FTrashButton,     200, 40);
+  gtk_widget_set_size_request(FScheduleButton,  200, 40);
   gtk_widget_set_size_request(FScheduledButton, 200, 40);
-  gtk_widget_set_size_request(FProfileButton, 200, 40);
-  gtk_widget_set_size_request(FReportsButton, 200, 40);
-  gtk_widget_set_size_request(FLogoutButton, 300, 40);
+  gtk_widget_set_size_request(FProfileButton,   200, 40);
+  gtk_widget_set_size_request(FReportsButton,   200, 40);
+  gtk_widget_set_size_request(FLogoutButton,    300, 40);
 end;
 
 procedure TUserWindow.ConnectSignals;
@@ -192,7 +192,7 @@ begin
   else
     Text := '✅ No tienes correos no leídos';
 
-  gtk_label_set_text(GTK_LABEL(FUnreadLabel), PChar(Text));
+  gtk_label_set_text(GTK_LABEL(FUnreadLabel), Pgchar(UTF8String(Text)));
 end;
 
 procedure TUserWindow.UpdateWelcomeMessage;
@@ -203,7 +203,7 @@ begin
   begin
     WelcomeText := Format('Bienvenido, %s (%s)', [CurrentUser^.Nombre, CurrentUser^.Email]);
     gtk_label_set_markup(GTK_LABEL(FWelcomeLabel),
-                        PChar('<span size="large" weight="bold">' + WelcomeText + '</span>'));
+      Pgchar(UTF8String('<span size="large" weight="bold">' + WelcomeText + '</span>')));
   end;
 end;
 
@@ -398,3 +398,4 @@ begin
 end;
 
 end.
+

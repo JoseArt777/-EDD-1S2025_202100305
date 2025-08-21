@@ -476,7 +476,7 @@ end;
 procedure TScheduleWindow.LoadContactIntoRecipient(ContactEmail: String);
 begin
   gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), PChar(ContactEmail));
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Contacto seleccionado: ' + ContactEmail);
+
 end;
 
 // ============================================================================

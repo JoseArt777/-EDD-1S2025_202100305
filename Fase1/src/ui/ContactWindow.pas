@@ -89,7 +89,8 @@ begin
 
   // Título
   Label1 := TUIUtils.CreateLabel('Gestión de Contactos', True);
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Gestión de Contactos</span>');
+  gtk_label_set_markup(GTK_LABEL(Label1),
+    Pgchar(UTF8String('<span size="large" weight="bold">Gestión de Contactos</span>')));
   gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 10);
 
   // Frame para información del contacto
@@ -197,20 +198,20 @@ procedure TContactWindow.UpdateContactDisplay;
 begin
   if FCurrentContact = nil then
   begin
-    gtk_label_set_text(GTK_LABEL(FNameLabel), 'Sin contactos');
-    gtk_label_set_text(GTK_LABEL(FUserLabel), '');
-    gtk_label_set_text(GTK_LABEL(FEmailLabel), '');
-    gtk_label_set_text(GTK_LABEL(FPhoneLabel), '');
-    gtk_label_set_text(GTK_LABEL(FPositionLabel), '0 / 0');
+    gtk_label_set_text(GTK_LABEL(FNameLabel),  Pgchar(UTF8String('Sin contactos')));
+    gtk_label_set_text(GTK_LABEL(FUserLabel),  Pgchar(UTF8String('')));
+    gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String('')));
+    gtk_label_set_text(GTK_LABEL(FPhoneLabel), Pgchar(UTF8String('')));
+    gtk_label_set_text(GTK_LABEL(FPositionLabel), Pgchar(UTF8String('0 / 0')));
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FNameLabel), PChar(FCurrentContact^.Nombre));
-    gtk_label_set_text(GTK_LABEL(FUserLabel), PChar(FCurrentContact^.Usuario));
-    gtk_label_set_text(GTK_LABEL(FEmailLabel), PChar(FCurrentContact^.Email));
-    gtk_label_set_text(GTK_LABEL(FPhoneLabel), PChar(FCurrentContact^.Telefono));
+    gtk_label_set_text(GTK_LABEL(FNameLabel),  Pgchar(UTF8String(FCurrentContact^.Nombre)));
+    gtk_label_set_text(GTK_LABEL(FUserLabel),  Pgchar(UTF8String(FCurrentContact^.Usuario)));
+    gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String(FCurrentContact^.Email)));
+    gtk_label_set_text(GTK_LABEL(FPhoneLabel), Pgchar(UTF8String(FCurrentContact^.Telefono)));
     gtk_label_set_text(GTK_LABEL(FPositionLabel),
-                      PChar(Format('%d / %d', [FCurrentPosition, FContactsCount])));
+      Pgchar(UTF8String(Format('%d / %d', [FCurrentPosition, FContactsCount]))));
   end;
 end;
 
@@ -256,25 +257,27 @@ procedure TContactWindow.AddNewContact;
 var
   ContactEmail: String;
 begin
-  ContactEmail := gtk_entry_get_text(GTK_ENTRY(FAddEmailEntry));
+  ContactEmail := UTF8String(gtk_entry_get_text(GTK_ENTRY(FAddEmailEntry)));
 
   if Length(ContactEmail) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese el email del contacto');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Email requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Email requerido')));
     Exit;
   end;
 
   if ContactManager.AddContact(ContactEmail) then
   begin
-    gtk_entry_set_text(GTK_ENTRY(FAddEmailEntry), '');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Contacto agregado: ' + ContactEmail);
+    gtk_entry_set_text(GTK_ENTRY(FAddEmailEntry), Pgchar(UTF8String('')));
+    gtk_label_set_text(GTK_LABEL(FStatusLabel),
+      Pgchar(UTF8String('Contacto agregado: ' + ContactEmail)));
     RefreshContactsList;
     TUIUtils.ShowInfoMessage(FWindow, 'Contacto agregado exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error al agregar contacto');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel),
+      Pgchar(UTF8String('Error al agregar contacto')));
   end;
 end;
 

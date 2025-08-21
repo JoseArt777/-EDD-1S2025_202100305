@@ -1,400 +1,325 @@
-unit UserWindow;
+unit LoginWindow;
 
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  GTK2, GDK2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
-  InboxWindow, ComposeWindow, ContactWindow, TrashWindow, ScheduleWindow,
-  ScheduledWindow, ProfileWindow, ReportsWindow;
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UserManager,
+  RootWindow, UserWindow, BasicOperations;
 
 type
-  TUserWindow = class(TBaseWindow)
+  TLoginWindow = class
   private
-    FMainVBox: PGtkWidget;
-    FMenuBar: PGtkWidget;
-    FStatusBar: PGtkWidget;
-    FWelcomeLabel: PGtkWidget;
-    FUnreadLabel: PGtkWidget;
+    FWindow: PGtkWidget;
+    FEmailEntry: PGtkWidget;
+    FPasswordEntry: PGtkWidget;
+    FLoginButton: PGtkWidget;
+    FCreateAccountButton: PGtkWidget;
+    FStatusLabel: PGtkWidget;
 
-    // Botones del menú principal
-    FInboxButton: PGtkWidget;
-    FComposeButton: PGtkWidget;
-    FContactsButton: PGtkWidget;
-    FTrashButton: PGtkWidget;
-    FScheduleButton: PGtkWidget;
-    FScheduledButton: PGtkWidget;
-    FProfileButton: PGtkWidget;
-    FReportsButton: PGtkWidget;
-    FLogoutButton: PGtkWidget;
+    // Ventana de registro
+    FRegisterWindow: PGtkWidget;
+    FRegNombreEntry: PGtkWidget;
+    FRegUsuarioEntry: PGtkWidget;
+    FRegEmailEntry: PGtkWidget;
+    FRegTelefonoEntry: PGtkWidget;
+    FRegPasswordEntry: PGtkWidget;
 
-    // Ventanas secundarias
-    FInboxWin: TInboxWindow;
-    FComposeWin: TComposeWindow;
-    FContactWin: TContactWindow;
-    FTrashWin: TTrashWindow;
-    FScheduleWin: TScheduleWindow;
-    FScheduledWin: TScheduledWindow;
-    FProfileWin: TProfileWindow;
-    FReportsWin: TReportsWindow;
-
-    procedure CreateMenuButtons;
-    procedure UpdateUnreadCount;
-    procedure UpdateWelcomeMessage;
-
-  protected
-    procedure SetupComponents; override;
-    procedure ConnectSignals; override;
+    procedure SetupLoginWindow;
+    procedure SetupRegisterWindow;
 
   public
     constructor Create;
     destructor Destroy; override;
-    procedure RefreshData;
-    procedure CloseAllSubWindows;
+    procedure Show;
+    procedure Hide;
   end;
 
 // Callbacks
-procedure OnInboxClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnComposeClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnContactsClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnTrashClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnScheduleClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnScheduledClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnProfileClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnUserWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnLoginClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnCreateAccountClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnRegisterClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnCancelRegisterClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
 
 var
-  UserWin: TUserWindow;
+  LoginWin: TLoginWindow;
 
 implementation
 
-uses EmailManager, ContactManager, LoginWindow;
-
-constructor TUserWindow.Create;
+constructor TLoginWindow.Create;
 begin
-  inherited Create('EDDMail - ' + CurrentUser^.Nombre, 800, 600);
-  UpdateWelcomeMessage;
-  UpdateUnreadCount;
+  SetupLoginWindow;
+  SetupRegisterWindow;
 end;
 
-destructor TUserWindow.Destroy;
+destructor TLoginWindow.Destroy;
 begin
-  CloseAllSubWindows;
+  if FWindow <> nil then
+    gtk_widget_destroy(FWindow);
+  if FRegisterWindow <> nil then
+    gtk_widget_destroy(FRegisterWindow);
   inherited;
 end;
 
-procedure TUserWindow.SetupComponents;
+procedure TLoginWindow.SetupLoginWindow;
 var
-  ButtonsHBox, ButtonsVBox1, ButtonsVBox2: PGtkWidget;
-  Separator: PGtkWidget;
+  VBox, HBox: PGtkWidget;
+  Label1: PGtkWidget;
 begin
-  // Contenedor principal
-  FMainVBox := TUIUtils.CreateVBox(10);
-  gtk_container_add(GTK_CONTAINER(FWindow), FMainVBox);
-  gtk_container_set_border_width(GTK_CONTAINER(FMainVBox), 10);
+  // Crear ventana principal
+  FWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(FWindow), 'EDDMail - Inicio de Sesión');
+  gtk_window_set_default_size(GTK_WINDOW(FWindow), 400, 300);
+  gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
 
-  // Mensaje de bienvenida
-  FWelcomeLabel := TUIUtils.CreateLabel('', True);
-  gtk_box_pack_start(GTK_BOX(FMainVBox), FWelcomeLabel, False, False, 10);
+  // Conectar señal de destrucción
+  g_signal_connect(G_OBJECT(FWindow), 'destroy', G_CALLBACK(@OnWindowDestroy), nil);
 
-  // Contador de correos no leídos
-  FUnreadLabel := TUIUtils.CreateLabel('');
-  gtk_box_pack_start(GTK_BOX(FMainVBox), FUnreadLabel, False, False, 5);
+  // Crear contenedor vertical
+  VBox := gtk_vbox_new(False, 10);
+  gtk_container_add(GTK_CONTAINER(FWindow), VBox);
+  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
 
-  // Separador
-  Separator := gtk_hseparator_new;
-  gtk_box_pack_start(GTK_BOX(FMainVBox), Separator, False, False, 10);
+  // Título
+  Label1 := gtk_label_new('EDDMail');
+  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="x-large" weight="bold">EDDMail</span>');
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 20);
 
-  // Contenedor para botones
-  ButtonsHBox := TUIUtils.CreateHBox(20);
-  gtk_box_pack_start(GTK_BOX(FMainVBox), ButtonsHBox, True, True, 10);
+  // Campo de email
+  Label1 := gtk_label_new('Email:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
 
-  // Primera columna de botones
-  ButtonsVBox1 := TUIUtils.CreateVBox(10);
-  gtk_box_pack_start(GTK_BOX(ButtonsHBox), ButtonsVBox1, True, True, 10);
+  FEmailEntry := gtk_entry_new;
+  gtk_box_pack_start(GTK_BOX(VBox), FEmailEntry, False, False, 5);
 
-  // Segunda columna de botones
-  ButtonsVBox2 := TUIUtils.CreateVBox(10);
-  gtk_box_pack_start(GTK_BOX(ButtonsHBox), ButtonsVBox2, True, True, 10);
+  // Campo de contraseña
+  Label1 := gtk_label_new('Password:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
 
-  // Crear botones del menú
-  CreateMenuButtons;
+  FPasswordEntry := gtk_entry_new;
+  gtk_entry_set_visibility(GTK_ENTRY(FPasswordEntry), False);
+  gtk_box_pack_start(GTK_BOX(VBox), FPasswordEntry, False, False, 5);
 
-  // Agrupar botones en columnas
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FInboxButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FComposeButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FContactsButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox1), FTrashButton, False, False, 5);
+  // Botones
+  HBox := gtk_hbox_new(True, 10);
+  gtk_box_pack_start(GTK_BOX(VBox), HBox, False, False, 20);
 
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FScheduleButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FScheduledButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FProfileButton, False, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsVBox2), FReportsButton, False, False, 5);
+  FLoginButton := gtk_button_new_with_label('Iniciar Sesión');
+  g_signal_connect(G_OBJECT(FLoginButton), 'clicked', G_CALLBACK(@OnLoginClicked), Self);
+  gtk_box_pack_start(GTK_BOX(HBox), FLoginButton, True, True, 5);
 
-  // Separador y botón de logout
-  Separator := gtk_hseparator_new;
-  gtk_box_pack_start(GTK_BOX(FMainVBox), Separator, False, False, 10);
+  FCreateAccountButton := gtk_button_new_with_label('Crear Cuenta');
+  g_signal_connect(G_OBJECT(FCreateAccountButton), 'clicked', G_CALLBACK(@OnCreateAccountClicked), Self);
+  gtk_box_pack_start(GTK_BOX(HBox), FCreateAccountButton, True, True, 5);
 
-  gtk_box_pack_start(GTK_BOX(FMainVBox), FLogoutButton, False, False, 5);
-
-  // Barra de estado
-  FStatusBar := gtk_statusbar_new;
-  gtk_box_pack_start(GTK_BOX(FMainVBox), FStatusBar, False, False, 0);
-  gtk_statusbar_push(GTK_STATUSBAR(FStatusBar), 0, 'Listo');
+  // Label de estado
+  FStatusLabel := gtk_label_new('');
+  gtk_box_pack_start(GTK_BOX(VBox), FStatusLabel, False, False, 10);
 end;
 
-procedure TUserWindow.CreateMenuButtons;
-begin
-  FInboxButton := TUIUtils.CreateButton('📥 Bandeja de Entrada', @OnInboxClicked, Self);
-  FComposeButton := TUIUtils.CreateButton('✉️ Enviar Correo', @OnComposeClicked, Self);
-  FContactsButton := TUIUtils.CreateButton('👥 Contactos', @OnContactsClicked, Self);
-  FTrashButton := TUIUtils.CreateButton('🗑️ Papelera', @OnTrashClicked, Self);
-  FScheduleButton := TUIUtils.CreateButton('⏰ Programar Correo', @OnScheduleClicked, Self);
-  FScheduledButton := TUIUtils.CreateButton('📅 Correos Programados', @OnScheduledClicked, Self);
-  FProfileButton := TUIUtils.CreateButton('👤 Actualizar Perfil', @OnProfileClicked, Self);
-  FReportsButton := TUIUtils.CreateButton('📊 Generar Reportes', @OnReportsClicked, Self);
-  FLogoutButton := TUIUtils.CreateButton('🚪 Cerrar Sesión', @OnLogoutClicked, Self);
-
-  // Configurar tamaños de botones
-  gtk_widget_set_size_request(FInboxButton, 200, 40);
-  gtk_widget_set_size_request(FComposeButton, 200, 40);
-  gtk_widget_set_size_request(FContactsButton, 200, 40);
-  gtk_widget_set_size_request(FTrashButton, 200, 40);
-  gtk_widget_set_size_request(FScheduleButton, 200, 40);
-  gtk_widget_set_size_request(FScheduledButton, 200, 40);
-  gtk_widget_set_size_request(FProfileButton, 200, 40);
-  gtk_widget_set_size_request(FReportsButton, 200, 40);
-  gtk_widget_set_size_request(FLogoutButton, 300, 40);
-end;
-
-procedure TUserWindow.ConnectSignals;
-begin
-  inherited;
-  g_signal_connect(G_OBJECT(FWindow), 'destroy', G_CALLBACK(@OnUserWindowDestroy), Self);
-end;
-
-procedure TUserWindow.UpdateUnreadCount;
+procedure TLoginWindow.SetupRegisterWindow;
 var
-  UserInbox: TEmailList;
-  UnreadCount: Integer;
-  Text: String;
+  VBox, HBox: PGtkWidget;
+  Label1: PGtkWidget;
+  RegisterButton, CancelButton: PGtkWidget;
 begin
-  if not IsUserLoggedIn then Exit;
+  // Crear ventana de registro
+  FRegisterWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(FRegisterWindow), 'EDDMail - Crear Cuenta');
+  gtk_window_set_default_size(GTK_WINDOW(FRegisterWindow), 400, 400);
+  gtk_window_set_position(GTK_WINDOW(FRegisterWindow), GTK_WIN_POS_CENTER);
+  gtk_window_set_modal(GTK_WINDOW(FRegisterWindow), True);
 
-  UserInbox := GetUserInbox(CurrentUser^.Email);
-  UnreadCount := UserInbox.GetUnreadCount;
+  // Crear contenedor vertical
+  VBox := gtk_vbox_new(False, 10);
+  gtk_container_add(GTK_CONTAINER(FRegisterWindow), VBox);
+  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
 
-  if UnreadCount > 0 then
-    Text := Format('📬 Tienes %d correos no leídos', [UnreadCount])
-  else
-    Text := '✅ No tienes correos no leídos';
+  // Título
+  Label1 := gtk_label_new('Crear Nueva Cuenta');
+  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Crear Nueva Cuenta</span>');
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 20);
 
-  gtk_label_set_text(GTK_LABEL(FUnreadLabel), PChar(Text));
+  // Campo nombre
+  Label1 := gtk_label_new('Nombre:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
+
+  FRegNombreEntry := gtk_entry_new;
+  gtk_box_pack_start(GTK_BOX(VBox), FRegNombreEntry, False, False, 5);
+
+  // Campo usuario
+  Label1 := gtk_label_new('Usuario:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
+
+  FRegUsuarioEntry := gtk_entry_new;
+  gtk_box_pack_start(GTK_BOX(VBox), FRegUsuarioEntry, False, False, 5);
+
+  // Campo email
+  Label1 := gtk_label_new('Email:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
+
+  FRegEmailEntry := gtk_entry_new;
+  gtk_box_pack_start(GTK_BOX(VBox), FRegEmailEntry, False, False, 5);
+
+  // Campo teléfono
+  Label1 := gtk_label_new('Teléfono:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
+
+  FRegTelefonoEntry := gtk_entry_new;
+  gtk_box_pack_start(GTK_BOX(VBox), FRegTelefonoEntry, False, False, 5);
+
+  // Campo contraseña
+  Label1 := gtk_label_new('Password:');
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 5);
+
+  FRegPasswordEntry := gtk_entry_new;
+  gtk_entry_set_visibility(GTK_ENTRY(FRegPasswordEntry), False);
+  gtk_box_pack_start(GTK_BOX(VBox), FRegPasswordEntry, False, False, 5);
+
+  // Botones
+  HBox := gtk_hbox_new(True, 10);
+  gtk_box_pack_start(GTK_BOX(VBox), HBox, False, False, 20);
+
+  RegisterButton := gtk_button_new_with_label('Registrar');
+  g_signal_connect(G_OBJECT(RegisterButton), 'clicked', G_CALLBACK(@OnRegisterClicked), Self);
+  gtk_box_pack_start(GTK_BOX(HBox), RegisterButton, True, True, 5);
+
+  CancelButton := gtk_button_new_with_label('Cancelar');
+  g_signal_connect(G_OBJECT(CancelButton), 'clicked', G_CALLBACK(@OnCancelRegisterClicked), Self);
+  gtk_box_pack_start(GTK_BOX(HBox), CancelButton, True, True, 5);
 end;
 
-procedure TUserWindow.UpdateWelcomeMessage;
-var
-  WelcomeText: String;
+procedure TLoginWindow.Show;
 begin
-  if IsUserLoggedIn then
-  begin
-    WelcomeText := Format('Bienvenido, %s (%s)', [CurrentUser^.Nombre, CurrentUser^.Email]);
-    gtk_label_set_markup(GTK_LABEL(FWelcomeLabel),
-                        PChar('<span size="large" weight="bold">' + WelcomeText + '</span>'));
-  end;
+  gtk_widget_show_all(FWindow);
 end;
 
-procedure TUserWindow.RefreshData;
+procedure TLoginWindow.Hide;
 begin
-  UpdateUnreadCount;
-  // Refrescar otras ventanas si están abiertas
-  if FInboxWin <> nil then
-    FInboxWin.RefreshInbox;
-  if FScheduledWin <> nil then
-    FScheduledWin.RefreshScheduled;
+  gtk_widget_hide(FWindow);
 end;
 
-procedure TUserWindow.CloseAllSubWindows;
-begin
-  if FInboxWin <> nil then
-  begin
-    FInboxWin.Free;
-    FInboxWin := nil;
-  end;
-
-  if FComposeWin <> nil then
-  begin
-    FComposeWin.Free;
-    FComposeWin := nil;
-  end;
-
-  if FContactWin <> nil then
-  begin
-    FContactWin.Free;
-    FContactWin := nil;
-  end;
-
-  if FTrashWin <> nil then
-  begin
-    FTrashWin.Free;
-    FTrashWin := nil;
-  end;
-
-  if FScheduleWin <> nil then
-  begin
-    FScheduleWin.Free;
-    FScheduleWin := nil;
-  end;
-
-  if FScheduledWin <> nil then
-  begin
-    FScheduledWin.Free;
-    FScheduledWin := nil;
-  end;
-
-  if FProfileWin <> nil then
-  begin
-    FProfileWin.Free;
-    FProfileWin := nil;
-  end;
-
-  if FReportsWin <> nil then
-  begin
-    FReportsWin.Free;
-    FReportsWin := nil;
-  end;
-end;
-
-// ============================================================================
 // Callbacks
-// ============================================================================
-
-procedure OnInboxClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnLoginClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  LoginWindow: TLoginWindow;
+  Email, Password: String;
+  User: PUser;
 begin
-  UserWindow := TUserWindow(data);
+  LoginWindow := TLoginWindow(data);
 
-  if UserWindow.FInboxWin = nil then
-    UserWindow.FInboxWin := TInboxWindow.Create(UserWindow.Window);
+  Email := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FEmailEntry));
+  Password := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FPasswordEntry));
 
-  UserWindow.FInboxWin.Show;
-  UserWindow.FInboxWin.RefreshInbox;
-end;
-
-procedure OnComposeClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FComposeWin = nil then
-    UserWindow.FComposeWin := TComposeWindow.Create(UserWindow.Window);
-
-  UserWindow.FComposeWin.Show;
-end;
-
-procedure OnContactsClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FContactWin = nil then
-    UserWindow.FContactWin := TContactWindow.Create(UserWindow.Window);
-
-  UserWindow.FContactWin.Show;
-end;
-
-procedure OnTrashClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FTrashWin = nil then
-    UserWindow.FTrashWin := TTrashWindow.Create(UserWindow.Window);
-
-  UserWindow.FTrashWin.Show;
-  UserWindow.FTrashWin.RefreshTrash;
-end;
-
-procedure OnScheduleClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FScheduleWin = nil then
-    UserWindow.FScheduleWin := TScheduleWindow.Create(UserWindow.Window);
-
-  UserWindow.FScheduleWin.Show;
-end;
-
-procedure OnScheduledClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FScheduledWin = nil then
-    UserWindow.FScheduledWin := TScheduledWindow.Create(UserWindow.Window);
-
-  UserWindow.FScheduledWin.Show;
-  UserWindow.FScheduledWin.RefreshScheduled;
-end;
-
-procedure OnProfileClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FProfileWin = nil then
-    UserWindow.FProfileWin := TProfileWindow.Create(UserWindow.Window);
-
-  UserWindow.FProfileWin.Show;
-  UserWindow.FProfileWin.LoadCurrentUser;
-end;
-
-procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FReportsWin = nil then
-    UserWindow.FReportsWin := TReportsWindow.Create(UserWindow.Window);
-
-  UserWindow.FReportsWin.Show;
-end;
-
-procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
-var
-  UserWindow: TUserWindow;
-begin
-  UserWindow := TUserWindow(data);
-
-  if TUIUtils.ShowConfirmDialog(UserWindow.Window, 'Cerrar Sesión',
-                               '¿Está seguro que desea cerrar sesión?') then
+  // Validar campos
+  if (Length(Email) = 0) or (Length(Password) = 0) then
   begin
-    UserWindow.CloseAllSubWindows;
-    LogoutUser;
-    UserWindow.Hide;
+    gtk_label_set_text(GTK_LABEL(LoginWindow.FStatusLabel), 'Por favor complete todos los campos');
+    Exit;
+  end;
 
-    // Mostrar ventana de login
-    if LoginWin = nil then
-      LoginWin := TLoginWindow.Create;
-    LoginWin.Show;
+  // Intentar login
+  User := LoginUser(Email, Password);
+
+  if User <> nil then
+  begin
+    gtk_label_set_text(GTK_LABEL(LoginWindow.FStatusLabel), 'Login exitoso');
+
+    // Ocultar ventana de login
+    LoginWindow.Hide;
+
+    // Mostrar ventana correspondiente
+    if IsRootUser then
+    begin
+      RootWin := TRootWindow.Create;
+      RootWin.Show;
+    end
+    else
+    begin
+      UserWin := TUserWindow.Create;
+      UserWin.Show;
+    end;
+  end
+  else
+  begin
+    gtk_label_set_text(GTK_LABEL(LoginWindow.FStatusLabel), 'Error: Credenciales incorrectas');
   end;
 end;
 
-procedure OnUserWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnCreateAccountClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  LoginWindow: TLoginWindow;
+begin
+  LoginWindow := TLoginWindow(data);
+  gtk_widget_show_all(LoginWindow.FRegisterWindow);
+end;
+
+procedure OnRegisterClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  LoginWindow: TLoginWindow;
+  Nombre, Usuario, Email, Telefono, Password: String;
+begin
+  LoginWindow := TLoginWindow(data);
+
+  Nombre := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FRegNombreEntry));
+  Usuario := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FRegUsuarioEntry));
+  Email := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FRegEmailEntry));
+  Telefono := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FRegTelefonoEntry));
+  Password := gtk_entry_get_text(GTK_ENTRY(LoginWindow.FRegPasswordEntry));
+
+  // Validar campos (puedes añadir mensajes si quieres)
+  if (Length(Nombre) = 0) or (Length(Usuario) = 0) or (Length(Email) = 0) or
+     (Length(Telefono) = 0) or (Length(Password) = 0) then
+    Exit;
+
+  if not ValidateEmail(Email) then
+    Exit;
+
+  if not ValidatePassword(Password) then
+    Exit;
+
+  // Intentar registrar
+  if RegisterUser(Nombre, Usuario, Email, Telefono, Password) then
+  begin
+    // Limpiar campos
+    gtk_entry_set_text(GTK_ENTRY(LoginWindow.FRegNombreEntry), '');
+    gtk_entry_set_text(GTK_ENTRY(LoginWindow.FRegUsuarioEntry), '');
+    gtk_entry_set_text(GTK_ENTRY(LoginWindow.FRegEmailEntry), '');
+    gtk_entry_set_text(GTK_ENTRY(LoginWindow.FRegTelefonoEntry), '');
+    gtk_entry_set_text(GTK_ENTRY(LoginWindow.FRegPasswordEntry), '');
+
+    // Ocultar ventana de registro
+    gtk_widget_hide(LoginWindow.FRegisterWindow);
+
+    gtk_label_set_text(GTK_LABEL(LoginWindow.FStatusLabel), 'Cuenta creada exitosamente');
+  end
+  else
+  begin
+    // Mostrar error de registro si lo deseas
+  end;
+end;
+
+procedure OnCancelRegisterClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  LoginWindow: TLoginWindow;
+begin
+  LoginWindow := TLoginWindow(data);
+  gtk_widget_hide(LoginWindow.FRegisterWindow);
+end;
+
+procedure OnWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
 begin
   gtk_main_quit;
 end;
 
 end.
+

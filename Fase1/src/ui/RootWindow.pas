@@ -5,7 +5,7 @@ unit RootWindow;
 interface
 
 uses
-  GTK2, GDK2, GLib2, UIBase, SysUtils, Classes, DataStructures, SystemCore, UIBase,
+  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase,
   UserManager, EmailManager, ContactManager, CommunityManager, ReportGenerator;
 
 type
@@ -14,6 +14,7 @@ type
     FMainVBox: PGtkWidget;
     FNotebook: PGtkWidget;
     FStatusLabel: PGtkWidget;
+    FLoadStatusLabel: PGtkWidget;
 
     // Página de carga masiva
     FFileEntry: PGtkWidget;
@@ -34,10 +35,11 @@ type
     FReportsStatusLabel: PGtkWidget;
 
     procedure SetupNotebook;
-    procedure SetupLoadPage;
-    procedure SetupCommunityPage;
+    procedure SetupLoadMassivePage;
+    procedure SetupCommunitiesPage;
     procedure SetupReportsPage;
     procedure RefreshCommunityCombo;
+    procedure ClearComboBox(ComboBox: PGtkWidget);
 
   protected
     procedure SetupComponents; override;
@@ -46,6 +48,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    procedure Show; reintroduce; // evitar warning de método oculto
+    procedure Hide; reintroduce; // evitar warning de método oculto
   end;
 
 // Callbacks
@@ -65,192 +69,163 @@ implementation
 constructor TRootWindow.Create;
 begin
   inherited Create('EDDMail - Administrador Root', 600, 500);
-  
-  SetupLoadMassivePage;
-  SetupCommunitiesPage;
-  SetupReportsPage;
   RefreshCommunityCombo;
 end;
 
 destructor TRootWindow.Destroy;
 begin
-  if FWindow <> nil then
-    gtk_widget_destroy(FWindow);
   inherited;
 end;
 
 procedure TRootWindow.SetupComponents;
-var
-  VBox: PGtkWidget;
-  Label1: PGtkWidget;
 begin
-  // Crear ventana principal
+  FMainVBox := TUIUtils.CreateVBox(10);
+  gtk_container_add(GTK_CONTAINER(FWindow), FMainVBox);
 
-  // Conectar señal de destrucción
+  SetupNotebook;
 
-  // Crear contenedor vertical
-  VBox := gtk_vbox_new(False, 10);
-  gtk_container_add(GTK_CONTAINER(FWindow), VBox);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 10);
+  // Status bar
+  FStatusLabel := TUIUtils.CreateLabel('Listo', False);
+  gtk_box_pack_end(GTK_BOX(FMainVBox), FStatusLabel, False, False, 0);
+end;
 
-  // Título
-  Label1 := gtk_label_new('Panel de Administración Root');
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Panel de Administración Root</span>');
-  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 10);
+procedure TRootWindow.ConnectSignals;
+begin
+  inherited;
+  g_signal_connect(G_OBJECT(FWindow), 'destroy', G_CALLBACK(@OnRootWindowDestroy), Self);
+end;
 
-  // Crear notebook (pestañas)
+procedure TRootWindow.SetupNotebook;
+begin
   FNotebook := gtk_notebook_new;
-  gtk_box_pack_start(GTK_BOX(VBox), FNotebook, True, True, 0);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FNotebook, True, True, 0);
+
+  SetupLoadMassivePage;
+  SetupCommunitiesPage;
+  SetupReportsPage;
 end;
 
 procedure TRootWindow.SetupLoadMassivePage;
 var
-  VBox: PGtkWidget;
+  PageVBox, HBox: PGtkWidget;
   Label1: PGtkWidget;
-  TabLabel: PGtkWidget;
 begin
-  // Crear página de carga masiva
-  VBox := gtk_vbox_new(False, 20);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
+  PageVBox := TUIUtils.CreateVBox(10);
+  gtk_container_set_border_width(GTK_CONTAINER(PageVBox), 10);
 
-  // Título de la sección
-  Label1 := gtk_label_new('Carga Masiva de Usuarios');
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="medium" weight="bold">Carga Masiva de Usuarios</span>');
-  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 10);
+  Label1 := TUIUtils.CreateLabel('Cargar Usuarios Masivamente', True);
+  gtk_box_pack_start(GTK_BOX(PageVBox), Label1, False, False, 0);
 
-  // Descripción
-  Label1 := gtk_label_new('Seleccione un archivo JSON para cargar usuarios masivamente:');
-  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 10);
+  HBox := TUIUtils.CreateHBox(5);
+  FFileEntry := TUIUtils.CreateEntry('Seleccionar archivo JSON...');
+  FSelectFileButton := TUIUtils.CreateButton('Examinar', @OnSelectFileClicked, Self);
 
-  // Botón para seleccionar archivo
-  FLoadFileButton := gtk_button_new_with_label('Seleccionar Archivo JSON');
-  g_signal_connect(G_OBJECT(FLoadFileButton), 'clicked', G_CALLBACK(@OnLoadFileClicked), Self);
-  gtk_box_pack_start(GTK_BOX(VBox), FLoadFileButton, False, False, 10);
+  gtk_box_pack_start(GTK_BOX(HBox), FFileEntry, True, True, 0);
+  gtk_box_pack_start(GTK_BOX(HBox), FSelectFileButton, False, False, 0);
+  gtk_box_pack_start(GTK_BOX(PageVBox), HBox, False, False, 0);
 
-  // Label de estado
-  FLoadStatusLabel := gtk_label_new('');
-  gtk_box_pack_start(GTK_BOX(VBox), FLoadStatusLabel, False, False, 10);
+  FLoadButton := TUIUtils.CreateButton('Cargar Usuarios', @OnLoadFileClicked, Self);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FLoadButton, False, False, 0);
 
-  // Agregar página al notebook
-  TabLabel := gtk_label_new('Carga Masiva');
-  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), VBox, TabLabel);
+  FLoadStatusLabel := TUIUtils.CreateLabel('', False);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FLoadStatusLabel, False, False, 0);
+
+  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), PageVBox,
+                           gtk_label_new('Carga Masiva'));
 end;
 
 procedure TRootWindow.SetupCommunitiesPage;
 var
-  VBox, HBox, Frame: PGtkWidget;
-  Label1: PGtkWidget;
-  TabLabel: PGtkWidget;
+  PageVBox, HBox: PGtkWidget;
+  Label1, Label2: PGtkWidget;
 begin
-  // Crear página de comunidades
-  VBox := gtk_vbox_new(False, 20);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
+  PageVBox := TUIUtils.CreateVBox(10);
+  gtk_container_set_border_width(GTK_CONTAINER(PageVBox), 10);
 
-  // Sección para crear comunidades
-  Frame := gtk_frame_new('Crear Nueva Comunidad');
-  gtk_box_pack_start(GTK_BOX(VBox), Frame, False, False, 10);
+  Label1 := TUIUtils.CreateLabel('Gestión de Comunidades', True);
+  gtk_box_pack_start(GTK_BOX(PageVBox), Label1, False, False, 0);
 
-  HBox := gtk_hbox_new(False, 10);
-  gtk_container_add(GTK_CONTAINER(Frame), HBox);
-  gtk_container_set_border_width(GTK_CONTAINER(HBox), 10);
+  // Crear comunidad
+  HBox := TUIUtils.CreateHBox(5);
+  FCommunityNameEntry := TUIUtils.CreateEntry('Nombre de la comunidad');
+  FCreateCommunityButton := TUIUtils.CreateButton('Crear', @OnCreateCommunityClicked, Self);
 
-  Label1 := gtk_label_new('Nombre:');
-  gtk_box_pack_start(GTK_BOX(HBox), Label1, False, False, 5);
+  gtk_box_pack_start(GTK_BOX(HBox), FCommunityNameEntry, True, True, 0);
+  gtk_box_pack_start(GTK_BOX(HBox), FCreateCommunityButton, False, False, 0);
+  gtk_box_pack_start(GTK_BOX(PageVBox), HBox, False, False, 0);
 
-  FCommunityNameEntry := gtk_entry_new;
-  gtk_box_pack_start(GTK_BOX(HBox), FCommunityNameEntry, True, True, 5);
+  // Agregar usuario a comunidad
+  Label2 := TUIUtils.CreateLabel('Agregar Usuario a Comunidad:', False);
+  gtk_box_pack_start(GTK_BOX(PageVBox), Label2, False, False, 0);
 
-  FCreateCommunityButton := gtk_button_new_with_label('Crear');
-  g_signal_connect(G_OBJECT(FCreateCommunityButton), 'clicked', G_CALLBACK(@OnCreateCommunityClicked), Self);
-  gtk_box_pack_start(GTK_BOX(HBox), FCreateCommunityButton, False, False, 5);
+  FCommunityCombo := TUIUtils.CreateComboBox;
+  gtk_box_pack_start(GTK_BOX(PageVBox), FCommunityCombo, False, False, 0);
 
-  // Sección para agregar usuarios a comunidades
-  Frame := gtk_frame_new('Agregar Usuario a Comunidad');
-  gtk_box_pack_start(GTK_BOX(VBox), Frame, False, False, 10);
+  HBox := TUIUtils.CreateHBox(5);
+  FUserEmailEntry := TUIUtils.CreateEntry('Email del usuario');
+  FAddUserButton := TUIUtils.CreateButton('Agregar', @OnAddUserToCommunityClicked, Self);
 
-  VBox := gtk_vbox_new(False, 10);
-  gtk_container_add(GTK_CONTAINER(Frame), VBox);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 10);
+  gtk_box_pack_start(GTK_BOX(HBox), FUserEmailEntry, True, True, 0);
+  gtk_box_pack_start(GTK_BOX(HBox), FAddUserButton, False, False, 0);
+  gtk_box_pack_start(GTK_BOX(PageVBox), HBox, False, False, 0);
 
-  HBox := gtk_hbox_new(False, 10);
-  gtk_box_pack_start(GTK_BOX(VBox), HBox, False, False, 5);
+  FCommunityStatusLabel := TUIUtils.CreateLabel('', False);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FCommunityStatusLabel, False, False, 0);
 
-  Label1 := gtk_label_new('Comunidad:');
-  gtk_box_pack_start(GTK_BOX(HBox), Label1, False, False, 5);
-
-  FCommunityCombo := gtk_combo_box_new_text;
-  gtk_box_pack_start(GTK_BOX(HBox), FCommunityCombo, True, True, 5);
-
-  HBox := gtk_hbox_new(False, 10);
-  gtk_box_pack_start(GTK_BOX(VBox), HBox, False, False, 5);
-
-  Label1 := gtk_label_new('Email del Usuario:');
-  gtk_box_pack_start(GTK_BOX(HBox), Label1, False, False, 5);
-
-  FUserEmailEntry := gtk_entry_new;
-  gtk_box_pack_start(GTK_BOX(HBox), FUserEmailEntry, True, True, 5);
-
-  FAddUserButton := gtk_button_new_with_label('Agregar Usuario');
-  g_signal_connect(G_OBJECT(FAddUserButton), 'clicked', G_CALLBACK(@OnAddUserToCommunityClicked), Self);
-  gtk_box_pack_start(GTK_BOX(HBox), FAddUserButton, False, False, 5);
-
-  // Label de estado
-  FCommunityStatusLabel := gtk_label_new('');
-  gtk_box_pack_start(GTK_BOX(VBox), FCommunityStatusLabel, False, False, 10);
-
-  // Agregar página al notebook
-  TabLabel := gtk_label_new('Comunidades');
-  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), VBox, TabLabel);
+  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), PageVBox,
+                           gtk_label_new('Comunidades'));
 end;
 
 procedure TRootWindow.SetupReportsPage;
 var
-  VBox: PGtkWidget;
+  PageVBox: PGtkWidget;
   Label1: PGtkWidget;
-  TabLabel: PGtkWidget;
 begin
-  // Crear página de reportes
-  VBox := gtk_vbox_new(False, 20);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
+  PageVBox := TUIUtils.CreateVBox(10);
+  gtk_container_set_border_width(GTK_CONTAINER(PageVBox), 10);
 
-  // Título de la sección
-  Label1 := gtk_label_new('Generación de Reportes');
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="medium" weight="bold">Generación de Reportes</span>');
-  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 10);
+  Label1 := TUIUtils.CreateLabel('Generar Reportes', True);
+  gtk_box_pack_start(GTK_BOX(PageVBox), Label1, False, False, 0);
 
-  // Descripción
-  Label1 := gtk_label_new('Los reportes se guardarán en la carpeta Root-Reportes/');
-  gtk_box_pack_start(GTK_BOX(VBox), Label1, False, False, 10);
+  FUsersReportButton := TUIUtils.CreateButton('Reporte de Usuarios', @OnUsersReportClicked, Self);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FUsersReportButton, False, False, 0);
 
-  // Botón reporte de usuarios
-  FUsersReportButton := gtk_button_new_with_label('Generar Reporte de Usuarios');
-  g_signal_connect(G_OBJECT(FUsersReportButton), 'clicked', G_CALLBACK(@OnUsersReportClicked), Self);
-  gtk_box_pack_start(GTK_BOX(VBox), FUsersReportButton, False, False, 10);
+  FRelationsReportButton := TUIUtils.CreateButton('Reporte de Relaciones', @OnRelationsReportClicked, Self);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FRelationsReportButton, False, False, 0);
 
-  // Botón reporte de relaciones
-  FRelationsReportButton := gtk_button_new_with_label('Generar Reporte de Relaciones');
-  g_signal_connect(G_OBJECT(FRelationsReportButton), 'clicked', G_CALLBACK(@OnRelationsReportClicked), Self);
-  gtk_box_pack_start(GTK_BOX(VBox), FRelationsReportButton, False, False, 10);
+  FReportsStatusLabel := TUIUtils.CreateLabel('', False);
+  gtk_box_pack_start(GTK_BOX(PageVBox), FReportsStatusLabel, False, False, 0);
 
-  // Label de estado
-  FReportsStatusLabel := gtk_label_new('');
-  gtk_box_pack_start(GTK_BOX(VBox), FReportsStatusLabel, False, False, 10);
+  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), PageVBox,
+                           gtk_label_new('Reportes'));
+end;
 
-  // Agregar página al notebook
-  TabLabel := gtk_label_new('Reportes');
-  gtk_notebook_append_page(GTK_NOTEBOOK(FNotebook), VBox, TabLabel);
+procedure TRootWindow.ClearComboBox(ComboBox: PGtkWidget);
+var
+  Model: PGtkTreeModel;
+  Count: Integer;
+  i: Integer;
+begin
+  Model := gtk_combo_box_get_model(GTK_COMBO_BOX(ComboBox));
+  if Model <> nil then
+  begin
+    Count := gtk_tree_model_iter_n_children(Model, nil);
+    for i := Count - 1 downto 0 do
+      gtk_combo_box_remove_text(GTK_COMBO_BOX(ComboBox), i);
+  end;
 end;
 
 procedure TRootWindow.RefreshCommunityCombo;
 var
-  CurrentCommunity: PCommunity;
+  CurrentCommunity: DataStructures.PCommunity; // <-- tipo desde DataStructures
   ComboText: String;
 begin
-  // Limpiar combo
-  //   ClearComboBox(FCommunityCombo);
+  if FCommunityCombo = nil then Exit;
 
-  // Agregar comunidades existentes
-  CurrentCommunity := CommunityList.GetFirst;
+  ClearComboBox(FCommunityCombo);
+
+  // head global desde CommunityManager
+  CurrentCommunity := CommunityManager.CommunitiesHead;
   while CurrentCommunity <> nil do
   begin
     ComboText := IntToStr(CurrentCommunity^.Id) + ' - ' + CurrentCommunity^.Nombre;
@@ -269,88 +244,123 @@ begin
   gtk_widget_hide(FWindow);
 end;
 
-// Callbacks
-procedure OnLoadFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
+// ============================================================================
+// Callbacks Implementation
+// ============================================================================
+
+procedure OnSelectFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  RootWindow: TRootWindow;
   Dialog: PGtkWidget;
-  FileName: String;
-  Response: gint;
+  Response: Integer;
+  Filename: PChar;
+  RootWin: TRootWindow;
 begin
-  RootWindow := TRootWindow(data);
+  RootWin := TRootWindow(data);
 
-  // Crear diálogo de selección de archivo
-  Dialog := gtk_file_chooser_dialog_new(
-    'Seleccionar archivo JSON',
-    GTK_WINDOW(RootWindow.FWindow),
-    GTK_FILE_CHOOSER_ACTION_OPEN,
-    GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-    GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-    nil
-  );
+  Dialog := gtk_file_chooser_dialog_new('Seleccionar archivo JSON',
+                                       GTK_WINDOW(RootWin.Window),
+                                       GTK_FILE_CHOOSER_ACTION_OPEN,
+                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                       GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                       nil);
 
-  // Filtro para archivos JSON
   Response := gtk_dialog_run(GTK_DIALOG(Dialog));
-
   if Response = GTK_RESPONSE_ACCEPT then
   begin
-    FileName := gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(Dialog));
-
-    if LoadUsersFromJSON(FileName) then
-      gtk_label_set_text(GTK_LABEL(RootWindow.FLoadStatusLabel), 'Usuarios cargados exitosamente')
-    else
-      gtk_label_set_text(GTK_LABEL(RootWindow.FLoadStatusLabel), 'Error al cargar usuarios');
+    Filename := gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(Dialog));
+    gtk_entry_set_text(GTK_ENTRY(RootWin.FFileEntry), Filename);
+    g_free(Filename);
   end;
 
   gtk_widget_destroy(Dialog);
 end;
 
-procedure OnCreateCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnLoadFileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  RootWindow: TRootWindow;
-  CommunityName: String;
+  RootWin: TRootWindow;
+  Filename: String;
+  Result: Boolean;
 begin
-  RootWindow := TRootWindow(data);
+  RootWin := TRootWindow(data);
+  Filename := gtk_entry_get_text(GTK_ENTRY(RootWin.FFileEntry));
 
-  CommunityName := gtk_entry_get_text(GTK_ENTRY(RootWindow.FCommunityNameEntry));
-
-  if Length(CommunityName) = 0 then
+  if Filename = '' then
   begin
-    gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Error: Ingrese un nombre para la comunidad');
+    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor seleccione un archivo');
     Exit;
   end;
 
-  if CreateCommunity(CommunityName) then
+  Result := LoadUsersFromJSON(Filename);
+
+  if Result then
   begin
-    gtk_entry_set_text(GTK_ENTRY(RootWindow.FCommunityNameEntry), '');
-    gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Comunidad creada exitosamente');
-    RootWindow.RefreshCommunityCombo;
+    gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Usuarios cargados exitosamente');
+    TUIUtils.ShowInfoMessage(RootWin.Window, 'Usuarios cargados exitosamente');
   end
   else
   begin
-    gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Error al crear la comunidad');
+    gtk_label_set_text(GTK_LABEL(RootWin.FLoadStatusLabel), 'Error al cargar usuarios');
+    TUIUtils.ShowErrorMessage(RootWin.Window, 'Error al cargar usuarios del archivo');
+  end;
+end;
+
+procedure OnCreateCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  RootWin: TRootWindow;
+  CommunityName: String;
+  Result: Boolean;
+begin
+  RootWin := TRootWindow(data);
+  CommunityName := gtk_entry_get_text(GTK_ENTRY(RootWin.FCommunityNameEntry));
+
+  if CommunityName = '' then
+  begin
+    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor ingrese un nombre para la comunidad');
+    Exit;
+  end;
+
+  Result := CreateCommunity(CommunityName);
+
+  if Result then
+  begin
+    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Comunidad creada exitosamente');
+    gtk_entry_set_text(GTK_ENTRY(RootWin.FCommunityNameEntry), '');
+    RootWin.RefreshCommunityCombo;
+  end
+  else
+  begin
+    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al crear la comunidad');
   end;
 end;
 
 procedure OnAddUserToCommunityClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  RootWindow: TRootWindow;
+  RootWin: TRootWindow;
   UserEmail, ComboText: String;
   CommunityId: Integer;
   SpacePos: Integer;
+  ComboPC: PChar;
 begin
-  RootWindow := TRootWindow(data);
+  RootWin := TRootWindow(data);
+  UserEmail := gtk_entry_get_text(GTK_ENTRY(RootWin.FUserEmailEntry));
 
-  UserEmail := gtk_entry_get_text(GTK_ENTRY(RootWindow.FUserEmailEntry));
-  ComboText := gtk_combo_box_get_active_text(GTK_COMBO_BOX(RootWindow.FCommunityCombo));
-
-  if (Length(UserEmail) = 0) or (Length(ComboText) = 0) then
+  // Obtener texto seleccionado del combo de forma segura
+  ComboPC := gtk_combo_box_get_active_text(GTK_COMBO_BOX(RootWin.FCommunityCombo));
+  if ComboPC <> nil then
   begin
-    gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Error: Complete todos los campos');
+    ComboText := String(ComboPC);
+    g_free(ComboPC);
+  end
+  else
+    ComboText := '';
+
+  if (UserEmail = '') or (ComboText = '') then
+  begin
+    TUIUtils.ShowErrorMessage(RootWin.Window, 'Por favor complete todos los campos');
     Exit;
   end;
 
-  // Extraer ID de la comunidad del texto del combo
+  // Extraer ID de la comunidad del texto del combo (formato: "<id> - <nombre>")
   SpacePos := Pos(' ', ComboText);
   if SpacePos > 0 then
   begin
@@ -359,41 +369,45 @@ begin
 
       if AddUserToCommunity(CommunityId, UserEmail) then
       begin
-        gtk_entry_set_text(GTK_ENTRY(RootWindow.FUserEmailEntry), '');
-        gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Usuario agregado a la comunidad exitosamente');
+        gtk_entry_set_text(GTK_ENTRY(RootWin.FUserEmailEntry), '');
+        gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Usuario agregado exitosamente');
       end
       else
       begin
-        gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Error al agregar usuario a la comunidad');
+        gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error al agregar usuario');
       end;
     except
-      gtk_label_set_text(GTK_LABEL(RootWindow.FCommunityStatusLabel), 'Error: ID de comunidad inválido');
+      gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Error: ID de comunidad inválido');
     end;
+  end
+  else
+  begin
+    gtk_label_set_text(GTK_LABEL(RootWin.FCommunityStatusLabel), 'Formato de comunidad inválido');
   end;
 end;
 
 procedure OnUsersReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  RootWindow: TRootWindow;
+  RootWin: TRootWindow;
 begin
-  RootWindow := TRootWindow(data);
+  RootWin := TRootWindow(data);
 
   if SaveUsersReport then
-    gtk_label_set_text(GTK_LABEL(RootWindow.FReportsStatusLabel), 'Reporte de usuarios generado exitosamente')
+    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de usuarios generado exitosamente')
   else
-    gtk_label_set_text(GTK_LABEL(RootWindow.FReportsStatusLabel), 'Error al generar el reporte de usuarios');
+    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar el reporte de usuarios');
 end;
 
 procedure OnRelationsReportClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  RootWindow: TRootWindow;
+  RootWin: TRootWindow;
 begin
-  RootWindow := TRootWindow(data);
+  RootWin := TRootWindow(data);
 
   if SaveRelationsReport then
-    gtk_label_set_text(GTK_LABEL(RootWindow.FReportsStatusLabel), 'Reporte de relaciones generado exitosamente')
+    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Reporte de relaciones generado exitosamente')
   else
-    gtk_label_set_text(GTK_LABEL(RootWindow.FReportsStatusLabel), 'Error al generar el reporte de relaciones');
+    gtk_label_set_text(GTK_LABEL(RootWin.FReportsStatusLabel), 'Error al generar el reporte de relaciones');
 end;
 
 procedure OnRootWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
@@ -403,20 +417,3 @@ end;
 
 end.
 
-// Función auxiliar para limpiar combo box en GTK2
-procedure ClearComboBox(ComboBox: PGtkWidget);
-var
-  Model: PGtkTreeModel;
-  Count: Integer;
-  i: Integer;
-begin
-  Model := gtk_combo_box_get_model(GTK_COMBO_BOX(ComboBox));
-  if Model <> nil then
-  begin
-    Count := gtk_tree_model_iter_n_children(Model, nil);
-    for i := Count - 1 downto 0 do
-    begin
-      gtk_combo_box_remove_text(GTK_COMBO_BOX(ComboBox), i);
-    end;
-  end;
-end;
