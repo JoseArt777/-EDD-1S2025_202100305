@@ -16,7 +16,7 @@ type
     FLoginButton: PGtkWidget;
     FCreateAccountButton: PGtkWidget;
     FStatusLabel: PGtkWidget;
-
+    
     // Campos para registro
     FRegisterWindow: PGtkWidget;
     FRegNameEntry: PGtkWidget;
@@ -26,22 +26,22 @@ type
     FRegPasswordEntry: PGtkWidget;
     FRegisterBtn: PGtkWidget;
     FCancelBtn: PGtkWidget;
-
+    
     FLoginSession: TLoginSession;
     FOnLoginSuccess: TNotifyEvent;
-
+    
     procedure CreateMainWindow;
     procedure CreateRegisterWindow;
-
+    
   public
     constructor Create(loginSession: TLoginSession);
     destructor Destroy; override;
-
+    
     procedure Show;
     procedure Hide;
     procedure ShowMessage(const msg: string);
     procedure ClearFields;
-
+    
     property OnLoginSuccess: TNotifyEvent read FOnLoginSuccess write FOnLoginSuccess;
   end;
 
@@ -72,62 +72,61 @@ procedure TLoginInterface.CreateMainWindow;
 var
   vbox, hbox: PGtkWidget;
   emailLabel, passwordLabel: PGtkWidget;
-  titleLabel: PGtkWidget;
 begin
   // Crear ventana principal
   FMainWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(FMainWindow), 'EDDMail - Inicio de Sesión');
   gtk_window_set_default_size(GTK_WINDOW(FMainWindow), 400, 300);
   gtk_window_set_position(GTK_WINDOW(FMainWindow), GTK_WIN_POS_CENTER);
-
+  
   // Conectar señal de destrucción
   g_signal_connect(G_OBJECT(FMainWindow), 'destroy', G_CALLBACK(@OnWindowDestroy), Self);
-
+  
   // Contenedor principal vertical
   vbox := gtk_vbox_new(FALSE, 10);
   gtk_container_set_border_width(GTK_CONTAINER(vbox), 20);
   gtk_container_add(GTK_CONTAINER(FMainWindow), vbox);
-
+  
   // Título
-  titleLabel := gtk_label_new('EDDMail');
+  var titleLabel := gtk_label_new('EDDMail');
   gtk_label_set_markup(GTK_LABEL(titleLabel), '<span size="x-large" weight="bold">EDDMail</span>');
   gtk_misc_set_alignment(GTK_MISC(titleLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), titleLabel, FALSE, FALSE, 20);
-
+  
   // Campo Email
   emailLabel := gtk_label_new('Email:');
   gtk_misc_set_alignment(GTK_MISC(emailLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), emailLabel, FALSE, FALSE, 0);
-
+  
   FEmailEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(vbox), FEmailEntry, FALSE, FALSE, 0);
-
+  
   // Campo Password
   passwordLabel := gtk_label_new('Password:');
   gtk_misc_set_alignment(GTK_MISC(passwordLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), passwordLabel, FALSE, FALSE, 0);
-
+  
   FPasswordEntry := gtk_entry_new();
   gtk_entry_set_visibility(GTK_ENTRY(FPasswordEntry), FALSE);
   gtk_box_pack_start(GTK_BOX(vbox), FPasswordEntry, FALSE, FALSE, 0);
-
+  
   // Botones
   hbox := gtk_hbox_new(TRUE, 10);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 20);
-
+  
   FLoginButton := gtk_button_new_with_label('Iniciar Sesión');
   g_signal_connect(G_OBJECT(FLoginButton), 'clicked', G_CALLBACK(@OnLoginClick), Self);
   gtk_box_pack_start(GTK_BOX(hbox), FLoginButton, TRUE, TRUE, 0);
-
+  
   FCreateAccountButton := gtk_button_new_with_label('Crear Cuenta');
   g_signal_connect(G_OBJECT(FCreateAccountButton), 'clicked', G_CALLBACK(@OnCreateAccountClick), Self);
   gtk_box_pack_start(GTK_BOX(hbox), FCreateAccountButton, TRUE, TRUE, 0);
-
+  
   // Label de estado
   FStatusLabel := gtk_label_new('');
   gtk_misc_set_alignment(GTK_MISC(FStatusLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), FStatusLabel, FALSE, FALSE, 0);
-
+  
   gtk_widget_show_all(FMainWindow);
 end;
 
@@ -135,81 +134,80 @@ procedure TLoginInterface.CreateRegisterWindow;
 var
   vbox, hbox: PGtkWidget;
   nameLabel, userLabel, emailLabel, phoneLabel, passwordLabel: PGtkWidget;
-  titleLabel: PGtkWidget;
 begin
   if FRegisterWindow <> nil then Exit;
-
+  
   // Crear ventana de registro
   FRegisterWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(FRegisterWindow), 'EDDMail - Crear Cuenta');
   gtk_window_set_default_size(GTK_WINDOW(FRegisterWindow), 400, 400);
   gtk_window_set_position(GTK_WINDOW(FRegisterWindow), GTK_WIN_POS_CENTER);
   gtk_window_set_modal(GTK_WINDOW(FRegisterWindow), TRUE);
-
+  
   // Contenedor principal vertical
   vbox := gtk_vbox_new(FALSE, 10);
   gtk_container_set_border_width(GTK_CONTAINER(vbox), 20);
   gtk_container_add(GTK_CONTAINER(FRegisterWindow), vbox);
-
+  
   // Título
-  titleLabel := gtk_label_new('Crear Nueva Cuenta');
+  var titleLabel := gtk_label_new('Crear Nueva Cuenta');
   gtk_label_set_markup(GTK_LABEL(titleLabel), '<span size="large" weight="bold">Crear Nueva Cuenta</span>');
   gtk_misc_set_alignment(GTK_MISC(titleLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), titleLabel, FALSE, FALSE, 10);
-
+  
   // Campo Nombre
   nameLabel := gtk_label_new('Nombre completo:');
   gtk_misc_set_alignment(GTK_MISC(nameLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), nameLabel, FALSE, FALSE, 0);
-
+  
   FRegNameEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(vbox), FRegNameEntry, FALSE, FALSE, 0);
-
+  
   // Campo Usuario
   userLabel := gtk_label_new('Nombre de usuario:');
   gtk_misc_set_alignment(GTK_MISC(userLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), userLabel, FALSE, FALSE, 0);
-
+  
   FRegUserEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(vbox), FRegUserEntry, FALSE, FALSE, 0);
-
+  
   // Campo Email
   emailLabel := gtk_label_new('Email:');
   gtk_misc_set_alignment(GTK_MISC(emailLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), emailLabel, FALSE, FALSE, 0);
-
+  
   FRegEmailEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(vbox), FRegEmailEntry, FALSE, FALSE, 0);
-
+  
   // Campo Teléfono
   phoneLabel := gtk_label_new('Teléfono:');
   gtk_misc_set_alignment(GTK_MISC(phoneLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), phoneLabel, FALSE, FALSE, 0);
-
+  
   FRegPhoneEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(vbox), FRegPhoneEntry, FALSE, FALSE, 0);
-
+  
   // Campo Password
   passwordLabel := gtk_label_new('Contraseña:');
   gtk_misc_set_alignment(GTK_MISC(passwordLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), passwordLabel, FALSE, FALSE, 0);
-
+  
   FRegPasswordEntry := gtk_entry_new();
   gtk_entry_set_visibility(GTK_ENTRY(FRegPasswordEntry), FALSE);
   gtk_box_pack_start(GTK_BOX(vbox), FRegPasswordEntry, FALSE, FALSE, 0);
-
+  
   // Botones
   hbox := gtk_hbox_new(TRUE, 10);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 20);
-
+  
   FRegisterBtn := gtk_button_new_with_label('Registrar');
   g_signal_connect(G_OBJECT(FRegisterBtn), 'clicked', G_CALLBACK(@OnRegisterClick), Self);
   gtk_box_pack_start(GTK_BOX(hbox), FRegisterBtn, TRUE, TRUE, 0);
-
+  
   FCancelBtn := gtk_button_new_with_label('Cancelar');
   g_signal_connect(G_OBJECT(FCancelBtn), 'clicked', G_CALLBACK(@OnCancelRegisterClick), Self);
   gtk_box_pack_start(GTK_BOX(hbox), FCancelBtn, TRUE, TRUE, 0);
-
+  
   gtk_widget_show_all(FRegisterWindow);
 end;
 
@@ -247,10 +245,10 @@ var
   email, password, errorMsg: string;
 begin
   loginInterface := TLoginInterface(data);
-
+  
   email := gtk_entry_get_text(GTK_ENTRY(loginInterface.FEmailEntry));
   password := gtk_entry_get_text(GTK_ENTRY(loginInterface.FPasswordEntry));
-
+  
   if loginInterface.FLoginSession.Login(email, password, errorMsg) then
   begin
     loginInterface.ShowMessage('Inicio de sesión exitoso');
@@ -275,28 +273,27 @@ procedure OnRegisterClick(widget: PGtkWidget; data: gpointer); cdecl;
 var
   loginInterface: TLoginInterface;
   nombre, usuario, email, telefono, password, errorMsg: string;
-  dialog: PGtkWidget;
 begin
   loginInterface := TLoginInterface(data);
-
+  
   nombre := gtk_entry_get_text(GTK_ENTRY(loginInterface.FRegNameEntry));
   usuario := gtk_entry_get_text(GTK_ENTRY(loginInterface.FRegUserEntry));
   email := gtk_entry_get_text(GTK_ENTRY(loginInterface.FRegEmailEntry));
   telefono := gtk_entry_get_text(GTK_ENTRY(loginInterface.FRegPhoneEntry));
   password := gtk_entry_get_text(GTK_ENTRY(loginInterface.FRegPasswordEntry));
-
+  
   if loginInterface.FLoginSession.RegisterNewUser(nombre, usuario, email, telefono, password, errorMsg) then
   begin
     // Cerrar ventana de registro
     gtk_widget_destroy(loginInterface.FRegisterWindow);
     loginInterface.FRegisterWindow := nil;
-
+    
     loginInterface.ShowMessage('Usuario registrado exitosamente. Puede iniciar sesión.');
   end
   else
   begin
     // Mostrar error en una nueva ventana de diálogo
-    dialog := gtk_message_dialog_new(
+    var dialog := gtk_message_dialog_new(
       GTK_WINDOW(loginInterface.FRegisterWindow),
       GTK_DIALOG_MODAL,
       GTK_MESSAGE_ERROR,

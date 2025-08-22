@@ -15,37 +15,40 @@ type
     FReportGenerator: TReportGenerator;
     FRelationMatrix: TSparseMatrix;
     FUserIndexMap: TStringList; // Para mapear emails a índices de matriz
-
+    
     procedure InitializeRelationMatrix;
     function GetUserIndex(email: string): Integer;
     procedure UpdateRelationMatrix(senderEmail, receiverEmail: string);
-
+    
   public
     constructor Create(userManager: TUserManager);
     destructor Destroy; override;
-
+    
     // Carga masiva de usuarios
     function LoadUsersFromJSON(filename: string; out errorMsg: string): Boolean;
-
+    
     // Gestión de comunidades
     function CreateCommunity(nombre: string; out errorMsg: string): Boolean;
     function AddUserToCommunity(communityName, userEmail: string; out errorMsg: string): Boolean;
     function ListCommunities: TStringList;
-
+    
     // Generación de reportes
     function GenerateUserReport: Boolean;
     function GenerateRelationReport: Boolean;
     function GenerateCommunitiesReport: Boolean;
-
+    
     // Registro de envío de correos (para matriz de relaciones)
     procedure RegisterEmailSent(senderEmail, receiverEmail: string);
-
+    
     // Getters
     property RelationMatrix: TSparseMatrix read FRelationMatrix;
     property CommunityManager: TCommunityManager read FCommunityManager;
   end;
 
 implementation
+
+uses
+  FileUtil;
 
 constructor TRootManager.Create(userManager: TUserManager);
 begin
@@ -56,7 +59,7 @@ begin
   FUserIndexMap := TStringList.Create;
   FUserIndexMap.Sorted := True;
   FUserIndexMap.Duplicates := dupIgnore;
-
+  
   InitializeRelationMatrix;
 end;
 
@@ -72,25 +75,25 @@ end;
 procedure TRootManager.InitializeRelationMatrix;
 var
   maxUsers: Integer;
-  userCurrent: PUser;
+  current: PUser;
   index: Integer;
 begin
   // Determinar número máximo de usuarios
   maxUsers := 100; // Tamaño inicial, se puede ajustar dinámicamente
-
+  
   FRelationMatrix := TSparseMatrix.Create(maxUsers, maxUsers);
-
+  
   // Mapear usuarios existentes
-  userCurrent := FUserManager.Users.Head;
+  current := FUserManager.Users.Head;
   index := 0;
-  while userCurrent <> nil do
+  while current <> nil do
   begin
-    if FUserIndexMap.IndexOf(userCurrent^.email) = -1 then
+    if FUserIndexMap.IndexOf(current^.email) = -1 then
     begin
-      FUserIndexMap.AddObject(userCurrent^.email, TObject(PtrInt(index)));
+      FUserIndexMap.AddObject(current^.email, TObject(PtrInt(index)));
       Inc(index);
     end;
-    userCurrent := userCurrent^.siguiente;
+    current := current^.siguiente;
   end;
 end;
 
@@ -117,7 +120,7 @@ var
 begin
   senderIndex := GetUserIndex(senderEmail);
   receiverIndex := GetUserIndex(receiverEmail);
-
+  
   FRelationMatrix.IncrementValue(senderIndex, receiverIndex);
 end;
 
@@ -125,21 +128,21 @@ function TRootManager.LoadUsersFromJSON(filename: string; out errorMsg: string):
 begin
   Result := False;
   errorMsg := '';
-
+  
   try
     if not FileExists(filename) then
     begin
       errorMsg := 'El archivo ' + filename + ' no existe';
       Exit;
     end;
-
+    
     FUserManager.LoadUsersFromJSON(filename);
-
+    
     // Reinicializar la matriz de relaciones con los nuevos usuarios
     FRelationMatrix.Free;
     FUserIndexMap.Clear;
     InitializeRelationMatrix;
-
+    
     Result := True;
   except
     on E: Exception do
@@ -158,28 +161,28 @@ var
 begin
   Result := False;
   errorMsg := '';
-
+  
   community := FCommunityManager.FindCommunityByName(communityName);
   if community = nil then
   begin
     errorMsg := 'Comunidad no encontrada: ' + communityName;
     Exit;
   end;
-
+  
   Result := FCommunityManager.AddUserToCommunity(community^.id, userEmail, errorMsg);
 end;
 
 function TRootManager.ListCommunities: TStringList;
 var
-  communityCurrent: PCommunity;
+  current: PCommunity;
 begin
   Result := TStringList.Create;
-  communityCurrent := FCommunityManager.Communities.Head;
-
-  while communityCurrent <> nil do
+  current := FCommunityManager.Communities.Head;
+  
+  while current <> nil do
   begin
-    Result.Add(Format('%d - %s', [communityCurrent^.id, communityCurrent^.nombre]));
-    communityCurrent := communityCurrent^.siguiente;
+    Result.Add(Format('%d - %s', [current^.id, current^.nombre]));
+    current := current^.siguiente;
   end;
 end;
 
