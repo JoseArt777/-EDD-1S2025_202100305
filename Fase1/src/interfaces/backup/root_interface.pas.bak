@@ -17,7 +17,7 @@ type
     FCommunitiesButton: PGtkWidget;
     FLogoutButton: PGtkWidget;
     FStatusLabel: PGtkWidget;
-    
+
     // Ventana de comunidades
     FCommunityWindow: PGtkWidget;
     FCommunityNameEntry: PGtkWidget;
@@ -25,23 +25,23 @@ type
     FUserEmailEntry: PGtkWidget;
     FCommunityCombo: PGtkWidget;
     FAddUserBtn: PGtkWidget;
-    
+
     FRootManager: TRootManager;
     FLoginSession: TLoginSession;
     FOnLogout: TNotifyEvent;
-    
+
     procedure CreateMainWindow;
     procedure CreateCommunityWindow;
     procedure UpdateCommunityCombo;
-    
+
   public
     constructor Create(rootManager: TRootManager; loginSession: TLoginSession);
     destructor Destroy; override;
-    
+
     procedure Show;
     procedure Hide;
     procedure ShowMessage(const msg: string);
-    
+
     property OnLogout: TNotifyEvent read FOnLogout write FOnLogout;
   end;
 
@@ -81,68 +81,68 @@ begin
   gtk_window_set_title(GTK_WINDOW(FMainWindow), 'EDDMail - Administrador');
   gtk_window_set_default_size(GTK_WINDOW(FMainWindow), 500, 400);
   gtk_window_set_position(GTK_WINDOW(FMainWindow), GTK_WIN_POS_CENTER);
-  
+
   // Contenedor principal vertical
   vbox := gtk_vbox_new(FALSE, 15);
   gtk_container_set_border_width(GTK_CONTAINER(vbox), 20);
   gtk_container_add(GTK_CONTAINER(FMainWindow), vbox);
-  
+
   // Título
   titleLabel := gtk_label_new('Panel de Administrador');
   gtk_label_set_markup(GTK_LABEL(titleLabel), '<span size="x-large" weight="bold">Panel de Administrador</span>');
   gtk_misc_set_alignment(GTK_MISC(titleLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), titleLabel, FALSE, FALSE, 20);
-  
+
   // Botón Carga Masiva
   FMassLoadButton := gtk_button_new_with_label('Carga Masiva');
   gtk_widget_set_size_request(FMassLoadButton, 200, 40);
   g_signal_connect(G_OBJECT(FMassLoadButton), 'clicked', G_CALLBACK(@OnMassLoadClick), Self);
-  
+
   hbox := gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), FMassLoadButton, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 5);
-  
+
   // Botón Reporte de Usuarios
   FUserReportButton := gtk_button_new_with_label('Reporte de Usuarios');
   gtk_widget_set_size_request(FUserReportButton, 200, 40);
   g_signal_connect(G_OBJECT(FUserReportButton), 'clicked', G_CALLBACK(@OnUserReportClick), Self);
-  
+
   hbox := gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), FUserReportButton, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 5);
-  
+
   // Botón Reporte de Relaciones
   FRelationReportButton := gtk_button_new_with_label('Reporte de Relaciones');
   gtk_widget_set_size_request(FRelationReportButton, 200, 40);
   g_signal_connect(G_OBJECT(FRelationReportButton), 'clicked', G_CALLBACK(@OnRelationReportClick), Self);
-  
+
   hbox := gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), FRelationReportButton, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 5);
-  
+
   // Botón Comunidades
   FCommunitiesButton := gtk_button_new_with_label('Gestionar Comunidades');
   gtk_widget_set_size_request(FCommunitiesButton, 200, 40);
   g_signal_connect(G_OBJECT(FCommunitiesButton), 'clicked', G_CALLBACK(@OnCommunitiesClick), Self);
-  
+
   hbox := gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), FCommunitiesButton, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 5);
-  
+
   // Botón Logout
   FLogoutButton := gtk_button_new_with_label('Cerrar Sesión');
   gtk_widget_set_size_request(FLogoutButton, 200, 40);
   g_signal_connect(G_OBJECT(FLogoutButton), 'clicked', G_CALLBACK(@OnLogoutClick), Self);
-  
+
   hbox := gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), FLogoutButton, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 20);
-  
+
   // Label de estado
   FStatusLabel := gtk_label_new('');
   gtk_misc_set_alignment(GTK_MISC(FStatusLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), FStatusLabel, FALSE, FALSE, 0);
-  
+
   gtk_widget_show_all(FMainWindow);
 end;
 
@@ -150,79 +150,81 @@ procedure TRootInterface.CreateCommunityWindow;
 var
   vbox, hbox, frame: PGtkWidget;
   titleLabel, nameLabel, userLabel, communityLabel: PGtkWidget;
+  frameVbox: PGtkWidget;
+  closeBtn: PGtkWidget;
 begin
   if FCommunityWindow <> nil then Exit;
-  
+
   // Crear ventana de comunidades
   FCommunityWindow := gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(FCommunityWindow), 'Gestión de Comunidades');
   gtk_window_set_default_size(GTK_WINDOW(FCommunityWindow), 450, 350);
   gtk_window_set_position(GTK_WINDOW(FCommunityWindow), GTK_WIN_POS_CENTER);
   gtk_window_set_modal(GTK_WINDOW(FCommunityWindow), TRUE);
-  
+
   // Contenedor principal vertical
   vbox := gtk_vbox_new(FALSE, 15);
   gtk_container_set_border_width(GTK_CONTAINER(vbox), 20);
   gtk_container_add(GTK_CONTAINER(FCommunityWindow), vbox);
-  
+
   // Título
   titleLabel := gtk_label_new('Gestión de Comunidades');
   gtk_label_set_markup(GTK_LABEL(titleLabel), '<span size="large" weight="bold">Gestión de Comunidades</span>');
   gtk_misc_set_alignment(GTK_MISC(titleLabel), 0.5, 0.5);
   gtk_box_pack_start(GTK_BOX(vbox), titleLabel, FALSE, FALSE, 10);
-  
+
   // Frame para crear comunidad
   frame := gtk_frame_new('Crear Nueva Comunidad');
   gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, FALSE, 10);
-  
-  var frameVbox := gtk_vbox_new(FALSE, 10);
-  gtk_container_set_border_width(GTK_CONTAINER(frameVbox), 10);
-  gtk_container_add(GTK_CONTAINER(frame), frameVbox);
-  
-  nameLabel := gtk_label_new('Nombre de la comunidad:');
-  gtk_misc_set_alignment(GTK_MISC(nameLabel), 0.0, 0.5);
-  gtk_box_pack_start(GTK_BOX(frameVbox), nameLabel, FALSE, FALSE, 0);
-  
-  FCommunityNameEntry := gtk_entry_new();
-  gtk_box_pack_start(GTK_BOX(frameVbox), FCommunityNameEntry, FALSE, FALSE, 0);
-  
-  FCreateCommunityBtn := gtk_button_new_with_label('Crear Comunidad');
-  g_signal_connect(G_OBJECT(FCreateCommunityBtn), 'clicked', G_CALLBACK(@OnCreateCommunityClick), Self);
-  gtk_box_pack_start(GTK_BOX(frameVbox), FCreateCommunityBtn, FALSE, FALSE, 5);
-  
-  // Frame para agregar usuarios
-  frame := gtk_frame_new('Agregar Usuario a Comunidad');
-  gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, FALSE, 10);
-  
+
   frameVbox := gtk_vbox_new(FALSE, 10);
   gtk_container_set_border_width(GTK_CONTAINER(frameVbox), 10);
   gtk_container_add(GTK_CONTAINER(frame), frameVbox);
-  
+
+  nameLabel := gtk_label_new('Nombre de la comunidad:');
+  gtk_misc_set_alignment(GTK_MISC(nameLabel), 0.0, 0.5);
+  gtk_box_pack_start(GTK_BOX(frameVbox), nameLabel, FALSE, FALSE, 0);
+
+  FCommunityNameEntry := gtk_entry_new();
+  gtk_box_pack_start(GTK_BOX(frameVbox), FCommunityNameEntry, FALSE, FALSE, 0);
+
+  FCreateCommunityBtn := gtk_button_new_with_label('Crear Comunidad');
+  g_signal_connect(G_OBJECT(FCreateCommunityBtn), 'clicked', G_CALLBACK(@OnCreateCommunityClick), Self);
+  gtk_box_pack_start(GTK_BOX(frameVbox), FCreateCommunityBtn, FALSE, FALSE, 5);
+
+  // Frame para agregar usuarios
+  frame := gtk_frame_new('Agregar Usuario a Comunidad');
+  gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, FALSE, 10);
+
+  frameVbox := gtk_vbox_new(FALSE, 10);
+  gtk_container_set_border_width(GTK_CONTAINER(frameVbox), 10);
+  gtk_container_add(GTK_CONTAINER(frame), frameVbox);
+
   communityLabel := gtk_label_new('Seleccionar comunidad:');
   gtk_misc_set_alignment(GTK_MISC(communityLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(frameVbox), communityLabel, FALSE, FALSE, 0);
-  
+
   FCommunityCombo := gtk_combo_box_new_text();
   gtk_box_pack_start(GTK_BOX(frameVbox), FCommunityCombo, FALSE, FALSE, 0);
-  
+
   userLabel := gtk_label_new('Email del usuario:');
   gtk_misc_set_alignment(GTK_MISC(userLabel), 0.0, 0.5);
   gtk_box_pack_start(GTK_BOX(frameVbox), userLabel, FALSE, FALSE, 0);
-  
+
   FUserEmailEntry := gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(frameVbox), FUserEmailEntry, FALSE, FALSE, 0);
-  
+
   FAddUserBtn := gtk_button_new_with_label('Agregar Usuario');
   g_signal_connect(G_OBJECT(FAddUserBtn), 'clicked', G_CALLBACK(@OnAddUserToCommunityClick), Self);
   gtk_box_pack_start(GTK_BOX(frameVbox), FAddUserBtn, FALSE, FALSE, 5);
-  
+
   // Botón cerrar
   hbox := gtk_hbox_new(FALSE, 0);
-  var closeBtn := gtk_button_new_with_label('Cerrar');
+  closeBtn := gtk_button_new_with_label('Cerrar');
   g_signal_connect_swapped(G_OBJECT(closeBtn), 'clicked', G_CALLBACK(@gtk_widget_destroy), FCommunityWindow);
   gtk_box_pack_start(GTK_BOX(hbox), closeBtn, TRUE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 10);
-  
+
   UpdateCommunityCombo;
   gtk_widget_show_all(FCommunityWindow);
 end;
@@ -233,10 +235,10 @@ var
   i: Integer;
 begin
   if FCommunityCombo = nil then Exit;
-  
+
   // Limpiar combo
   gtk_combo_box_remove_text(GTK_COMBO_BOX(FCommunityCombo), 0);
-  
+
   communities := FRootManager.ListCommunities;
   try
     for i := 0 to communities.Count - 1 do
@@ -272,9 +274,10 @@ var
   rootInterface: TRootInterface;
   dialog: PGtkWidget;
   filename, errorMsg: string;
+  filter: PGtkFileFilter;
 begin
   rootInterface := TRootInterface(data);
-  
+
   // Diálogo para seleccionar archivo
   dialog := gtk_file_chooser_dialog_new(
     'Seleccionar archivo JSON',
@@ -284,23 +287,23 @@ begin
     GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
     nil
   );
-  
+
   // Filtro para archivos JSON
-  var filter := gtk_file_filter_new();
+  filter := gtk_file_filter_new();
   gtk_file_filter_set_name(filter, 'Archivos JSON');
   gtk_file_filter_add_pattern(filter, '*.json');
   gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-  
+
   if gtk_dialog_run(GTK_DIALOG(dialog)) = GTK_RESPONSE_ACCEPT then
   begin
     filename := gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-    
+
     if rootInterface.FRootManager.LoadUsersFromJSON(filename, errorMsg) then
       rootInterface.ShowMessage('Usuarios cargados exitosamente')
     else
       rootInterface.ShowMessage('Error: ' + errorMsg);
   end;
-  
+
   gtk_widget_destroy(dialog);
 end;
 
@@ -309,7 +312,7 @@ var
   rootInterface: TRootInterface;
 begin
   rootInterface := TRootInterface(data);
-  
+
   if rootInterface.FRootManager.GenerateUserReport then
     rootInterface.ShowMessage('Reporte de usuarios generado en Root-Reportes/')
   else
@@ -321,7 +324,7 @@ var
   rootInterface: TRootInterface;
 begin
   rootInterface := TRootInterface(data);
-  
+
   if rootInterface.FRootManager.GenerateRelationReport then
     rootInterface.ShowMessage('Reporte de relaciones generado en Root-Reportes/')
   else
@@ -353,14 +356,14 @@ var
   dialog: PGtkWidget;
 begin
   rootInterface := TRootInterface(data);
-  
+
   communityName := gtk_entry_get_text(GTK_ENTRY(rootInterface.FCommunityNameEntry));
-  
+
   if rootInterface.FRootManager.CreateCommunity(communityName, errorMsg) then
   begin
     gtk_entry_set_text(GTK_ENTRY(rootInterface.FCommunityNameEntry), '');
     rootInterface.UpdateCommunityCombo;
-    
+
     dialog := gtk_message_dialog_new(
       GTK_WINDOW(rootInterface.FCommunityWindow),
       GTK_DIALOG_MODAL,
@@ -379,7 +382,7 @@ begin
       PChar(errorMsg)
     );
   end;
-  
+
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
 end;
@@ -392,20 +395,20 @@ var
   activeIndex: Integer;
 begin
   rootInterface := TRootInterface(data);
-  
+
   userEmail := gtk_entry_get_text(GTK_ENTRY(rootInterface.FUserEmailEntry));
   activeIndex := gtk_combo_box_get_active(GTK_COMBO_BOX(rootInterface.FCommunityCombo));
-  
+
   if activeIndex >= 0 then
   begin
     communityText := gtk_combo_box_get_active_text(GTK_COMBO_BOX(rootInterface.FCommunityCombo));
     // Extraer solo el nombre de la comunidad (después del " - ")
     communityName := Copy(communityText, Pos(' - ', communityText) + 3, Length(communityText));
-    
+
     if rootInterface.FRootManager.AddUserToCommunity(communityName, userEmail, errorMsg) then
     begin
       gtk_entry_set_text(GTK_ENTRY(rootInterface.FUserEmailEntry), '');
-      
+
       dialog := gtk_message_dialog_new(
         GTK_WINDOW(rootInterface.FCommunityWindow),
         GTK_DIALOG_MODAL,
@@ -435,7 +438,7 @@ begin
       'Por favor seleccione una comunidad'
     );
   end;
-  
+
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
 end;

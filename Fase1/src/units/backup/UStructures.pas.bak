@@ -9,7 +9,7 @@ uses
 
 type
   // Tipos de datos para el sistema
-  
+
   // Usuario
   PUser = ^TUser;
   TUser = record
@@ -75,7 +75,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
+
     procedure AddUser(id: Integer; nombre, usuario, email, telefono, password: string);
     function FindUser(email: string): PUser;
     function FindUserByUsername(usuario: string): PUser;
@@ -83,7 +83,7 @@ type
     procedure UpdateUser(user: PUser; nombre, usuario, telefono: string);
     procedure ClearList;
     procedure LoadFromJSON(filename: string);
-    
+
     property Head: PUser read FHead;
     property Count: Integer read FCount;
   end;
@@ -97,8 +97,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
-    procedure AddEmail(id: Integer; remitente, destinatario, asunto, mensaje: string; 
+
+    procedure AddEmail(id: Integer; remitente, destinatario, asunto, mensaje: string;
                       fecha: TDateTime; programado: Boolean = False);
     procedure RemoveEmail(email: PEmail);
     function FindEmail(id: Integer): PEmail;
@@ -106,7 +106,7 @@ type
     procedure SortBySubject;
     function GetUnreadCount: Integer;
     procedure ClearList;
-    
+
     property Head: PEmail read FHead;
     property Tail: PEmail read FTail;
     property Count: Integer read FCount;
@@ -121,14 +121,14 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
+
     procedure AddContact(id: Integer; nombre, usuario, email, telefono: string);
     procedure RemoveContact(email: string);
     function FindContact(email: string): PContact;
     function GetNext: PContact;
     function GetPrevious: PContact;
     procedure ClearList;
-    
+
     property Head: PContact read FHead;
     property Count: Integer read FCount;
     property Current: PContact read FCurrent write FCurrent;
@@ -143,13 +143,13 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
+
     procedure Enqueue(id: Integer; remitente, destinatario, asunto, mensaje: string; fecha: TDateTime);
     function Dequeue: PEmail;
     function IsEmpty: Boolean;
     function GetScheduledEmails: PEmail;
     procedure ClearQueue;
-    
+
     property Head: PEmail read FHead;
     property Count: Integer read FCount;
   end;
@@ -162,13 +162,13 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
+
     procedure Push(email: PEmail);
     function Pop: PEmail;
     function IsEmpty: Boolean;
     function SearchBySubject(keyword: string): PEmail;
     procedure ClearStack;
-    
+
     property Top: PEmail read FTop;
     property Count: Integer read FCount;
   end;
@@ -181,12 +181,12 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    
+
     procedure AddCommunity(id: Integer; nombre: string);
     procedure AddUserToCommunity(communityId: Integer; user: PUser);
     function FindCommunity(id: Integer): PCommunity;
     procedure ClearList;
-    
+
     property Head: PCommunity read FHead;
     property Count: Integer read FCount;
   end;
@@ -202,12 +202,12 @@ type
   public
     constructor Create(maxFila, maxColumna: Integer);
     destructor Destroy; override;
-    
+
     procedure SetValue(fila, columna, valor: Integer);
     function GetValue(fila, columna: Integer): Integer;
     procedure IncrementValue(fila, columna: Integer);
     procedure ClearMatrix;
-    
+
     property MaxFila: Integer read FMaxFila;
     property MaxColumna: Integer read FMaxColumna;
   end;
@@ -249,35 +249,35 @@ end;
 
 function TUserList.FindUser(email: string): PUser;
 var
-  current: PUser;
+  userCurrent: PUser;
 begin
   Result := nil;
-  current := FHead;
-  while current <> nil do
+  userCurrent := FHead;
+  while userCurrent <> nil do
   begin
-    if current^.email = email then
+    if userCurrent^.email = email then
     begin
-      Result := current;
+      Result := userCurrent;
       Break;
     end;
-    current := current^.siguiente;
+    userCurrent := userCurrent^.siguiente;
   end;
 end;
 
 function TUserList.FindUserByUsername(usuario: string): PUser;
 var
-  current: PUser;
+  userCurrent: PUser;
 begin
   Result := nil;
-  current := FHead;
-  while current <> nil do
+  userCurrent := FHead;
+  while userCurrent <> nil do
   begin
-    if current^.usuario = usuario then
+    if userCurrent^.usuario = usuario then
     begin
-      Result := current;
+      Result := userCurrent;
       Break;
     end;
-    current := current^.siguiente;
+    userCurrent := userCurrent^.siguiente;
   end;
 end;
 
@@ -303,13 +303,13 @@ end;
 
 procedure TUserList.ClearList;
 var
-  current, temp: PUser;
+  userCurrent, temp: PUser;
 begin
-  current := FHead;
-  while current <> nil do
+  userCurrent := FHead;
+  while userCurrent <> nil do
   begin
-    temp := current;
-    current := current^.siguiente;
+    temp := userCurrent;
+    userCurrent := userCurrent^.siguiente;
     Dispose(temp);
   end;
   FHead := nil;
@@ -326,11 +326,13 @@ var
   fileContent: string;
   fs: TFileStream;
 begin
+  fileContent := '';
   try
     fs := TFileStream.Create(filename, fmOpenRead);
     try
       SetLength(fileContent, fs.Size);
-      fs.ReadBuffer(fileContent[1], fs.Size);
+      if fs.Size > 0 then
+        fs.ReadBuffer(fileContent[1], fs.Size);
     finally
       fs.Free;
     end;
@@ -339,7 +341,7 @@ begin
     try
       jsonObject := jsonData as TJSONObject;
       usersArray := jsonObject.Get('usuarios', TJSONArray(nil));
-      
+
       if usersArray <> nil then
       begin
         for i := 0 to usersArray.Count - 1 do
@@ -379,7 +381,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TEmailList.AddEmail(id: Integer; remitente, destinatario, asunto, mensaje: string; 
+procedure TEmailList.AddEmail(id: Integer; remitente, destinatario, asunto, mensaje: string;
                              fecha: TDateTime; programado: Boolean = False);
 var
   newEmail: PEmail;
@@ -395,12 +397,12 @@ begin
   newEmail^.mensaje := mensaje;
   newEmail^.siguiente := nil;
   newEmail^.anterior := FTail;
-  
+
   if FTail <> nil then
     FTail^.siguiente := newEmail
   else
     FHead := newEmail;
-    
+
   FTail := newEmail;
   Inc(FCount);
 end;
@@ -408,34 +410,34 @@ end;
 procedure TEmailList.RemoveEmail(email: PEmail);
 begin
   if email = nil then Exit;
-  
+
   if email^.anterior <> nil then
     email^.anterior^.siguiente := email^.siguiente
   else
     FHead := email^.siguiente;
-    
+
   if email^.siguiente <> nil then
     email^.siguiente^.anterior := email^.anterior
   else
     FTail := email^.anterior;
-    
+
   Dec(FCount);
 end;
 
 function TEmailList.FindEmail(id: Integer): PEmail;
 var
-  current: PEmail;
+  emailCurrent: PEmail;
 begin
   Result := nil;
-  current := FHead;
-  while current <> nil do
+  emailCurrent := FHead;
+  while emailCurrent <> nil do
   begin
-    if current^.id = id then
+    if emailCurrent^.id = id then
     begin
-      Result := current;
+      Result := emailCurrent;
       Break;
     end;
-    current := current^.siguiente;
+    emailCurrent := emailCurrent^.siguiente;
   end;
 end;
 
@@ -448,28 +450,28 @@ end;
 procedure TEmailList.SortBySubject;
 var
   i, j: Integer;
-  current, next: PEmail;
+  emailCurrent, next: PEmail;
   temp: TEmail;
 begin
-  current := FHead;
+  emailCurrent := FHead;
   for i := 0 to FCount - 2 do
   begin
-    next := current^.siguiente;
+    next := emailCurrent^.siguiente;
     for j := i + 1 to FCount - 1 do
     begin
-      if current^.asunto > next^.asunto then
+      if emailCurrent^.asunto > next^.asunto then
       begin
         // Intercambiar datos (no punteros)
-        temp := current^;
-        current^.id := next^.id;
-        current^.remitente := next^.remitente;
-        current^.destinatario := next^.destinatario;
-        current^.estado := next^.estado;
-        current^.programado := next^.programado;
-        current^.asunto := next^.asunto;
-        current^.fecha := next^.fecha;
-        current^.mensaje := next^.mensaje;
-        
+        temp := emailCurrent^;
+        emailCurrent^.id := next^.id;
+        emailCurrent^.remitente := next^.remitente;
+        emailCurrent^.destinatario := next^.destinatario;
+        emailCurrent^.estado := next^.estado;
+        emailCurrent^.programado := next^.programado;
+        emailCurrent^.asunto := next^.asunto;
+        emailCurrent^.fecha := next^.fecha;
+        emailCurrent^.mensaje := next^.mensaje;
+
         next^.id := temp.id;
         next^.remitente := temp.remitente;
         next^.destinatario := temp.destinatario;
@@ -481,33 +483,33 @@ begin
       end;
       next := next^.siguiente;
     end;
-    current := current^.siguiente;
+    emailCurrent := emailCurrent^.siguiente;
   end;
 end;
 
 function TEmailList.GetUnreadCount: Integer;
 var
-  current: PEmail;
+  emailCurrent: PEmail;
 begin
   Result := 0;
-  current := FHead;
-  while current <> nil do
+  emailCurrent := FHead;
+  while emailCurrent <> nil do
   begin
-    if current^.estado = 'NL' then
+    if emailCurrent^.estado = 'NL' then
       Inc(Result);
-    current := current^.siguiente;
+    emailCurrent := emailCurrent^.siguiente;
   end;
 end;
 
 procedure TEmailList.ClearList;
 var
-  current, temp: PEmail;
+  emailCurrent, temp: PEmail;
 begin
-  current := FHead;
-  while current <> nil do
+  emailCurrent := FHead;
+  while emailCurrent <> nil do
   begin
-    temp := current;
-    current := current^.siguiente;
+    temp := emailCurrent;
+    emailCurrent := emailCurrent^.siguiente;
     Dispose(temp);
   end;
   FHead := nil;
@@ -540,7 +542,7 @@ begin
   newContact^.usuario := usuario;
   newContact^.email := email;
   newContact^.telefono := telefono;
-  
+
   if FHead = nil then
   begin
     FHead := newContact;
@@ -552,31 +554,31 @@ begin
     newContact^.siguiente := FHead^.siguiente;
     FHead^.siguiente := newContact;
   end;
-  
+
   Inc(FCount);
 end;
 
 procedure TContactList.RemoveContact(email: string);
 var
-  current, previous: PContact;
+  contactCurrent, previous: PContact;
   found: Boolean;
 begin
   if FHead = nil then Exit;
-  
+
   found := False;
-  current := FHead;
+  contactCurrent := FHead;
   previous := nil;
-  
+
   repeat
-    if current^.email = email then
+    if contactCurrent^.email = email then
     begin
       found := True;
       Break;
     end;
-    previous := current;
-    current := current^.siguiente;
-  until current = FHead;
-  
+    previous := contactCurrent;
+    contactCurrent := contactCurrent^.siguiente;
+  until contactCurrent = FHead;
+
   if found then
   begin
     if FCount = 1 then
@@ -587,49 +589,49 @@ begin
     end
     else
     begin
-      if current = FHead then
+      if contactCurrent = FHead then
       begin
         // Encontrar el último nodo para actualizar su siguiente
         previous := FHead;
         while previous^.siguiente <> FHead do
           previous := previous^.siguiente;
-        
+
         FHead := FHead^.siguiente;
         previous^.siguiente := FHead;
-        
-        if FCurrent = current then
+
+        if FCurrent = contactCurrent then
           FCurrent := FHead;
       end
       else
       begin
-        previous^.siguiente := current^.siguiente;
-        if FCurrent = current then
-          FCurrent := current^.siguiente;
+        previous^.siguiente := contactCurrent^.siguiente;
+        if FCurrent = contactCurrent then
+          FCurrent := contactCurrent^.siguiente;
       end;
-      
-      Dispose(current);
+
+      Dispose(contactCurrent);
     end;
-    
+
     Dec(FCount);
   end;
 end;
 
 function TContactList.FindContact(email: string): PContact;
 var
-  current: PContact;
+  contactCurrent: PContact;
 begin
   Result := nil;
   if FHead = nil then Exit;
-  
-  current := FHead;
+
+  contactCurrent := FHead;
   repeat
-    if current^.email = email then
+    if contactCurrent^.email = email then
     begin
-      Result := current;
+      Result := contactCurrent;
       Break;
     end;
-    current := current^.siguiente;
-  until current = FHead;
+    contactCurrent := contactCurrent^.siguiente;
+  until contactCurrent = FHead;
 end;
 
 function TContactList.GetNext: PContact;
@@ -645,38 +647,38 @@ end;
 
 function TContactList.GetPrevious: PContact;
 var
-  current: PContact;
+  contactCurrent: PContact;
 begin
   Result := nil;
   if (FCurrent = nil) or (FHead = nil) then Exit;
-  
-  current := FHead;
+
+  contactCurrent := FHead;
   repeat
-    if current^.siguiente = FCurrent then
+    if contactCurrent^.siguiente = FCurrent then
     begin
-      FCurrent := current;
+      FCurrent := contactCurrent;
       Result := FCurrent;
       Break;
     end;
-    current := current^.siguiente;
-  until current = FHead;
+    contactCurrent := contactCurrent^.siguiente;
+  until contactCurrent = FHead;
 end;
 
 procedure TContactList.ClearList;
 var
-  current, temp: PContact;
+  contactCurrent, temp: PContact;
   i: Integer;
 begin
   if FHead = nil then Exit;
-  
-  current := FHead;
+
+  contactCurrent := FHead;
   for i := 0 to FCount - 1 do
   begin
-    temp := current;
-    current := current^.siguiente;
+    temp := contactCurrent;
+    contactCurrent := contactCurrent^.siguiente;
     Dispose(temp);
   end;
-  
+
   FHead := nil;
   FCurrent := nil;
   FCount := 0;
@@ -712,7 +714,7 @@ begin
   newEmail^.mensaje := mensaje;
   newEmail^.siguiente := nil;
   newEmail^.anterior := nil;
-  
+
   if FTail = nil then
   begin
     FHead := newEmail;
@@ -723,7 +725,7 @@ begin
     FTail^.siguiente := newEmail;
     FTail := newEmail;
   end;
-  
+
   Inc(FCount);
 end;
 
@@ -752,13 +754,13 @@ end;
 
 procedure TEmailQueue.ClearQueue;
 var
-  current, temp: PEmail;
+  queueCurrent, temp: PEmail;
 begin
-  current := FHead;
-  while current <> nil do
+  queueCurrent := FHead;
+  while queueCurrent <> nil do
   begin
-    temp := current;
-    current := current^.siguiente;
+    temp := queueCurrent;
+    queueCurrent := queueCurrent^.siguiente;
     Dispose(temp);
   end;
   FHead := nil;
@@ -785,7 +787,7 @@ var
   newEmail: PEmail;
 begin
   if email = nil then Exit;
-  
+
   New(newEmail);
   newEmail^ := email^;
   newEmail^.estado := 'Eliminado';
@@ -813,30 +815,30 @@ end;
 
 function TEmailStack.SearchBySubject(keyword: string): PEmail;
 var
-  current: PEmail;
+  stackCurrent: PEmail;
 begin
   Result := nil;
-  current := FTop;
-  while current <> nil do
+  stackCurrent := FTop;
+  while stackCurrent <> nil do
   begin
-    if Pos(LowerCase(keyword), LowerCase(current^.asunto)) > 0 then
+    if Pos(LowerCase(keyword), LowerCase(stackCurrent^.asunto)) > 0 then
     begin
-      Result := current;
+      Result := stackCurrent;
       Break;
     end;
-    current := current^.siguiente;
+    stackCurrent := stackCurrent^.siguiente;
   end;
 end;
 
 procedure TEmailStack.ClearStack;
 var
-  current, temp: PEmail;
+  stackCurrent, temp: PEmail;
 begin
-  current := FTop;
-  while current <> nil do
+  stackCurrent := FTop;
+  while stackCurrent <> nil do
   begin
-    temp := current;
-    current := current^.siguiente;
+    temp := stackCurrent;
+    stackCurrent := stackCurrent^.siguiente;
     Dispose(temp);
   end;
   FTop := nil;
@@ -887,40 +889,40 @@ end;
 
 function TCommunityList.FindCommunity(id: Integer): PCommunity;
 var
-  current: PCommunity;
+  communityCurrent: PCommunity;
 begin
   Result := nil;
-  current := FHead;
-  while current <> nil do
+  communityCurrent := FHead;
+  while communityCurrent <> nil do
   begin
-    if current^.id = id then
+    if communityCurrent^.id = id then
     begin
-      Result := current;
+      Result := communityCurrent;
       Break;
     end;
-    current := current^.siguiente;
+    communityCurrent := communityCurrent^.siguiente;
   end;
 end;
 
 procedure TCommunityList.ClearList;
 var
-  current, temp: PCommunity;
+  communityCurrent, temp: PCommunity;
   userCurrent, userTemp: PUser;
 begin
-  current := FHead;
-  while current <> nil do
+  communityCurrent := FHead;
+  while communityCurrent <> nil do
   begin
     // Limpiar usuarios de la comunidad
-    userCurrent := current^.usuarios;
+    userCurrent := communityCurrent^.usuarios;
     while userCurrent <> nil do
     begin
       userTemp := userCurrent;
       userCurrent := userCurrent^.siguiente;
       Dispose(userTemp);
     end;
-    
-    temp := current;
-    current := current^.siguiente;
+
+    temp := communityCurrent;
+    communityCurrent := communityCurrent^.siguiente;
     Dispose(temp);
   end;
   FHead := nil;
@@ -936,10 +938,10 @@ begin
   FHead := nil;
   FMaxFila := maxFila;
   FMaxColumna := maxColumna;
-  
+
   SetLength(FFilas, maxFila + 1);
   SetLength(FColumnas, maxColumna + 1);
-  
+
   for i := 0 to maxFila do
     FFilas[i] := nil;
   for i := 0 to maxColumna do
@@ -954,28 +956,28 @@ end;
 
 procedure TSparseMatrix.SetValue(fila, columna, valor: Integer);
 var
-  current, newNode, prev: PMatrixNode;
+  matrixCurrent, newNode, prev: PMatrixNode;
 begin
   if (fila < 0) or (fila > FMaxFila) or (columna < 0) or (columna > FMaxColumna) then
     Exit;
-  
+
   // Buscar si ya existe el nodo
-  current := FFilas[fila];
-  while (current <> nil) and (current^.columna < columna) do
-    current := current^.siguiente_fila;
-  
-  if (current <> nil) and (current^.columna = columna) then
+  matrixCurrent := FFilas[fila];
+  while (matrixCurrent <> nil) and (matrixCurrent^.columna < columna) do
+    matrixCurrent := matrixCurrent^.siguiente_fila;
+
+  if (matrixCurrent <> nil) and (matrixCurrent^.columna = columna) then
   begin
-    current^.valor := valor;
+    matrixCurrent^.valor := valor;
     Exit;
   end;
-  
+
   // Crear nuevo nodo
   New(newNode);
   newNode^.fila := fila;
   newNode^.columna := columna;
   newNode^.valor := valor;
-  
+
   // Insertar en fila
   if (FFilas[fila] = nil) or (FFilas[fila]^.columna > columna) then
   begin
@@ -990,7 +992,7 @@ begin
     newNode^.siguiente_fila := prev^.siguiente_fila;
     prev^.siguiente_fila := newNode;
   end;
-  
+
   // Insertar en columna
   if (FColumnas[columna] = nil) or (FColumnas[columna]^.fila > fila) then
   begin
@@ -1009,23 +1011,23 @@ end;
 
 function TSparseMatrix.GetValue(fila, columna: Integer): Integer;
 var
-  current: PMatrixNode;
+  matrixCurrent: PMatrixNode;
 begin
   Result := 0;
   if (fila < 0) or (fila > FMaxFila) or (columna < 0) or (columna > FMaxColumna) then
     Exit;
-  
-  current := FFilas[fila];
-  while current <> nil do
+
+  matrixCurrent := FFilas[fila];
+  while matrixCurrent <> nil do
   begin
-    if current^.columna = columna then
+    if matrixCurrent^.columna = columna then
     begin
-      Result := current^.valor;
+      Result := matrixCurrent^.valor;
       Break;
     end
-    else if current^.columna > columna then
+    else if matrixCurrent^.columna > columna then
       Break;
-    current := current^.siguiente_fila;
+    matrixCurrent := matrixCurrent^.siguiente_fila;
   end;
 end;
 
@@ -1040,23 +1042,23 @@ end;
 procedure TSparseMatrix.ClearMatrix;
 var
   i: Integer;
-  current, temp: PMatrixNode;
+  matrixCurrent, temp: PMatrixNode;
 begin
   for i := 0 to FMaxFila do
   begin
-    current := FFilas[i];
-    while current <> nil do
+    matrixCurrent := FFilas[i];
+    while matrixCurrent <> nil do
     begin
-      temp := current;
-      current := current^.siguiente_fila;
+      temp := matrixCurrent;
+      matrixCurrent := matrixCurrent^.siguiente_fila;
       Dispose(temp);
     end;
     FFilas[i] := nil;
   end;
-  
+
   for i := 0 to FMaxColumna do
     FColumnas[i] := nil;
-    
+
   FHead := nil;
 end;
 
