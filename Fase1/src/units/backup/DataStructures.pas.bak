@@ -319,7 +319,7 @@ end;
 
 // Reemplaza la función TEmailList.Add en DataStructures.pas
 procedure TEmailList.Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
-                        Programado: Boolean; Fecha: TDateTime);
+                        Programado: Boolean = False; Fecha: TDateTime = 0);
 var
   NewEmail: PEmail;
 begin
@@ -331,8 +331,8 @@ begin
   NewEmail^.Programado := Programado;
   NewEmail^.Asunto := Asunto;
 
-  // Corregir manejo de fecha - usar Now por defecto si la fecha es 0 o inválida
-  if (Fecha <= 0) or (Fecha > 73050) then  // 73050 = aproximadamente año 2100
+  // CORRECCIÓN: Validar fecha antes de asignar
+  if (Fecha <= 0) then  // Si fecha es 0 o inválida, usar Now
     NewEmail^.Fecha := Now
   else
     NewEmail^.Fecha := Fecha;
@@ -340,6 +340,46 @@ begin
   NewEmail^.Mensaje := Mensaje;
   NewEmail^.Next := nil;
   NewEmail^.Prev := FTail;
+
+  if FTail <> nil then
+    FTail^.Next := NewEmail
+  else
+    FHead := NewEmail;
+
+  FTail := NewEmail;
+  Inc(FCount);
+end;
+
+// TAMBIÉN CORREGIR en la declaración de la clase TEmailList en la sección interface:
+// CAMBIAR:
+//   procedure Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
+//                 Programado: Boolean = False; Fecha: TDateTime = -1);
+// POR:
+//   procedure Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
+//                 Programado: Boolean = False; Fecha: TDateTime = 0);
+
+// ADICIONAL: Verificar también TEmailQueue.Enqueue si usa parámetros similares
+procedure TEmailQueue.Enqueue(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String; Fecha: TDateTime);
+var
+  NewEmail: PEmail;
+begin
+  New(NewEmail);
+  NewEmail^.Id := Id;
+  NewEmail^.Remitente := Remitente;
+  NewEmail^.Destinatario := Destinatario;
+  NewEmail^.Estado := 'NL';
+  NewEmail^.Programado := True;
+  NewEmail^.Asunto := Asunto;
+
+  // CORRECCIÓN: Validar fecha antes de asignar
+  if (Fecha <= 0) then  // Si fecha es inválida, usar Now + 1 día
+    NewEmail^.Fecha := Now + 1
+  else
+    NewEmail^.Fecha := Fecha;
+
+  NewEmail^.Mensaje := Mensaje;
+  NewEmail^.Next := nil;
+  NewEmail^.Prev := nil;
 
   if FTail <> nil then
     FTail^.Next := NewEmail
@@ -609,6 +649,7 @@ begin
   inherited;
 end;
 
+// En TEmailQueue.Enqueue, asegúrate de que la fecha sea válida:
 procedure TEmailQueue.Enqueue(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String; Fecha: TDateTime);
 var
   NewEmail: PEmail;
@@ -617,26 +658,28 @@ begin
   NewEmail^.Id := Id;
   NewEmail^.Remitente := Remitente;
   NewEmail^.Destinatario := Destinatario;
-  NewEmail^.Estado := 'P'; // Programado
+  NewEmail^.Estado := 'NL';
   NewEmail^.Programado := True;
   NewEmail^.Asunto := Asunto;
-  NewEmail^.Fecha := Fecha;
+
+  // Validar fecha antes de asignar
+  if (Fecha <= Now) or (Fecha > 73050) then  // Fecha debe ser futura y válida
+    NewEmail^.Fecha := Now + 1  // Default: mañana
+  else
+    NewEmail^.Fecha := Fecha;
+
   NewEmail^.Mensaje := Mensaje;
   NewEmail^.Next := nil;
   NewEmail^.Prev := nil;
 
   if FTail <> nil then
-  begin
-    FTail^.Next := NewEmail;
-    NewEmail^.Prev := FTail;
-  end
+    FTail^.Next := NewEmail
   else
     FHead := NewEmail;
 
   FTail := NewEmail;
   Inc(FCount);
 end;
-
 function TEmailQueue.Dequeue: PEmail;
 begin
   Result := FHead;

@@ -1,0 +1,12 @@
+REPORTE DE RELACIONES EMISOR-RECEPTOR
+=====================================
+Fecha: 21-8-25 20:49:57
+
+Matriz de correos enviados:
+(Filas: Emisores, Columnas: Receptores)
+
+EMISOR -> RECEPTOR: CANTIDAD
+=============================
+
+RESUMEN:
+Total de correos enviados: 0

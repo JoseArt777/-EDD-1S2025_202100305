@@ -102,7 +102,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
-                  Programado: Boolean = False; Fecha: TDateTime = -1);
+                  Programado: Boolean = False; Fecha: TDateTime = 0);
     procedure Remove(Email: PEmail);
     function Find(Id: Integer): PEmail;
     procedure SortBySubject;
@@ -317,9 +317,8 @@ begin
   inherited;
 end;
 
-// Reemplaza la función TEmailList.Add en DataStructures.pas
 procedure TEmailList.Add(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String;
-                        Programado: Boolean; Fecha: TDateTime);
+                        Programado: Boolean = False; Fecha: TDateTime = 0);
 var
   NewEmail: PEmail;
 begin
@@ -331,8 +330,8 @@ begin
   NewEmail^.Programado := Programado;
   NewEmail^.Asunto := Asunto;
 
-  // Corregir manejo de fecha - usar Now por defecto si la fecha es 0 o inválida
-  if (Fecha <= 0) or (Fecha > 73050) then  // 73050 = aproximadamente año 2100
+  // CORRECCIÓN: Validar fecha antes de asignar
+  if (Fecha <= 0) then  // Si fecha es 0 o inválida, usar Now
     NewEmail^.Fecha := Now
   else
     NewEmail^.Fecha := Fecha;
@@ -349,6 +348,7 @@ begin
   FTail := NewEmail;
   Inc(FCount);
 end;
+
 procedure TEmailList.Remove(Email: PEmail);
 begin
   if Email = nil then Exit;
@@ -378,7 +378,6 @@ end;
 
 procedure TEmailList.SortBySubject;
 var
-  i, j: Integer;
   Current, Next: PEmail;
   TempEmail: TEmail;
 begin
@@ -609,7 +608,6 @@ begin
   inherited;
 end;
 
-// En TEmailQueue.Enqueue, asegúrate de que la fecha sea válida:
 procedure TEmailQueue.Enqueue(Id: Integer; Remitente, Destinatario, Asunto, Mensaje: String; Fecha: TDateTime);
 var
   NewEmail: PEmail;
@@ -622,9 +620,9 @@ begin
   NewEmail^.Programado := True;
   NewEmail^.Asunto := Asunto;
 
-  // Validar fecha antes de asignar
-  if (Fecha <= Now) or (Fecha > 73050) then  // Fecha debe ser futura y válida
-    NewEmail^.Fecha := Now + 1  // Default: mañana
+  // CORRECCIÓN: Validar fecha antes de asignar
+  if (Fecha <= 0) then  // Si fecha es inválida, usar Now + 1 día
+    NewEmail^.Fecha := Now + 1
   else
     NewEmail^.Fecha := Fecha;
 
@@ -640,19 +638,16 @@ begin
   FTail := NewEmail;
   Inc(FCount);
 end;
+
 function TEmailQueue.Dequeue: PEmail;
 begin
   Result := FHead;
   if FHead <> nil then
   begin
     FHead := FHead^.Next;
-    if FHead <> nil then
-      FHead^.Prev := nil
-    else
+    if FHead = nil then
       FTail := nil;
     Dec(FCount);
-    Result^.Next := nil;
-    Result^.Prev := nil;
   end;
 end;
 
@@ -710,15 +705,9 @@ end;
 
 procedure TEmailStack.Push(Email: PEmail);
 begin
-  if Email <> nil then
-  begin
-    Email^.Next := FTop;
-    Email^.Prev := nil;
-    if FTop <> nil then
-      FTop^.Prev := Email;
-    FTop := Email;
-    Inc(FCount);
-  end;
+  Email^.Next := FTop;
+  FTop := Email;
+  Inc(FCount);
 end;
 
 function TEmailStack.Pop: PEmail;
@@ -727,11 +716,7 @@ begin
   if FTop <> nil then
   begin
     FTop := FTop^.Next;
-    if FTop <> nil then
-      FTop^.Prev := nil;
     Dec(FCount);
-    Result^.Next := nil;
-    Result^.Prev := nil;
   end;
 end;
 
@@ -752,7 +737,9 @@ begin
   Current := FTop;
   while Current <> nil do
   begin
-    if Pos(LowerCase(Keyword), LowerCase(Current^.Asunto)) > 0 then
+    if (Pos(Keyword, Current^.Asunto) > 0) or
+       (Pos(Keyword, Current^.Mensaje) > 0) or
+       (Pos(Keyword, Current^.Remitente) > 0) then
     begin
       Result := Current;
       Exit;
@@ -853,25 +840,25 @@ end;
 
 procedure TCommunityList.Clear;
 var
-  CurrentCommunity, NextCommunity: PCommunity;
-  CurrentUser, NextUser: PUserCommunity;
+  Current, Next: PCommunity;
+  UserCurrent, UserNext: PUserCommunity;
 begin
-  CurrentCommunity := FHead;
-  while CurrentCommunity <> nil do
+  Current := FHead;
+  while Current <> nil do
   begin
-    NextCommunity := CurrentCommunity^.Next;
+    Next := Current^.Next;
 
     // Limpiar usuarios de la comunidad
-    CurrentUser := CurrentCommunity^.Users;
-    while CurrentUser <> nil do
+    UserCurrent := Current^.Users;
+    while UserCurrent <> nil do
     begin
-      NextUser := CurrentUser^.Next;
-      Dispose(CurrentUser);
-      CurrentUser := NextUser;
+      UserNext := UserCurrent^.Next;
+      Dispose(UserCurrent);
+      UserCurrent := UserNext;
     end;
 
-    Dispose(CurrentCommunity);
-    CurrentCommunity := NextCommunity;
+    Dispose(Current);
+    Current := Next;
   end;
   FHead := nil;
   FCount := 0;
@@ -882,10 +869,19 @@ end;
 // ============================================================================
 
 constructor TSparseMatrix.Create(Size: Integer);
+var
+  i: Integer;
 begin
   FSize := Size;
   SetLength(FRowHeaders, Size);
   SetLength(FColHeaders, Size);
+
+  for i := 0 to Size - 1 do
+  begin
+    FRowHeaders[i] := nil;
+    FColHeaders[i] := nil;
+  end;
+
   FHead := nil;
 end;
 
@@ -1009,4 +1005,3 @@ begin
 end;
 
 end.
-

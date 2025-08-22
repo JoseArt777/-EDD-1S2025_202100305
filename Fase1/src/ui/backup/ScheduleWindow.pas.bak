@@ -383,6 +383,7 @@ var
   DateStr, TimeStr: String;
   DateParts, TimeParts: TStringList;
   Day, Month, Year, Hour, Minute: Integer;
+  MaxDaysInMonth: Integer;
 begin
   DateStr := gtk_entry_get_text(GTK_ENTRY(FDateEntry));
   TimeStr := gtk_entry_get_text(GTK_ENTRY(FTimeEntry));
@@ -412,12 +413,32 @@ begin
     Hour := StrToInt(TimeParts[0]);
     Minute := StrToInt(TimeParts[1]);
 
-    // Validar rangos
-    if (Day < 1) or (Day > 31) or (Month < 1) or (Month > 12) or
+    // Validar rangos básicos
+    if (Day < 1) or (Month < 1) or (Month > 12) or
        (Year < 2025) or (Hour < 0) or (Hour > 23) or (Minute < 0) or (Minute > 59) then
       raise Exception.Create('Valores de fecha/hora fuera de rango');
 
-    Result := EncodeDateTime(Year, Month, Day, Hour, Minute, 0, 0);
+    // Validar días según el mes
+    case Month of
+      1, 3, 5, 7, 8, 10, 12: MaxDaysInMonth := 31;
+      4, 6, 9, 11: MaxDaysInMonth := 30;
+      2: begin
+        // Verificar año bisiesto
+        if ((Year mod 4 = 0) and (Year mod 100 <> 0)) or (Year mod 400 = 0) then
+          MaxDaysInMonth := 29
+        else
+          MaxDaysInMonth := 28;
+      end;
+    else
+      MaxDaysInMonth := 31; // Por seguridad
+    end;
+
+    if Day > MaxDaysInMonth then
+      raise Exception.Create('Día inválido para el mes especificado');
+
+    // Intentar crear la fecha usando TryEncodeDateTime para mayor seguridad
+    if not TryEncodeDateTime(Year, Month, Day, Hour, Minute, 0, 0, Result) then
+      raise Exception.Create('No se pudo crear una fecha válida con los valores proporcionados');
 
   finally
     DateParts.Free;
@@ -476,7 +497,7 @@ end;
 procedure TScheduleWindow.LoadContactIntoRecipient(ContactEmail: String);
 begin
   gtk_entry_set_text(GTK_ENTRY(FRecipientEntry), PChar(ContactEmail));
-      CommunitySelected := PChar(gtk_combo_box_get_active_text(GTK_COMBO_BOX(FCommunityCombo)));
+
 end;
 
 // ============================================================================

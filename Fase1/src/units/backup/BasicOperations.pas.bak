@@ -74,7 +74,16 @@ end;
 
 function FormatDateTime(DateTime: TDateTime): String;
 begin
-  Result := FormatDateTime('dd/mm/yyyy hh:nn:ss', DateTime);
+  try
+    // Validar que la fecha sea válida antes de formatear
+    if (DateTime <= 0) or (DateTime > 73050) then  // Fecha fuera de rango válido
+      Result := 'Fecha inválida'
+    else
+      Result := SysUtils.FormatDateTime('dd/mm/yyyy hh:nn:ss', DateTime);
+  except
+    on E: Exception do
+      Result := 'Error en fecha';
+  end;
 end;
 
 function ParseDateTime(DateTimeStr: String): TDateTime;
@@ -138,4 +147,3 @@ begin
 end;
 
 end.
-

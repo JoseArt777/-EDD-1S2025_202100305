@@ -11,8 +11,8 @@ uses
 function ValidateEmail(Email: String): Boolean;
 function ValidatePassword(Password: String): Boolean;
 function HashPassword(Password: String): String;
-function FormatDateTime(DateTime: TDateTime): String;
-function ParseDateTime(DateTimeStr: String): TDateTime;
+function FormatMyDateTime(DateTime: TDateTime): String;  // CAMBIADO: Renombrado para evitar conflicto
+function ParseMyDateTime(DateTimeStr: String): TDateTime;  // CAMBIADO: Renombrado para evitar conflicto
 function GenerateId: Integer;
 function SanitizeFileName(FileName: String): String;
 function IsValidDate(DateStr: String): Boolean;
@@ -72,15 +72,18 @@ begin
   Result := IntToStr(HashValue);
 end;
 
-function FormatDateTime(DateTime: TDateTime): String;
+function FormatMyDateTime(DateTime: TDateTime): String;
 begin
+  // CORREGIDO: Usar explícitamente SysUtils.FormatDateTime
   Result := SysUtils.FormatDateTime('dd/mm/yyyy hh:nn:ss', DateTime);
 end;
 
-function ParseDateTime(DateTimeStr: String): TDateTime;
+function ParseMyDateTime(DateTimeStr: String): TDateTime;
 begin
   try
-    Result := StrToDateTime(DateTimeStr);
+    // CORREGIDO: Usar TryStrToDateTime para mejor manejo de errores
+    if not TryStrToDateTime(DateTimeStr, Result) then
+      Result := 0; // Fecha inválida
   except
     Result := 0; // Fecha inválida
   end;
@@ -115,8 +118,8 @@ var
   TestDate: TDateTime;
 begin
   try
-    TestDate := StrToDate(DateStr);
-    Result := True;
+    // CORREGIDO: Usar TryStrToDate para mejor manejo de errores
+    Result := TryStrToDate(DateStr, TestDate);
   except
     Result := False;
   end;
