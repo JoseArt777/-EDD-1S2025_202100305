@@ -285,7 +285,7 @@ begin
   TotalCount := UserInbox.GetCount;
   UnreadCount := UserInbox.GetUnreadCount;
 
-  StatusText := Format('Total: %d correos | No leídos: %d', [TotalCount, UnreadCount]);
+  StatusText := 'Total: ' + IntToStr(TotalCount) + ' correos | No leídos: ' + IntToStr(UnreadCount);
   gtk_label_set_text(GTK_LABEL(FStatusLabel), PChar(StatusText));
 end;
 

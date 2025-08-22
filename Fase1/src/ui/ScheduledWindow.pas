@@ -227,7 +227,7 @@ begin
   if TotalCount = 0 then
     StatusText := 'No hay correos programados'
   else
-    StatusText := Format('Total: %d | Listos para enviar: %d', [TotalCount, ReadyCount]);
+    StatusText := 'Total: ' + IntToStr(TotalCount) + ' | Listos para enviar: ' + IntToStr(ReadyCount);
 
   gtk_label_set_text(GTK_LABEL(FStatusLabel), PChar(StatusText));
 end;
@@ -297,7 +297,7 @@ begin
     if ProcessedCount > 0 then
     begin
       RefreshScheduled;
-      TUIUtils.ShowInfoMessage(FWindow, Format('Se enviaron %d correos programados', [ProcessedCount]));
+      TUIUtils.ShowInfoMessage(FWindow, 'Se enviaron ' + IntToStr(ProcessedCount) + ' correos programados');
     end
     else
     begin

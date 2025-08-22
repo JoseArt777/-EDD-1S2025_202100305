@@ -354,26 +354,23 @@ begin
   // Mostrar resumen de la generación
   if ErrorCount = 0 then
   begin
-    ResultMessage := Format('✅ Todos los reportes generados exitosamente!' + LineEnding +
-                           'Se crearon %d archivos en la carpeta: %s',
-                           [SuccessCount, GetUserReportsPath(CurrentUser^.Email)]);
+    ResultMessage := '✅ Todos los reportes generados exitosamente!' + LineEnding +
+                'Se crearon ' + IntToStr(SuccessCount) + ' archivos en la carpeta: ' + GetUserReportsPath(CurrentUser^.Email);
     gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Todos los reportes generados exitosamente'))); // <-- Pgchar
   end
   else if SuccessCount > 0 then
   begin
-    ResultMessage := Format('⚠️ Generación parcial completada' + LineEnding +
-                           'Exitosos: %d | Errores: %d' + LineEnding +
-                           'Revise la carpeta: %s',
-                           [SuccessCount, ErrorCount, GetUserReportsPath(CurrentUser^.Email)]);
+    ResultMessage := '⚠️ Generación parcial completada' + LineEnding +
+                'Exitosos: ' + IntToStr(SuccessCount) + ' | Errores: ' + IntToStr(ErrorCount) + LineEnding +
+                'Revise la carpeta: ' + GetUserReportsPath(CurrentUser^.Email);
     gtk_label_set_text(GTK_LABEL(FStatusLabel),
-      Pgchar(UTF8String(Format('Generación parcial: %d exitosos, %d errores', [SuccessCount, ErrorCount])))); // <-- Pgchar
+  Pgchar(UTF8String('Generación parcial: ' + IntToStr(SuccessCount) + ' exitosos, ' + IntToStr(ErrorCount) + ' errores')));
   end
   else
   begin
-    ResultMessage := Format('❌ Error en la generación de reportes' + LineEnding +
-                           'No se pudo generar ningún reporte.' + LineEnding +
-                           'Verifique los permisos de la carpeta: %s',
-                           [GetUserReportsPath(CurrentUser^.Email)]);
+    ResultMessage := '❌ Error en la generación de reportes' + LineEnding +
+                'No se pudo generar ningún reporte.' + LineEnding +
+                'Verifique los permisos de la carpeta: ' + GetUserReportsPath(CurrentUser^.Email);
     gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: No se pudo generar ningún reporte'))); // <-- Pgchar
   end;
 
@@ -384,9 +381,8 @@ begin
                    '=================================' + LineEnding +
                    'Usuario: ' + CurrentUser^.Email + LineEnding +
                    'Fecha: ' + FormatDateTime('dd/mm/yyyy hh:nn:ss', Now) + LineEnding + LineEnding +
-                   Format('Reportes generados exitosamente: %d', [SuccessCount]) + LineEnding +
-                   Format('Errores encontrados: %d', [ErrorCount]) + LineEnding + LineEnding +
-                   'Ubicación de archivos: ' + GetUserReportsPath(CurrentUser^.Email) + LineEnding + LineEnding +
+                   'Reportes generados exitosamente: ' + IntToStr(SuccessCount) + LineEnding +
+'Errores encontrados: ' + IntToStr(ErrorCount) + LineEnding + LineEnding +                   'Ubicación de archivos: ' + GetUserReportsPath(CurrentUser^.Email) + LineEnding + LineEnding +
                    'Archivos generados:' + LineEnding;
 
   if SuccessCount > 0 then

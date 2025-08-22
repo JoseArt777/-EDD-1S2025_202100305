@@ -234,7 +234,7 @@ begin
   else if Count = 1 then
     StatusText := '1 correo en la papelera'
   else
-    StatusText := Format('%d correos en la papelera', [Count]);
+    StatusText := IntToStr(Count) + ' correos en la papelera';
 
   gtk_label_set_text(GTK_LABEL(FStatusLabel), PChar(StatusText));
 end;

@@ -114,7 +114,9 @@ begin
   gtk_box_pack_start(GTK_BOX(FNavigationHBox), FNextButton, False, False, 5);
 
   // Tabla para información del contacto
-  Table := TUIUtils.CreateTable(4, 2);
+  Table := gtk_table_new(4, 2, False);
+gtk_table_set_row_spacings(GTK_TABLE(Table), 5);
+gtk_table_set_col_spacings(GTK_TABLE(Table), 5);
   gtk_box_pack_start(GTK_BOX(ContactInfoVBox), Table, True, True, 10);
 
   // Campos de información
@@ -147,7 +149,9 @@ begin
   gtk_container_set_border_width(GTK_CONTAINER(AddContactVBox), 10);
 
   // Campo para email del nuevo contacto
-  Table := TUIUtils.CreateTable(1, 3);
+  Table := gtk_table_new(1, 3, False);
+gtk_table_set_row_spacings(GTK_TABLE(Table), 5);
+gtk_table_set_col_spacings(GTK_TABLE(Table), 5);
   gtk_box_pack_start(GTK_BOX(AddContactVBox), Table, False, False, 5);
 
   Label1 := TUIUtils.CreateLabel('Email del contacto:');
@@ -195,6 +199,8 @@ begin
 end;
 
 procedure TContactWindow.UpdateContactDisplay;
+var
+  PositionText: String;  // ← AQUÍ va la declaración de la variable
 begin
   if FCurrentContact = nil then
   begin
@@ -210,8 +216,10 @@ begin
     gtk_label_set_text(GTK_LABEL(FUserLabel),  Pgchar(UTF8String(FCurrentContact^.Usuario)));
     gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String(FCurrentContact^.Email)));
     gtk_label_set_text(GTK_LABEL(FPhoneLabel), Pgchar(UTF8String(FCurrentContact^.Telefono)));
-    gtk_label_set_text(GTK_LABEL(FPositionLabel),
-      Pgchar(UTF8String(Format('%d / %d', [FCurrentPosition, FContactsCount]))));
+
+    // FIX: Usar concatenación de strings en lugar de Format para evitar errores de punto flotante
+    PositionText := IntToStr(FCurrentPosition) + ' / ' + IntToStr(FContactsCount);
+    gtk_label_set_text(GTK_LABEL(FPositionLabel), Pgchar(UTF8String(PositionText)));
   end;
 end;
 

@@ -188,7 +188,8 @@ begin
   UnreadCount := UserInbox.GetUnreadCount;
 
   if UnreadCount > 0 then
-    Text := Format('📬 Tienes %d correos no leídos', [UnreadCount])
+    Text := '📬 Tienes ' + IntToStr(UnreadCount) + ' correos no leídos'
+
   else
     Text := '✅ No tienes correos no leídos';
 
