@@ -19,11 +19,18 @@ type
     constructor Create;
     destructor Destroy; override;
     
+    // Métodos de autenticación
     function Login(email, password: String; out user: PUser): TLoginResult;
     function RegisterUser(nombre, usuario, email, telefono, password: String): Boolean;
+    
+    // Carga masiva desde JSON
     function LoadUsersFromJSON(fileName: String): Boolean;
+    
+    // Validaciones
     function IsEmailAvailable(email: String): Boolean;
     function IsUsernameAvailable(username: String): Boolean;
+    
+    // Usuario root por defecto
     procedure InitializeRootUser;
   end;
 
@@ -45,6 +52,7 @@ end;
 
 procedure TLoginManager.InitializeRootUser;
 begin
+  // Crear usuario root si no existe
   if UserList.FindUserByEmail('root@edd.com') = nil then
   begin
     UserList.AddUser(0, 'Root User', 'root', 'root@edd.com', '00000000', 'root123');
@@ -72,6 +80,8 @@ var
   userId: Integer;
 begin
   Result := False;
+  
+  // Validaciones
   if not ValidateEmail(email) then Exit;
   if not ValidatePassword(password) then Exit;
   if not IsEmailAvailable(email) then Exit;
@@ -98,13 +108,16 @@ var
   Stream: TStringStream;
 begin
   Result := False;
+  
   try
+    // Leer archivo JSON
     if not FileExists(fileName) then
     begin
       WriteLn('Error: Archivo ', fileName, ' no encontrado');
       Exit;
     end;
     
+    // Cargar contenido del archivo
     with TStringList.Create do
     try
       LoadFromFile(fileName);
@@ -113,9 +126,10 @@ begin
       Free;
     end;
     
+    // Parsear JSON
     Stream := TStringStream.Create(FileContent);
     try
-      Parser := TJSONParser.Create(Stream, []);
+      Parser := TJSONParser.Create(Stream);
       try
         JSONData := Parser.Parse;
         try
@@ -131,13 +145,14 @@ begin
                 UserObject := UsersArray.Objects[i];
                 if UserObject <> nil then
                 begin
+                  // Agregar usuario con contraseña por defecto
                   UserList.AddUser(
                     UserObject.Get('id', 0),
                     UserObject.Get('nombre', ''),
                     UserObject.Get('usuario', ''),
                     UserObject.Get('email', ''),
                     UserObject.Get('telefono', ''),
-                    '123456'
+                    '123456' // Contraseña por defecto
                   );
                 end;
               end;
@@ -154,6 +169,7 @@ begin
     finally
       Stream.Free;
     end;
+    
   except
     on E: Exception do
     begin
@@ -175,11 +191,13 @@ end;
 
 function TLoginManager.ValidateEmail(email: String): Boolean;
 begin
+  // Validación básica de email
   Result := (Pos('@', email) > 0) and (Pos('.', email) > 0) and (Length(email) > 5);
 end;
 
 function TLoginManager.ValidatePassword(password: String): Boolean;
 begin
+  // Validación básica de contraseña
   Result := Length(password) >= 6;
 end;
 
@@ -201,6 +219,7 @@ begin
   Result := maxId + 1;
 end;
 
+// Inicialización global
 initialization
   LoginManager := TLoginManager.Create;
 

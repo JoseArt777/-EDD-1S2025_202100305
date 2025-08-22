@@ -105,8 +105,6 @@ var
   email, password: String;
   user: PUser;
   result: TLoginResult;
-  userWindow: TUserInterface;
-  rootWindow: TRootInterface;
 begin
   email := gtk_entry_get_text(GTK_ENTRY(email_entry));
   password := gtk_entry_get_text(GTK_ENTRY(password_entry));
@@ -117,26 +115,15 @@ begin
     lrSuccess:
     begin
       WriteLn('Login exitoso para: ', user^.email);
+      // Aquí abrir la interfaz correspondiente (root o user)
       Hide;
-
-      // Verificar si es usuario root
-      if user^.email = 'root@edd.com' then
-      begin
-        rootWindow := TRootInterface.Create;
-        rootWindow.Show;
-      end
-      else
-      begin
-        userWindow := TUserInterface.Create(user);
-        userWindow.Show;
-      end;
     end;
     lrInvalidCredentials:
-      ShowMessage('Credenciales inválidas');
+      WriteLn('Credenciales inválidas');
     lrUserNotFound:
-      ShowMessage('Usuario no encontrado');
+      WriteLn('Usuario no encontrado');
     lrError:
-      ShowMessage('Error en el sistema');
+      WriteLn('Error en el sistema');
   end;
 end;
 
