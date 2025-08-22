@@ -197,15 +197,33 @@ end;
 
 procedure TInboxWindow.SortEmails;
 var
-  UserInbox: TEmailList;
+  Emails: TEmailList;
 begin
-  if not IsUserLoggedIn then Exit;
+  if CurrentUser = nil then Exit;
 
-  UserInbox := GetUserInbox(CurrentUser^.Email);
-  UserInbox.SortBySubject;
+  Emails := GetUserEmailsReceived(CurrentUser^.Email);
+  if Emails = nil then
+  begin
+    // CORREGIDO: Usar función segura en lugar de TUIUtils.ShowErrorMessage
+    TUIUtils.ShowSafeErrorMessage(FWindow, 'No se pudieron obtener los emails');
+    Exit;
+  end;
 
-  RefreshInbox;
-  TUIUtils.ShowInfoMessage(FWindow, 'Correos ordenados por asunto alfabéticamente');
+  try
+    Emails.SortBySubject;
+
+    // CORREGIDO: Usar función segura en lugar de TUIUtils.ShowInfoMessage
+    TUIUtils.ShowSafeInfoMessage(FWindow, 'Correos ordenados por asunto alfabéticamente');
+
+    // Recargar la lista de emails
+    LoadEmails;
+  except
+    on E: Exception do
+    begin
+      // CORREGIDO: Usar función segura y manejar excepción
+      TUIUtils.ShowSafeErrorMessage(FWindow, 'Error al ordenar emails: ' + E.Message);
+    end;
+  end;
 end;
 
 procedure TInboxWindow.DeleteSelectedEmail;
@@ -285,7 +303,7 @@ begin
   TotalCount := UserInbox.GetCount;
   UnreadCount := UserInbox.GetUnreadCount;
 
-  StatusText := Format('Total: %d correos | No leídos: %d', [TotalCount, UnreadCount]);
+  StatusText := 'Total: ' + IntToStr(TotalCount) + ' correos | No leídos: ' + IntToStr(UnreadCount);
   gtk_label_set_text(GTK_LABEL(FStatusLabel), PChar(StatusText));
 end;
 

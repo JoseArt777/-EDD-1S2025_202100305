@@ -374,6 +374,7 @@ begin
   Result := Report;
 end;
 
+// CORREGIDO: Funciones para guardar reportes usando las funciones correctas de FileManager
 function SaveUsersReport: Boolean;
 var
   Report: String;
@@ -383,14 +384,8 @@ begin
   try
     Report := GenerateUsersReport;
 
-    // CORREGIDO: Generar nombre de archivo con fecha segura
-    try
-      FileName := 'usuarios_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := 'usuarios_reporte.txt';
-    end;
-
-    Result := SaveReportToFile(Report, FileName);
+    // CORREGIDO: Usar SaveRootReport en lugar de SaveReportToFile
+    Result := SaveRootReport('Reporte_Usuarios', Report);
   except
     on E: Exception do
     begin
@@ -409,14 +404,8 @@ begin
   try
     Report := GenerateRelationsReport;
 
-    // CORREGIDO: Generar nombre de archivo con fecha segura
-    try
-      FileName := 'relaciones_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := 'relaciones_reporte.txt';
-    end;
-
-    Result := SaveReportToFile(Report, FileName);
+    // CORREGIDO: Usar SaveRootReport en lugar de SaveReportToFile
+    Result := SaveRootReport('Reporte_Relaciones', Report);
   except
     on E: Exception do
     begin
@@ -429,10 +418,9 @@ end;
 function SaveUserReports(UserEmail: String): Boolean;
 var
   InboxReport, TrashReport, ScheduledReport, ContactsReport: String;
-  FileName: String;
-  SafeEmail: String;
+  Success: Boolean;
 begin
-  Result := False;
+  Success := True;
   try
     // Generar todos los reportes del usuario
     InboxReport := GenerateUserInboxReport(UserEmail);
@@ -440,40 +428,20 @@ begin
     ScheduledReport := GenerateUserScheduledReport(UserEmail);
     ContactsReport := GenerateUserContactsReport(UserEmail);
 
-    // Crear un email seguro para el nombre del archivo
-    SafeEmail := StringReplace(UserEmail, '@', '_', [rfReplaceAll]);
-    SafeEmail := StringReplace(SafeEmail, '.', '_', [rfReplaceAll]);
+    // CORREGIDO: Usar SaveUserReport en lugar de SaveReportToFile
+    if not SaveUserReport(UserEmail, 'Reporte_Bandeja_Entrada', InboxReport) then
+      Success := False;
 
-    // CORREGIDO: Generar nombres de archivo con fecha segura
-    try
-      FileName := SafeEmail + '_inbox_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := SafeEmail + '_inbox_reporte.txt';
-    end;
-    SaveReportToFile(InboxReport, FileName);
+    if not SaveUserReport(UserEmail, 'Reporte_Papelera', TrashReport) then
+      Success := False;
 
-    try
-      FileName := SafeEmail + '_trash_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := SafeEmail + '_trash_reporte.txt';
-    end;
-    SaveReportToFile(TrashReport, FileName);
+    if not SaveUserReport(UserEmail, 'Reporte_Correos_Programados', ScheduledReport) then
+      Success := False;
 
-    try
-      FileName := SafeEmail + '_scheduled_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := SafeEmail + '_scheduled_reporte.txt';
-    end;
-    SaveReportToFile(ScheduledReport, FileName);
+    if not SaveUserReport(UserEmail, 'Reporte_Contactos', ContactsReport) then
+      Success := False;
 
-    try
-      FileName := SafeEmail + '_contacts_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
-    except
-      FileName := SafeEmail + '_contacts_reporte.txt';
-    end;
-    SaveReportToFile(ContactsReport, FileName);
-
-    Result := True;
+    Result := Success;
   except
     on E: Exception do
     begin

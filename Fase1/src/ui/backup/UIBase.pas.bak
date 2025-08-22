@@ -35,11 +35,14 @@ type
     property Title: String read FTitle write FTitle;
   end;
 
+  // Callback procedure para botones
+  TButtonCallback = procedure(widget: PGtkWidget; data: gpointer); cdecl;
+
   // Utilidades para crear widgets comúnmente usados
   TUIUtils = class
   public
     class function CreateLabel(Text: String; Bold: Boolean = False): PGtkWidget;
-    class function CreateButton(Text: String; Callback: Pointer; Data: Pointer = nil): PGtkWidget;
+    class function CreateButton(Text: String; Callback: TButtonCallback; Data: Pointer = nil): PGtkWidget;
     class function CreateEntry(Placeholder: String = ''): PGtkWidget;
     class function CreateTextView: PGtkWidget;
     class function CreateFrame(Title: String): PGtkWidget;
@@ -48,11 +51,18 @@ type
     class function CreateVBox(Spacing: Integer = 5): PGtkWidget;
     class function CreateTable(Rows, Cols: Integer): PGtkWidget;
     class function CreateComboBox: PGtkWidget;
+
+    // CORREGIDO: Funciones de diálogo seguras para GTK2
     class function ShowMessageDialog(Parent: PGtkWidget; MessageType: TGtkMessageType;
                                    Title, Message: String): Integer;
     class function ShowConfirmDialog(Parent: PGtkWidget; Title, Message: String): Boolean;
     class procedure ShowInfoMessage(Parent: PGtkWidget; Message: String);
     class procedure ShowErrorMessage(Parent: PGtkWidget; Message: String);
+
+    // NUEVO: Funciones alternativas completamente seguras
+    class function ShowSafeMessageDialog(Parent: PGtkWidget; Title, Message: String): Integer;
+    class procedure ShowSafeInfoMessage(Parent: PGtkWidget; Message: String);
+    class procedure ShowSafeErrorMessage(Parent: PGtkWidget; Message: String);
   end;
 
 implementation
@@ -128,7 +138,7 @@ end;
 
 procedure TBaseWindow.CenterOnParent;
 begin
-  if FWindow <> nil then
+  if (FWindow <> nil) and (FParentWindow <> nil) then
     gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER_ON_PARENT);
 end;
 
@@ -140,24 +150,26 @@ class function TUIUtils.CreateLabel(Text: String; Bold: Boolean): PGtkWidget;
 begin
   Result := gtk_label_new(PChar(Text));
   if Bold then
-  begin
-    // Agregar markup para texto en negrita
     gtk_label_set_markup(GTK_LABEL(Result), PChar('<b>' + Text + '</b>'));
-  end;
 end;
 
-class function TUIUtils.CreateButton(Text: String; Callback: Pointer; Data: Pointer): PGtkWidget;
+class function TUIUtils.CreateButton(Text: String; Callback: TButtonCallback; Data: Pointer): PGtkWidget;
 begin
   Result := gtk_button_new_with_label(PChar(Text));
-  if Callback <> nil then
-    g_signal_connect(Result, 'clicked', G_CALLBACK(Callback), Data);
+  if Assigned(Callback) then
+    g_signal_connect(G_OBJECT(Result), 'clicked', G_CALLBACK(Callback), Data);
 end;
 
 class function TUIUtils.CreateEntry(Placeholder: String): PGtkWidget;
 begin
   Result := gtk_entry_new;
-  if Placeholder <> '' then
-    gtk_entry_set_text(GTK_ENTRY(Result), PChar(Placeholder));
+  // CORREGIDO: GTK2 no tiene placeholder text nativo
+  // Se puede simular con el valor inicial si es necesario
+  if Length(Placeholder) > 0 then
+  begin
+    // Simplemente ignoramos el placeholder en GTK2 o usamos otro método
+    // gtk_entry_set_text(GTK_ENTRY(Result), PChar(Placeholder));
+  end;
 end;
 
 class function TUIUtils.CreateTextView: PGtkWidget;
@@ -176,8 +188,7 @@ class function TUIUtils.CreateScrolledWindow: PGtkWidget;
 begin
   Result := gtk_scrolled_window_new(nil, nil);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(Result),
-                                GTK_POLICY_AUTOMATIC,
-                                GTK_POLICY_AUTOMATIC);
+                                GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 end;
 
 class function TUIUtils.CreateHBox(Spacing: Integer): PGtkWidget;
@@ -202,20 +213,32 @@ begin
   Result := gtk_combo_box_new_text;
 end;
 
+// CORREGIDO: Funciones de diálogo compatibles con GTK2
 class function TUIUtils.ShowMessageDialog(Parent: PGtkWidget; MessageType: TGtkMessageType;
                                         Title, Message: String): Integer;
 var
   Dialog: PGtkWidget;
 begin
-  Dialog := gtk_message_dialog_new(GTK_WINDOW(Parent),
-                                  GTK_DIALOG_MODAL,
-                                  MessageType,
-                                  GTK_BUTTONS_OK,
-                                  PChar(Message));
-  gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
+  try
+    // CORREGIDO: Usar solo tipos de mensaje seguros en GTK2
+    Dialog := gtk_message_dialog_new(GTK_WINDOW(Parent),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_INFO,  // CAMBIADO: Usar solo INFO para evitar iconos problemáticos
+                                    GTK_BUTTONS_OK,    // CAMBIADO: Usar botones estándar
+                                    PChar(Message));
 
-  Result := gtk_dialog_run(GTK_DIALOG(Dialog));
-  gtk_widget_destroy(Dialog);
+    gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
+
+    Result := gtk_dialog_run(GTK_DIALOG(Dialog));
+    gtk_widget_destroy(Dialog);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error en ShowMessageDialog: ', E.Message);
+      // Fallback: usar función segura
+      Result := ShowSafeMessageDialog(Parent, Title, Message);
+    end;
+  end;
 end;
 
 class function TUIUtils.ShowConfirmDialog(Parent: PGtkWidget; Title, Message: String): Boolean;
@@ -223,27 +246,117 @@ var
   Dialog: PGtkWidget;
   Response: Integer;
 begin
-  Dialog := gtk_message_dialog_new(GTK_WINDOW(Parent),
-                                  GTK_DIALOG_MODAL,
-                                  GTK_MESSAGE_QUESTION,
-                                  GTK_BUTTONS_YES_NO,
-                                  PChar(Message));
-  gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
+  try
+    // CORREGIDO: Crear diálogo de confirmación simple
+    Dialog := gtk_message_dialog_new(GTK_WINDOW(Parent),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_QUESTION,
+                                    GTK_BUTTONS_YES_NO,
+                                    PChar(Message));
 
-  Response := gtk_dialog_run(GTK_DIALOG(Dialog));
-  gtk_widget_destroy(Dialog);
+    gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
 
-  Result := (Response = GTK_RESPONSE_YES);
+    Response := gtk_dialog_run(GTK_DIALOG(Dialog));
+    gtk_widget_destroy(Dialog);
+
+    Result := (Response = GTK_RESPONSE_YES);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error en ShowConfirmDialog: ', E.Message);
+      // Fallback: asumir No como respuesta segura
+      Result := False;
+    end;
+  end;
 end;
 
 class procedure TUIUtils.ShowInfoMessage(Parent: PGtkWidget; Message: String);
 begin
-  ShowMessageDialog(Parent, GTK_MESSAGE_INFO, 'Información', Message);
+  try
+    ShowMessageDialog(Parent, GTK_MESSAGE_INFO, 'Información', Message);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error en ShowInfoMessage: ', E.Message);
+      // Fallback: usar función segura
+      ShowSafeInfoMessage(Parent, Message);
+    end;
+  end;
 end;
 
 class procedure TUIUtils.ShowErrorMessage(Parent: PGtkWidget; Message: String);
 begin
-  ShowMessageDialog(Parent, GTK_MESSAGE_ERROR, 'Error', Message);
+  try
+    ShowMessageDialog(Parent, GTK_MESSAGE_ERROR, 'Error', Message);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error en ShowErrorMessage: ', E.Message);
+      // Fallback: usar función segura
+      ShowSafeErrorMessage(Parent, Message);
+    end;
+  end;
+end;
+
+// NUEVO: Funciones alternativas completamente seguras sin GTK message dialogs
+class function TUIUtils.ShowSafeMessageDialog(Parent: PGtkWidget; Title, Message: String): Integer;
+var
+  Dialog: PGtkWidget;
+  VBox: PGtkWidget;
+  HBox: PGtkWidget;
+  Label1: PGtkWidget;
+  Button: PGtkWidget;
+begin
+  // CORREGIDO: Crear diálogo básico manualmente compatible con GTK2
+  Dialog := gtk_dialog_new;
+  gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
+  gtk_window_set_modal(GTK_WINDOW(Dialog), True);
+  gtk_window_set_default_size(GTK_WINDOW(Dialog), 300, 150);
+
+  if Parent <> nil then
+  begin
+    gtk_window_set_transient_for(GTK_WINDOW(Dialog), GTK_WINDOW(Parent));
+    gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+  end
+  else
+    gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER);
+
+  // CORREGIDO: Obtener área de contenido de forma compatible con GTK2
+  VBox := GTK_DIALOG(Dialog)^.vbox;
+  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
+
+  // Agregar mensaje
+  Label1 := CreateLabel(Message);
+  gtk_misc_set_alignment(GTK_MISC(Label1), 0.5, 0.5);
+  gtk_label_set_line_wrap(GTK_LABEL(Label1), True);
+  gtk_box_pack_start(GTK_BOX(VBox), Label1, True, True, 10);
+
+  // CORREGIDO: Agregar botón de forma compatible con GTK2
+  HBox := CreateHBox(10);
+  gtk_box_pack_start(GTK_BOX(VBox), HBox, False, False, 10);
+
+  Button := gtk_button_new_with_label('OK');
+  gtk_box_pack_start(GTK_BOX(HBox), Button, True, False, 0);
+
+  // CORREGIDO: Conectar respuesta manualmente
+  g_signal_connect_swapped(G_OBJECT(Button), 'clicked',
+                           G_CALLBACK(@gtk_widget_destroy), Dialog);
+
+  gtk_widget_show_all(Dialog);
+  Result := gtk_dialog_run(GTK_DIALOG(Dialog));
+
+  if GTK_IS_WIDGET(Dialog) then
+    gtk_widget_destroy(Dialog);
+end;
+
+class procedure TUIUtils.ShowSafeInfoMessage(Parent: PGtkWidget; Message: String);
+begin
+  ShowSafeMessageDialog(Parent, 'Información', Message);
+end;
+
+class procedure TUIUtils.ShowSafeErrorMessage(Parent: PGtkWidget; Message: String);
+begin
+  ShowSafeMessageDialog(Parent, 'Error', Message);
 end;
 
 end.

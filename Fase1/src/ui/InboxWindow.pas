@@ -197,15 +197,32 @@ end;
 
 procedure TInboxWindow.SortEmails;
 var
-  UserInbox: TEmailList;
+  Emails: TEmailList;
 begin
-  if not IsUserLoggedIn then Exit;
+  if CurrentUser = nil then Exit;
 
-  UserInbox := GetUserInbox(CurrentUser^.Email);
-  UserInbox.SortBySubject;
+  Emails := GetUserEmailsReceived(CurrentUser^.Email);
+  if Emails = nil then
+  begin
+    TUIUtils.ShowSafeErrorMessage(FWindow, 'No se pudieron obtener los emails');
+    Exit;
+  end;
 
-  RefreshInbox;
-  TUIUtils.ShowInfoMessage(FWindow, 'Correos ordenados por asunto alfabéticamente');
+  try
+    Emails.SortBySubject;
+
+    TUIUtils.ShowSafeInfoMessage(FWindow, 'Correos ordenados por asunto alfabéticamente');
+
+    // CAMBIAR ESTA LÍNEA:
+    // LoadEmails;
+    // POR:
+    RefreshInbox;
+  except
+    on E: Exception do
+    begin
+      TUIUtils.ShowSafeErrorMessage(FWindow, 'Error al ordenar emails: ' + E.Message);
+    end;
+  end;
 end;
 
 procedure TInboxWindow.DeleteSelectedEmail;

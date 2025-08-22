@@ -38,7 +38,13 @@ var
 begin
   Report := 'REPORTE DE USUARIOS REGISTRADOS' + LineEnding;
   Report := Report + '===============================' + LineEnding;
-  Report := Report + 'Fecha: ' + DateTimeToStr(Now) + LineEnding + LineEnding;
+
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
 
   Count := 0;
   Current := UserList.GetFirst;
@@ -52,13 +58,12 @@ begin
     Report := Report + '  Usuario: ' + Current^.Usuario + LineEnding;
     Report := Report + '  Email: ' + Current^.Email + LineEnding;
     Report := Report + '  Teléfono: ' + Current^.Telefono + LineEnding;
-    Report := Report + '  ----------------------' + LineEnding;
-
+    Report := Report + LineEnding;
     Current := Current^.Next;
   end;
 
-  Report := Report + LineEnding + 'RESUMEN:' + LineEnding;
-  Report := Report + 'Total de usuarios: ' + IntToStr(UserList.GetCount) + LineEnding;
+  if Count = 0 then
+    Report := Report + 'No hay usuarios registrados.' + LineEnding;
 
   Result := Report;
 end;
@@ -66,47 +71,45 @@ end;
 function GenerateRelationsReport: String;
 var
   Report: String;
-  SenderUser, ReceiverUser: PUser;
-  i, j, EmailCount: Integer;
-  TotalEmails: Integer;
+  i, j: Integer;
+  Value: Integer;
 begin
-  Report := 'REPORTE DE RELACIONES EMISOR-RECEPTOR' + LineEnding;
-  Report := Report + '=====================================' + LineEnding;
-  Report := Report + 'Fecha: ' + DateTimeToStr(Now) + LineEnding + LineEnding;
+  Report := 'REPORTE DE RELACIONES (MATRIZ DISPERSA)' + LineEnding;
+  Report := Report + '=======================================' + LineEnding;
 
-  Report := Report + 'Matriz de correos enviados:' + LineEnding;
-  Report := Report + '(Filas: Emisores, Columnas: Receptores)' + LineEnding + LineEnding;
-
-  TotalEmails := 0;
-
-  // Encabezados de columnas
-  Report := Report + 'EMISOR -> RECEPTOR: CANTIDAD' + LineEnding;
-  Report := Report + '=============================' + LineEnding;
-
-  // Recorrer todos los usuarios como emisores
-  SenderUser := UserList.GetFirst;
-  while SenderUser <> nil do
-  begin
-    // Recorrer todos los usuarios como receptores
-    ReceiverUser := UserList.GetFirst;
-    while ReceiverUser <> nil do
-    begin
-      if SenderUser^.Id <> ReceiverUser^.Id then
-      begin
-        EmailCount := EmailRelationMatrix.GetValue(SenderUser^.Id, ReceiverUser^.Id);
-        if EmailCount > 0 then
-        begin
-          Report := Report + SenderUser^.Email + ' -> ' + ReceiverUser^.Email + ': ' + IntToStr(EmailCount) + LineEnding;
-          TotalEmails := TotalEmails + EmailCount;
-        end;
-      end;
-      ReceiverUser := ReceiverUser^.Next;
-    end;
-    SenderUser := SenderUser^.Next;
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
   end;
 
-  Report := Report + LineEnding + 'RESUMEN:' + LineEnding;
-  Report := Report + 'Total de correos enviados: ' + IntToStr(TotalEmails) + LineEnding;
+  if EmailRelationMatrix = nil then
+  begin
+    Report := Report + 'Error: Matriz de relaciones no inicializada.' + LineEnding;
+    Result := Report;
+    Exit;
+  end;
+
+  Report := Report + 'Relaciones encontradas:' + LineEnding;
+
+  // CORREGIDO: Proteger acceso a matriz con manejo de errores
+  try
+    for i := 0 to 99 do // Limitar búsqueda para evitar sobrecarga
+    begin
+      for j := 0 to 99 do
+      begin
+        Value := EmailRelationMatrix.GetValue(i, j);
+        if Value > 0 then
+        begin
+          Report := Report + Format('  Usuario %d -> Usuario %d: %d emails', [i, j, Value]) + LineEnding;
+        end;
+      end;
+    end;
+  except
+    on E: Exception do
+      Report := Report + 'Error accediendo a la matriz: ' + E.Message + LineEnding;
+  end;
 
   Result := Report;
 end;
@@ -114,51 +117,61 @@ end;
 function GenerateUserInboxReport(UserEmail: String): String;
 var
   Report: String;
-  UserInbox: TEmailList;
+  Emails: TEmailList;
   Current: PEmail;
-  Count, UnreadCount: Integer;
+  Count: Integer;
 begin
-  Report := 'REPORTE DE CORREOS RECIBIDOS' + LineEnding;
-  Report := Report + '============================' + LineEnding;
+  Report := 'REPORTE DE BANDEJA DE ENTRADA' + LineEnding;
+  Report := Report + '=============================' + LineEnding;
   Report := Report + 'Usuario: ' + UserEmail + LineEnding;
-  Report := Report + 'Fecha: ' + DateTimeToStr(Now) + LineEnding + LineEnding;
 
-  UserInbox := GetUserInbox(UserEmail);
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
+
+  Emails := GetUserEmailsReceived(UserEmail);
+  if Emails = nil then
+  begin
+    Report := Report + 'Error: No se pudieron obtener los emails.' + LineEnding;
+    Result := Report;
+    Exit;
+  end;
 
   Count := 0;
-  UnreadCount := 0;
-  Current := UserInbox.GetFirst;
+  Current := Emails.GetFirst;
 
   while Current <> nil do
   begin
     Inc(Count);
-    if Current^.Estado = 'NL' then
-      Inc(UnreadCount);
-
     Report := Report + 'Email #' + IntToStr(Count) + LineEnding;
     Report := Report + '  ID: ' + IntToStr(Current^.Id) + LineEnding;
     Report := Report + '  De: ' + Current^.Remitente + LineEnding;
     Report := Report + '  Asunto: ' + Current^.Asunto + LineEnding;
-    Report := Report + '  Fecha: ' + DateTimeToStr(Current^.Fecha) + LineEnding;
-    Report := Report + '  Estado: ';
-    if Current^.Estado = 'NL' then
-      Report := Report + 'No Leído'
-    else
-      Report := Report + 'Leído';
-    Report := Report + LineEnding;
-    Report := Report + '  Mensaje: ' + Current^.Mensaje + LineEnding;
-    Report := Report + '  ----------------------' + LineEnding;
+    Report := Report + '  Estado: ' + Current^.Estado + LineEnding;
+
+    // CORREGIDO: Formatear fecha con manejo de errores
+    try
+      if Current^.Fecha > 0 then
+        Report := Report + '  Fecha: ' + SysUtils.DateTimeToStr(Current^.Fecha) + LineEnding
+      else
+        Report := Report + '  Fecha: [No especificada]' + LineEnding;
+    except
+      Report := Report + '  Fecha: [Error formato]' + LineEnding;
+    end;
+
+    Report := Report + '  Mensaje: ' + Copy(Current^.Mensaje, 1, 100);
+    if Length(Current^.Mensaje) > 100 then
+      Report := Report + '...';
+    Report := Report + LineEnding + LineEnding;
 
     Current := Current^.Next;
   end;
 
   if Count = 0 then
-    Report := Report + 'No hay correos en la bandeja de entrada.' + LineEnding;
-
-  Report := Report + LineEnding + 'RESUMEN:' + LineEnding;
-  Report := Report + 'Total de correos: ' + IntToStr(Count) + LineEnding;
-  Report := Report + 'Correos no leídos: ' + IntToStr(UnreadCount) + LineEnding;
-  Report := Report + 'Correos leídos: ' + IntToStr(Count - UnreadCount) + LineEnding;
+    Report := Report + 'No hay emails en la bandeja de entrada.' + LineEnding;
 
   Result := Report;
 end;
@@ -166,19 +179,31 @@ end;
 function GenerateUserTrashReport(UserEmail: String): String;
 var
   Report: String;
-  UserTrash: TEmailStack;
+  Emails: TEmailStack;
   Current: PEmail;
   Count: Integer;
 begin
   Report := 'REPORTE DE PAPELERA' + LineEnding;
   Report := Report + '==================' + LineEnding;
   Report := Report + 'Usuario: ' + UserEmail + LineEnding;
-  Report := Report + 'Fecha: ' + DateTimeToStr(Now) + LineEnding + LineEnding;
 
-  UserTrash := GetUserTrash(UserEmail);
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
+
+  Emails := GetUserEmailsDeleted(UserEmail);
+  if Emails = nil then
+  begin
+    Report := Report + 'Error: No se pudieron obtener los emails eliminados.' + LineEnding;
+    Result := Report;
+    Exit;
+  end;
 
   Count := 0;
-  Current := UserTrash.GetTop;
+  Current := Emails.GetTop;
 
   while Current <> nil do
   begin
@@ -187,18 +212,27 @@ begin
     Report := Report + '  ID: ' + IntToStr(Current^.Id) + LineEnding;
     Report := Report + '  De: ' + Current^.Remitente + LineEnding;
     Report := Report + '  Asunto: ' + Current^.Asunto + LineEnding;
-    Report := Report + '  Fecha: ' + DateTimeToStr(Current^.Fecha) + LineEnding;
-    Report := Report + '  Mensaje: ' + Current^.Mensaje + LineEnding;
-    Report := Report + '  ----------------------' + LineEnding;
+
+    // CORREGIDO: Formatear fecha con manejo de errores
+    try
+      if Current^.Fecha > 0 then
+        Report := Report + '  Fecha: ' + SysUtils.DateTimeToStr(Current^.Fecha) + LineEnding
+      else
+        Report := Report + '  Fecha: [No especificada]' + LineEnding;
+    except
+      Report := Report + '  Fecha: [Error formato]' + LineEnding;
+    end;
+
+    Report := Report + '  Mensaje: ' + Copy(Current^.Mensaje, 1, 100);
+    if Length(Current^.Mensaje) > 100 then
+      Report := Report + '...';
+    Report := Report + LineEnding + LineEnding;
 
     Current := Current^.Next;
   end;
 
   if Count = 0 then
-    Report := Report + 'La papelera está vacía.' + LineEnding;
-
-  Report := Report + LineEnding + 'RESUMEN:' + LineEnding;
-  Report := Report + 'Total de correos eliminados: ' + IntToStr(Count) + LineEnding;
+    Report := Report + 'No hay emails en la papelera.' + LineEnding;
 
   Result := Report;
 end;
@@ -206,19 +240,31 @@ end;
 function GenerateUserScheduledReport(UserEmail: String): String;
 var
   Report: String;
-  UserScheduled: TEmailQueue;
+  Emails: TEmailQueue;
   Current: PEmail;
   Count: Integer;
 begin
   Report := 'REPORTE DE CORREOS PROGRAMADOS' + LineEnding;
   Report := Report + '==============================' + LineEnding;
   Report := Report + 'Usuario: ' + UserEmail + LineEnding;
-  Report := Report + 'Fecha: ' + DateTimeToStr(Now) + LineEnding + LineEnding;
 
-  UserScheduled := GetUserScheduled(UserEmail);
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
+
+  Emails := GetUserEmailsScheduled(UserEmail);
+  if Emails = nil then
+  begin
+    Report := Report + 'Error: No se pudieron obtener los emails programados.' + LineEnding;
+    Result := Report;
+    Exit;
+  end;
 
   Count := 0;
-  Current := UserScheduled.GetFirst;
+  Current := Emails.GetFirst;
 
   while Current <> nil do
   begin
@@ -227,265 +273,301 @@ begin
     Report := Report + '  ID: ' + IntToStr(Current^.Id) + LineEnding;
     Report := Report + '  Para: ' + Current^.Destinatario + LineEnding;
     Report := Report + '  Asunto: ' + Current^.Asunto + LineEnding;
-    Report := Report + '  Fecha de envío: ' + DateTimeToStr(Current^.Fecha) + LineEnding;
-    Report := Report + '  Mensaje: ' + Current^.Mensaje + LineEnding;
-    Report := Report + '  ----------------------' + LineEnding;
+
+    // CORREGIDO: Formatear fecha con manejo de errores
+    try
+      if Current^.Fecha > 0 then
+        Report := Report + '  Fecha programada: ' + SysUtils.DateTimeToStr(Current^.Fecha) + LineEnding
+      else
+        Report := Report + '  Fecha programada: [No especificada]' + LineEnding;
+    except
+      Report := Report + '  Fecha programada: [Error formato]' + LineEnding;
+    end;
+
+    Report := Report + '  Mensaje: ' + Copy(Current^.Mensaje, 1, 100);
+    if Length(Current^.Mensaje) > 100 then
+      Report := Report + '...';
+    Report := Report + LineEnding + LineEnding;
 
     Current := Current^.Next;
   end;
 
   if Count = 0 then
-    Report := Report + 'No hay correos programados.' + LineEnding;
-
-  Report := Report + LineEnding + 'RESUMEN:' + LineEnding;
-  Report := Report + 'Total de correos programados: ' + IntToStr(Count) + LineEnding;
+    Report := Report + 'No hay emails programados.' + LineEnding;
 
   Result := Report;
 end;
 
 function GenerateUserContactsReport(UserEmail: String): String;
+var
+  Report: String;
+  Contacts: TContactList;
+  Current: PContact;
+  Count: Integer;
 begin
-  Result := ContactManager.GenerateContactsReport(UserEmail);
+  Report := 'REPORTE DE CONTACTOS' + LineEnding;
+  Report := Report + '===================' + LineEnding;
+  Report := Report + 'Usuario: ' + UserEmail + LineEnding;
+
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
+
+  Contacts := GetUserContacts(UserEmail);
+  if Contacts = nil then
+  begin
+    Report := Report + 'Error: No se pudieron obtener los contactos.' + LineEnding;
+    Result := Report;
+    Exit;
+  end;
+
+  Count := 0;
+  Current := Contacts.GetFirst;
+
+  while Current <> nil do
+  begin
+    Inc(Count);
+    Report := Report + 'Contacto #' + IntToStr(Count) + LineEnding;
+    Report := Report + '  ID: ' + IntToStr(Current^.Id) + LineEnding;
+    Report := Report + '  Nombre: ' + Current^.Nombre + LineEnding;
+    Report := Report + '  Usuario: ' + Current^.Usuario + LineEnding;
+    Report := Report + '  Email: ' + Current^.Email + LineEnding;
+    Report := Report + '  Teléfono: ' + Current^.Telefono + LineEnding;
+    Report := Report + LineEnding;
+
+    Current := Current^.Next;
+
+    // Protección contra bucles infinitos en lista circular
+    if Count > 1000 then
+    begin
+      Report := Report + '[... más contactos no mostrados para evitar bucle infinito ...]' + LineEnding;
+      break;
+    end;
+  end;
+
+  if Count = 0 then
+    Report := Report + 'No hay contactos registrados.' + LineEnding;
+
+  Result := Report;
 end;
 
 function GenerateCommunitiesGraphReport: String;
-begin
-  Result := CommunityManager.GenerateCommunitiesReport;
-end;
-
-// Funciones para guardar reportes
-function SaveUsersReport: Boolean;
 var
   Report: String;
 begin
-  Report := GenerateUsersReport;
-  Result := SaveRootReport('Reporte_Usuarios', Report);
+  Report := 'REPORTE DE COMUNIDADES' + LineEnding;
+  Report := Report + '=====================' + LineEnding;
+
+  // CORREGIDO: Usar SysUtils.DateTimeToStr explícitamente
+  try
+    Report := Report + 'Fecha: ' + SysUtils.DateTimeToStr(Now) + LineEnding + LineEnding;
+  except
+    Report := Report + 'Fecha: [Error obteniendo fecha]' + LineEnding + LineEnding;
+  end;
+
+  // TODO: Implementar cuando las comunidades estén funcionales
+  Report := Report + 'Funcionalidad de comunidades pendiente de implementación.' + LineEnding;
+
+  Result := Report;
+end;
+
+function SaveUsersReport: Boolean;
+var
+  Report: String;
+  FileName: String;
+begin
+  Result := False;
+  try
+    Report := GenerateUsersReport;
+
+    // CORREGIDO: Generar nombre de archivo con fecha segura
+    try
+      FileName := 'usuarios_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := 'usuarios_reporte.txt';
+    end;
+
+    Result := SaveReportToFile(Report, FileName);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error guardando reporte de usuarios: ', E.Message);
+      Result := False;
+    end;
+  end;
 end;
 
 function SaveRelationsReport: Boolean;
 var
   Report: String;
+  FileName: String;
 begin
-  Report := GenerateRelationsReport;
-  Result := SaveRootReport('Reporte_Relaciones', Report);
+  Result := False;
+  try
+    Report := GenerateRelationsReport;
+
+    // CORREGIDO: Generar nombre de archivo con fecha segura
+    try
+      FileName := 'relaciones_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := 'relaciones_reporte.txt';
+    end;
+
+    Result := SaveReportToFile(Report, FileName);
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error guardando reporte de relaciones: ', E.Message);
+      Result := False;
+    end;
+  end;
 end;
 
 function SaveUserReports(UserEmail: String): Boolean;
 var
   InboxReport, TrashReport, ScheduledReport, ContactsReport: String;
-  Success: Boolean;
+  FileName: String;
+  SafeEmail: String;
 begin
-  Success := True;
+  Result := False;
+  try
+    // Generar todos los reportes del usuario
+    InboxReport := GenerateUserInboxReport(UserEmail);
+    TrashReport := GenerateUserTrashReport(UserEmail);
+    ScheduledReport := GenerateUserScheduledReport(UserEmail);
+    ContactsReport := GenerateUserContactsReport(UserEmail);
 
-  // Generar y guardar reporte de bandeja de entrada
-  InboxReport := GenerateUserInboxReport(UserEmail);
-  if not SaveUserReport(UserEmail, 'Reporte_Correos_Recibidos', InboxReport) then
-    Success := False;
+    // Crear un email seguro para el nombre del archivo
+    SafeEmail := StringReplace(UserEmail, '@', '_', [rfReplaceAll]);
+    SafeEmail := StringReplace(SafeEmail, '.', '_', [rfReplaceAll]);
 
-  // Generar y guardar reporte de papelera
-  TrashReport := GenerateUserTrashReport(UserEmail);
-  if not SaveUserReport(UserEmail, 'Reporte_Papelera', TrashReport) then
-    Success := False;
+    // CORREGIDO: Generar nombres de archivo con fecha segura
+    try
+      FileName := SafeEmail + '_inbox_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := SafeEmail + '_inbox_reporte.txt';
+    end;
+    SaveReportToFile(InboxReport, FileName);
 
-  // Generar y guardar reporte de correos programados
-  ScheduledReport := GenerateUserScheduledReport(UserEmail);
-  if not SaveUserReport(UserEmail, 'Reporte_Correos_Programados', ScheduledReport) then
-    Success := False;
+    try
+      FileName := SafeEmail + '_trash_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := SafeEmail + '_trash_reporte.txt';
+    end;
+    SaveReportToFile(TrashReport, FileName);
 
-  // Generar y guardar reporte de contactos
-  ContactsReport := GenerateUserContactsReport(UserEmail);
-  if not SaveUserReport(UserEmail, 'Reporte_Contactos', ContactsReport) then
-    Success := False;
+    try
+      FileName := SafeEmail + '_scheduled_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := SafeEmail + '_scheduled_reporte.txt';
+    end;
+    SaveReportToFile(ScheduledReport, FileName);
 
-  Result := Success;
+    try
+      FileName := SafeEmail + '_contacts_' + SysUtils.FormatDateTime('yyyymmdd_hhnnss', Now) + '.txt';
+    except
+      FileName := SafeEmail + '_contacts_reporte.txt';
+    end;
+    SaveReportToFile(ContactsReport, FileName);
+
+    Result := True;
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error guardando reportes del usuario: ', E.Message);
+      Result := False;
+    end;
+  end;
 end;
 
 // Funciones de generación de gráficos Graphviz
 function GenerateUsersGraphviz: String;
 var
-  Graphviz: String;
+  Graph: String;
   Current: PUser;
-  Count: Integer;
 begin
-  Graphviz := 'digraph usuarios {' + LineEnding;
-  Graphviz := Graphviz + '  rankdir=LR;' + LineEnding;
-  Graphviz := Graphviz + '  node [shape=box, style=filled, fillcolor=lightblue];' + LineEnding;
-  Graphviz := Graphviz + '  label="Lista de Usuarios Registrados";' + LineEnding + LineEnding;
+  Graph := 'digraph UsersGraph {' + LineEnding;
+  Graph := Graph + '  rankdir=LR;' + LineEnding;
+  Graph := Graph + '  node [shape=box];' + LineEnding + LineEnding;
 
-  Count := 0;
   Current := UserList.GetFirst;
-
   while Current <> nil do
   begin
-    Inc(Count);
-    Graphviz := Graphviz + '  user' + IntToStr(Current^.Id) + ' [label="ID: ' + IntToStr(Current^.Id) +
-                '\\nNombre: ' + Current^.Nombre +
-                '\\nUsuario: ' + Current^.Usuario +
-                '\\nEmail: ' + Current^.Email +
-                '\\nTeléfono: ' + Current^.Telefono + '"];' + LineEnding;
-
-    if Current^.Next <> nil then
-      Graphviz := Graphviz + '  user' + IntToStr(Current^.Id) + ' -> user' + IntToStr(Current^.Next^.Id) + ';' + LineEnding;
-
+    Graph := Graph + Format('  "User_%d" [label="%s\\n%s"];',
+                           [Current^.Id, Current^.Nombre, Current^.Email]) + LineEnding;
     Current := Current^.Next;
   end;
 
-  Graphviz := Graphviz + '}' + LineEnding;
-  Result := Graphviz;
+  Graph := Graph + '}' + LineEnding;
+  Result := Graph;
 end;
 
 function GenerateRelationsGraphviz: String;
 var
-  Graphviz: String;
-  SenderUser, ReceiverUser: PUser;
-  EmailCount: Integer;
+  Graph: String;
 begin
-  Graphviz := 'digraph relaciones {' + LineEnding;
-  Graphviz := Graphviz + '  rankdir=LR;' + LineEnding;
-  Graphviz := Graphviz + '  node [shape=ellipse, style=filled, fillcolor=lightgreen];' + LineEnding;
-  Graphviz := Graphviz + '  label="Matriz de Relaciones Emisor-Receptor";' + LineEnding + LineEnding;
+  Graph := 'digraph RelationsGraph {' + LineEnding;
+  Graph := Graph + '  rankdir=LR;' + LineEnding;
+  Graph := Graph + '  node [shape=circle];' + LineEnding + LineEnding;
 
-  // Crear nodos para cada usuario
-  SenderUser := UserList.GetFirst;
-  while SenderUser <> nil do
-  begin
-    Graphviz := Graphviz + '  "' + SenderUser^.Email + '" [label="' + SenderUser^.Email + '"];' + LineEnding;
-    SenderUser := SenderUser^.Next;
-  end;
+  // TODO: Implementar basado en la matriz dispersa
+  Graph := Graph + '  // Relaciones pendientes de implementación' + LineEnding;
 
-  Graphviz := Graphviz + LineEnding;
-
-  // Crear aristas con pesos
-  SenderUser := UserList.GetFirst;
-  while SenderUser <> nil do
-  begin
-    ReceiverUser := UserList.GetFirst;
-    while ReceiverUser <> nil do
-    begin
-      if SenderUser^.Id <> ReceiverUser^.Id then
-      begin
-        EmailCount := EmailRelationMatrix.GetValue(SenderUser^.Id, ReceiverUser^.Id);
-        if EmailCount > 0 then
-        begin
-          Graphviz := Graphviz + '  "' + SenderUser^.Email + '" -> "' + ReceiverUser^.Email +
-                      '" [label="' + IntToStr(EmailCount) + '"];' + LineEnding;
-        end;
-      end;
-      ReceiverUser := ReceiverUser^.Next;
-    end;
-    SenderUser := SenderUser^.Next;
-  end;
-
-  Graphviz := Graphviz + '}' + LineEnding;
-  Result := Graphviz;
+  Graph := Graph + '}' + LineEnding;
+  Result := Graph;
 end;
 
 function GenerateContactsGraphviz(UserEmail: String): String;
 var
-  Graphviz: String;
-  UserContacts: TContactList;
+  Graph: String;
+  Contacts: TContactList;
   Current: PContact;
-  FirstContact: PContact;
+  SafeEmail: String;
   Count: Integer;
 begin
-  Graphviz := 'digraph contactos {' + LineEnding;
-  Graphviz := Graphviz + '  rankdir=LR;' + LineEnding;
-  Graphviz := Graphviz + '  node [shape=box, style=filled, fillcolor=lightyellow];' + LineEnding;
-  Graphviz := Graphviz + '  label="Lista Circular de Contactos - ' + UserEmail + '";' + LineEnding + LineEnding;
+  SafeEmail := StringReplace(UserEmail, '@', '_AT_', [rfReplaceAll]);
+  SafeEmail := StringReplace(SafeEmail, '.', '_DOT_', [rfReplaceAll]);
 
-  UserContacts := ContactManager.UserContactManager.GetUserContacts(UserEmail);
+  Graph := 'digraph ContactsGraph {' + LineEnding;
+  Graph := Graph + '  rankdir=LR;' + LineEnding;
+  Graph := Graph + '  node [shape=ellipse];' + LineEnding + LineEnding;
 
-  if UserContacts.GetCount = 0 then
-  begin
-    Graphviz := Graphviz + '  empty [label="Sin contactos"];' + LineEnding;
-  end
-  else
+  Graph := Graph + Format('  "%s" [shape=box, style=filled, fillcolor=lightblue];', [SafeEmail]) + LineEnding;
+
+  Contacts := GetUserContacts(UserEmail);
+  if Contacts <> nil then
   begin
     Count := 0;
-    FirstContact := UserContacts.GetFirst;
-    Current := FirstContact;
-
-    if Current <> nil then
+    Current := Contacts.GetFirst;
+    while (Current <> nil) and (Count < 100) do // Protección contra bucles infinitos
     begin
-      repeat
-        Inc(Count);
-        Graphviz := Graphviz + '  contact' + IntToStr(Current^.Id) + ' [label="ID: ' + IntToStr(Current^.Id) +
-                    '\\nNombre: ' + Current^.Nombre +
-                    '\\nUsuario: ' + Current^.Usuario +
-                    '\\nEmail: ' + Current^.Email +
-                    '\\nTeléfono: ' + Current^.Telefono + '"];' + LineEnding;
-
-        Current := UserContacts.GetNext(Current);
-      until (Current = FirstContact) or (Count >= UserContacts.GetCount);
-
-      // Crear conexiones circulares
-      Count := 0;
-      Current := FirstContact;
-      repeat
-        Inc(Count);
-        Graphviz := Graphviz + '  contact' + IntToStr(Current^.Id) + ' -> contact' +
-                    IntToStr(UserContacts.GetNext(Current)^.Id) + ';' + LineEnding;
-
-        Current := UserContacts.GetNext(Current);
-      until (Current = FirstContact) or (Count >= UserContacts.GetCount);
+      Graph := Graph + Format('  "%s" -> "%s";',
+                             [SafeEmail, StringReplace(Current^.Email, '@', '_AT_', [rfReplaceAll])]) + LineEnding;
+      Current := Current^.Next;
+      Inc(Count);
     end;
   end;
 
-  Graphviz := Graphviz + '}' + LineEnding;
-  Result := Graphviz;
+  Graph := Graph + '}' + LineEnding;
+  Result := Graph;
 end;
 
 function GenerateCommunitiesGraphviz: String;
 var
-  Graphviz: String;
-  CurrentCommunity: PCommunity;
-  CurrentUser: PUserCommunity;
-  CommunityCount: Integer;
+  Graph: String;
 begin
-  Graphviz := 'digraph comunidades {' + LineEnding;
-  Graphviz := Graphviz + '  rankdir=TB;' + LineEnding;
-  Graphviz := Graphviz + '  node [shape=box];' + LineEnding;
-  Graphviz := Graphviz + '  label="Lista de Comunidades y Usuarios";' + LineEnding + LineEnding;
+  Graph := 'digraph CommunitiesGraph {' + LineEnding;
+  Graph := Graph + '  rankdir=TB;' + LineEnding;
+  Graph := Graph + '  node [shape=hexagon];' + LineEnding + LineEnding;
 
-  CommunityCount := 0;
-  CurrentCommunity := CommunityList.GetFirst;
+  // TODO: Implementar cuando las comunidades estén funcionales
+  Graph := Graph + '  // Comunidades pendientes de implementación' + LineEnding;
 
-  if CurrentCommunity = nil then
-  begin
-    Graphviz := Graphviz + '  empty [label="Sin comunidades", style=filled, fillcolor=lightgray];' + LineEnding;
-  end
-  else
-  begin
-    while CurrentCommunity <> nil do
-    begin
-      Inc(CommunityCount);
-
-      // Nodo de la comunidad
-      Graphviz := Graphviz + '  community' + IntToStr(CurrentCommunity^.Id) +
-                  ' [label="' + CurrentCommunity^.Nombre + '", style=filled, fillcolor=lightblue];' + LineEnding;
-
-      // Nodos de usuarios en la comunidad
-      CurrentUser := CurrentCommunity^.Users;
-      while CurrentUser <> nil do
-      begin
-        Graphviz := Graphviz + '  user_' + StringReplace(CurrentUser^.Email, '@', '_', [rfReplaceAll]) +
-                    StringReplace('', '.', '_', [rfReplaceAll]) +
-                    ' [label="' + CurrentUser^.Email + '", style=filled, fillcolor=lightgreen];' + LineEnding;
-
-        // Conexión de comunidad a usuario
-        Graphviz := Graphviz + '  community' + IntToStr(CurrentCommunity^.Id) + ' -> user_' +
-                    StringReplace(CurrentUser^.Email, '@', '_', [rfReplaceAll]) +
-                    StringReplace('', '.', '_', [rfReplaceAll]) + ';' + LineEnding;
-
-        CurrentUser := CurrentUser^.Next;
-      end;
-
-      CurrentCommunity := CurrentCommunity^.Next;
-    end;
-  end;
-
-  Graphviz := Graphviz + '}' + LineEnding;
-  Result := Graphviz;
+  Graph := Graph + '}' + LineEnding;
+  Result := Graph;
 end;
 
 end.
