@@ -5,308 +5,214 @@ unit ProfileWindow;
 interface
 
 uses
-  GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore, UIBase, UserManager;
+  GTK2, GDK2, GLib2, SysUtils, Classes, UIBase, DataStructures, SystemCore;
 
 type
   TProfileWindow = class(TBaseWindow)
   private
-    FMainVBox: PGtkWidget;
-    FNameEntry: PGtkWidget;
-    FUserEntry: PGtkWidget;
-    FEmailLabel: PGtkWidget;
-    FPhoneEntry: PGtkWidget;
-    FUpdateButton: PGtkWidget;
-    FCancelButton: PGtkWidget;
-    FStatusLabel: PGtkWidget;
+    FMainVBox   : PGtkWidget;
+    FFormTable  : PGtkWidget;
+    FButtonBox  : PGtkWidget;
 
-    function ValidateForm: Boolean;
-    procedure ClearForm;
+    // Controles tipados (no PGtkWidget genérico)
+    FTitleLabel : PGtkLabel;
+    FEmailLabel : PGtkLabel;
 
+    FNameEntry  : PGtkEntry;   // Nombre visible
+    FUserEntry  : PGtkEntry;   // Usuario (username)
+    FPhoneEntry : PGtkEntry;   // Teléfono
+
+    FSaveButton   : PGtkWidget;
+    FCancelButton : PGtkWidget;
+
+    procedure BuildForm;
+    procedure LoadFromUser;
+    procedure SaveToUser;
   protected
     procedure SetupComponents; override;
     procedure ConnectSignals; override;
-
   public
-    constructor Create(AParent: PGtkWidget = nil);
-    destructor Destroy; override;
+    constructor Create(AParent: PGtkWidget);
     procedure LoadCurrentUser;
-    procedure UpdateProfile;
   end;
 
-// Callbacks
-procedure OnUpdateClicked(widget: PGtkWidget; data: gpointer); cdecl;
-procedure OnCancelClicked(widget: PGtkWidget; data: gpointer); cdecl;
+// Callbacks de botones
+procedure OnProfileSaveClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnProfileCancelClicked(widget: PGtkWidget; data: gpointer); cdecl;
 
 implementation
 
+// ============================================================================
+// TProfileWindow
+// ============================================================================
+
 constructor TProfileWindow.Create(AParent: PGtkWidget);
 begin
-  inherited Create('Actualizar Perfil', 450, 350, AParent);
-  LoadCurrentUser;
-end;
-
-destructor TProfileWindow.Destroy;
-begin
-  inherited;
+  inherited Create('Actualizar Perfil', 450, 300, AParent);
 end;
 
 procedure TProfileWindow.SetupComponents;
-var
-  Table: PGtkWidget;
-  ButtonsHBox: PGtkWidget;
-  Label1: PGtkWidget;
-  InfoLabel: PGtkWidget;
 begin
-  // Contenedor principal
-  FMainVBox := TUIUtils.CreateVBox(15);
+  // VBox principal
+  FMainVBox := TUIUtils.CreateVBox(10);
   gtk_container_add(GTK_CONTAINER(FWindow), FMainVBox);
-  gtk_container_set_border_width(GTK_CONTAINER(FMainVBox), 20);
+  gtk_container_set_border_width(GTK_CONTAINER(FMainVBox), 12);
 
   // Título
-  Label1 := TUIUtils.CreateLabel('Actualizar Perfil de Usuario', True);
-  gtk_label_set_markup(GTK_LABEL(Label1),
-    Pgchar(UTF8String('<span size="large" weight="bold">Actualizar Perfil de Usuario</span>')));
-  gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 10);
+  FTitleLabel := PGtkLabel(TUIUtils.CreateLabel('<b>Editar Perfil</b>', True));
+  gtk_label_set_use_markup(FTitleLabel, True);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), PGtkWidget(FTitleLabel), False, False, 0);
 
-  // Información
-  InfoLabel := TUIUtils.CreateLabel('Puedes actualizar tu nombre de usuario y número de teléfono.');
-  gtk_label_set_markup(GTK_LABEL(InfoLabel),
-    Pgchar(UTF8String('<span style="italic">Puedes actualizar tu nombre de usuario y número de teléfono.</span>')));
-  gtk_box_pack_start(GTK_BOX(FMainVBox), InfoLabel, False, False, 5);
+  // Formulario
+  BuildForm;
 
-  // Tabla para organizar campos
-  Table := TUIUtils.CreateTable(4, 2);
-  gtk_box_pack_start(GTK_BOX(FMainVBox), Table, True, True, 15);
+  // Botonera
+  FButtonBox := TUIUtils.CreateHBox(10);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FButtonBox, False, False, 0);
 
-  // Campo Nombre Completo
-  Label1 := TUIUtils.CreateLabel('Nombre Completo:', True);
-  gtk_table_attach(GTK_TABLE(Table), Label1, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 5, 8);
+  FSaveButton   := TUIUtils.CreateButton('💾 Guardar', @OnProfileSaveClicked, Self);
+  FCancelButton := TUIUtils.CreateButton('✖ Cancelar', @OnProfileCancelClicked, Self);
 
-  FNameEntry := TUIUtils.CreateEntry;
-  gtk_table_attach(GTK_TABLE(Table), FNameEntry, 1, 2, 0, 1,
-                  GTK_EXPAND or GTK_FILL, GTK_FILL, 5, 8);
+  gtk_widget_set_size_request(FSaveButton,   100, 34);
+  gtk_widget_set_size_request(FCancelButton, 100, 34);
 
-  // Campo Nombre de Usuario
-  Label1 := TUIUtils.CreateLabel('Nombre de Usuario:', True);
-  gtk_table_attach(GTK_TABLE(Table), Label1, 0, 1, 1, 2, GTK_FILL, GTK_FILL, 5, 8);
-
-  FUserEntry := TUIUtils.CreateEntry;
-  gtk_table_attach(GTK_TABLE(Table), FUserEntry, 1, 2, 1, 2,
-                  GTK_EXPAND or GTK_FILL, GTK_FILL, 5, 8);
-
-  // Campo Email (solo lectura)
-  Label1 := TUIUtils.CreateLabel('Email:', True);
-  gtk_table_attach(GTK_TABLE(Table), Label1, 0, 1, 2, 3, GTK_FILL, GTK_FILL, 5, 8);
-
-  FEmailLabel := TUIUtils.CreateLabel('');
-  gtk_label_set_markup(GTK_LABEL(FEmailLabel),
-    Pgchar(UTF8String('<span foreground="gray">No modificable</span>')));
-  gtk_misc_set_alignment(GTK_MISC(FEmailLabel), 0.0, 0.5);
-  gtk_table_attach(GTK_TABLE(Table), FEmailLabel, 1, 2, 2, 3,
-                  GTK_EXPAND or GTK_FILL, GTK_FILL, 5, 8);
-
-  // Campo Teléfono
-  Label1 := TUIUtils.CreateLabel('Teléfono:', True);
-  gtk_table_attach(GTK_TABLE(Table), Label1, 0, 1, 3, 4, GTK_FILL, GTK_FILL, 5, 8);
-
-  FPhoneEntry := TUIUtils.CreateEntry;
-  gtk_table_attach(GTK_TABLE(Table), FPhoneEntry, 1, 2, 3, 4,
-                  GTK_EXPAND or GTK_FILL, GTK_FILL, 5, 8);
-
-  // Botones
-  ButtonsHBox := TUIUtils.CreateHBox(15);
-  gtk_box_pack_start(GTK_BOX(FMainVBox), ButtonsHBox, False, False, 15);
-
-  FUpdateButton := TUIUtils.CreateButton('💾 Actualizar', @OnUpdateClicked, Self);
-  FCancelButton := TUIUtils.CreateButton('❌ Cancelar', @OnCancelClicked, Self);
-
-  gtk_widget_set_size_request(FUpdateButton, 120, 35);
-  gtk_widget_set_size_request(FCancelButton, 120, 35);
-
-  gtk_box_pack_start(GTK_BOX(ButtonsHBox), FUpdateButton, True, False, 5);
-  gtk_box_pack_start(GTK_BOX(ButtonsHBox), FCancelButton, True, False, 5);
-
-  // Label de estado
-  FStatusLabel := TUIUtils.CreateLabel('');
-  gtk_box_pack_start(GTK_BOX(FMainVBox), FStatusLabel, False, False, 10);
+  gtk_box_pack_end(GTK_BOX(FButtonBox), FCancelButton, False, False, 0);
+  gtk_box_pack_end(GTK_BOX(FButtonBox), FSaveButton,   False, False, 0);
 end;
 
 procedure TProfileWindow.ConnectSignals;
 begin
   inherited;
+  // (Las señales de botones ya se conectaron al crearlos con CreateButton)
+end;
+
+procedure TProfileWindow.BuildForm;
+var
+  L1, L2, L3, L4: PGtkWidget;
+begin
+  FFormTable := TUIUtils.CreateTable(4, 2);
+  gtk_box_pack_start(GTK_BOX(FMainVBox), FFormTable, True, True, 0);
+
+  // Labels
+  L1 := TUIUtils.CreateLabel('Nombre:');
+  L2 := TUIUtils.CreateLabel('Usuario:');
+  L3 := TUIUtils.CreateLabel('Teléfono:');
+  L4 := TUIUtils.CreateLabel('Email:');
+
+  // Entradas (creadas tipadas)
+  FNameEntry  := PGtkEntry(gtk_entry_new);
+  FUserEntry  := PGtkEntry(gtk_entry_new);
+  FPhoneEntry := PGtkEntry(gtk_entry_new);
+
+  // Email solo lectura (label)
+  FEmailLabel := PGtkLabel(TUIUtils.CreateLabel(''));
+  gtk_label_set_selectable(FEmailLabel, True);
+
+  // Attach en tabla
+  // Fila 0: Nombre
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), L1, 0, 1, 0, 1);
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), PGtkWidget(FNameEntry), 1, 2, 0, 1);
+
+  // Fila 1: Usuario
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), L2, 0, 1, 1, 2);
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), PGtkWidget(FUserEntry), 1, 2, 1, 2);
+
+  // Fila 2: Teléfono
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), L3, 0, 1, 2, 3);
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), PGtkWidget(FPhoneEntry), 1, 2, 2, 3);
+
+  // Fila 3: Email (label)
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), L4, 0, 1, 3, 4);
+  gtk_table_attach_defaults(GTK_TABLE(FFormTable), PGtkWidget(FEmailLabel), 1, 2, 3, 4);
+end;
+
+procedure TProfileWindow.LoadFromUser;
+begin
+  if (CurrentUser = nil) then Exit;
+
+  // Cargar datos con validaciones GTK_IS_*
+  if (FNameEntry <> nil) and GTK_IS_ENTRY(FNameEntry) then
+    gtk_entry_set_text(FNameEntry, PChar(UTF8Encode(CurrentUser^.Nombre)));
+
+  if (FUserEntry <> nil) and GTK_IS_ENTRY(FUserEntry) then
+    gtk_entry_set_text(FUserEntry, PChar(UTF8Encode(CurrentUser^.Usuario)));
+
+  if (FPhoneEntry <> nil) and GTK_IS_ENTRY(FPhoneEntry) then
+    gtk_entry_set_text(FPhoneEntry, PChar(UTF8Encode(CurrentUser^.Telefono)));
+
+  if (FEmailLabel <> nil) and GTK_IS_LABEL(FEmailLabel) then
+    gtk_label_set_text(FEmailLabel, PChar(UTF8Encode(CurrentUser^.Email)));
+end;
+
+procedure TProfileWindow.SaveToUser;
+var
+  SNombre, SUsuario, STelefono: AnsiString;
+begin
+  if (CurrentUser = nil) then Exit;
+
+  // Leer valores con validaciones
+  if (FNameEntry <> nil) and GTK_IS_ENTRY(FNameEntry) then
+    SNombre := gtk_entry_get_text(FNameEntry)
+  else
+    SNombre := CurrentUser^.Nombre;
+
+  if (FUserEntry <> nil) and GTK_IS_ENTRY(FUserEntry) then
+    SUsuario := gtk_entry_get_text(FUserEntry)
+  else
+    SUsuario := CurrentUser^.Usuario;
+
+  if (FPhoneEntry <> nil) and GTK_IS_ENTRY(FPhoneEntry) then
+    STelefono := gtk_entry_get_text(FPhoneEntry)
+  else
+    STelefono := CurrentUser^.Telefono;
+
+  // Actualizar solo los campos permitidos (usuario, teléfono; y opcionalmente nombre visible)
+  CurrentUser^.Nombre   := UTF8Decode(SNombre);
+  CurrentUser^.Usuario  := UTF8Decode(SUsuario);
+  CurrentUser^.Telefono := UTF8Decode(STelefono);
+
+  // Persistir en tu sistema si aplica (ej: SaveUsers/Flush, etc.)
+  try
+    // Si tienes alguna rutina de persistencia, llámala aquí
+    // SaveUsers();  // <- ejemplo opcional según tu arquitectura
+  except
+    on E: Exception do
+      TUIUtils.ShowErrorMessage(Window, 'No se pudieron guardar los cambios: ' + E.Message);
+  end;
+
+  TUIUtils.ShowInfoMessage(Window, 'Perfil actualizado exitosamente');
 end;
 
 procedure TProfileWindow.LoadCurrentUser;
 begin
-  if not IsUserLoggedIn then
-  begin
-    ClearForm;
-    Exit;
-  end;
-
-  gtk_entry_set_text(GTK_ENTRY(FNameEntry),  Pgchar(UTF8String(CurrentUser^.Nombre)));
-  gtk_entry_set_text(GTK_ENTRY(FUserEntry),  Pgchar(UTF8String(CurrentUser^.Usuario)));
-  gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String(CurrentUser^.Email)));
-  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), Pgchar(UTF8String(CurrentUser^.Telefono)));
-
-  gtk_label_set_text(GTK_LABEL(FStatusLabel),
-    Pgchar(UTF8String('Información cargada desde el perfil actual')));
-end;
-
-procedure TProfileWindow.ClearForm;
-begin
-  gtk_entry_set_text(GTK_ENTRY(FNameEntry),  Pgchar(UTF8String('')));
-  gtk_entry_set_text(GTK_ENTRY(FUserEntry),  Pgchar(UTF8String('')));
-  gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String('')));
-  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), Pgchar(UTF8String('')));
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('')));
-end;
-
-function TProfileWindow.ValidateForm: Boolean;
-var
-  Name, User, Phone: String;
-  i: Integer;  // <-- NECESARIO para el for
-begin
-  Result := False;
-
-  Name  := UTF8String(gtk_entry_get_text(GTK_ENTRY(FNameEntry)));
-  User  := UTF8String(gtk_entry_get_text(GTK_ENTRY(FUserEntry)));
-  Phone := UTF8String(gtk_entry_get_text(GTK_ENTRY(FPhoneEntry)));
-
-  if Length(Trim(Name)) = 0 then
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su nombre completo');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Nombre requerido')));
-    Exit;
-  end;
-
-  if Length(Trim(User)) = 0 then
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su nombre de usuario');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Nombre de usuario requerido')));
-    Exit;
-  end;
-
-  if Length(Trim(Phone)) = 0 then
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su número de teléfono');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono requerido')));
-    Exit;
-  end;
-
-  // Validar longitud del teléfono
-  if Length(Phone) < 8 then
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'El número de teléfono debe tener al menos 8 dígitos');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono muy corto')));
-    Exit;
-  end;
-
-  // Validar que el teléfono contenga solo números
-  for i := 1 to Length(Phone) do
-  begin
-    if not (Phone[i] in ['0'..'9']) then
-    begin
-      TUIUtils.ShowErrorMessage(FWindow, 'El número de teléfono debe contener solo dígitos');
-      gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono con caracteres inválidos')));
-      Exit;
-    end;
-  end;
-
-  Result := True;
-end;
-
-procedure TProfileWindow.UpdateProfile;
-var
-  Name, User, Phone: String;
-  OldName, OldUser, OldPhone: String;
-  ChangesText: String; // <-- mover var aquí
-begin
-  if not IsUserLoggedIn then
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'Error: No hay usuario logueado');
-    Exit;
-  end;
-
-  if not ValidateForm then Exit;
-
-  Name  := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FNameEntry))));
-  User  := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FUserEntry))));
-  Phone := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FPhoneEntry))));
-
-  // Guardar valores anteriores para comparación
-  OldName  := CurrentUser^.Nombre;
-  OldUser  := CurrentUser^.Usuario;
-  OldPhone := CurrentUser^.Telefono;
-
-  // Verificar si hay cambios
-  if (Name = OldName) and (User = OldUser) and (Phone = OldPhone) then
-  begin
-    TUIUtils.ShowInfoMessage(FWindow, 'No se detectaron cambios en el perfil');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Sin cambios detectados')));
-    Exit;
-  end;
-
-  // Confirmar actualización
-  if not TUIUtils.ShowConfirmDialog(FWindow, 'Confirmar Actualización',
-                                   '¿Está seguro que desea actualizar su perfil con esta información?') then
-  begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Actualización cancelada')));
-    Exit;
-  end;
-
-  // Actualizar perfil
-  if UpdateUserProfile(CurrentUser^.Email, Name, User, Phone) then
-  begin
-    TUIUtils.ShowInfoMessage(FWindow, 'Perfil actualizado exitosamente');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Perfil actualizado correctamente')));
-
-    // Mostrar resumen de cambios
-    ChangesText := 'Cambios realizados:' + LineEnding;
-
-    if Name <> OldName then
-      ChangesText := ChangesText + '• Nombre: ' + OldName + ' → ' + Name + LineEnding;
-    if User <> OldUser then
-      ChangesText := ChangesText + '• Usuario: ' + OldUser + ' → ' + User + LineEnding;
-    if Phone <> OldPhone then
-      ChangesText := ChangesText + '• Teléfono: ' + OldPhone + ' → ' + Phone + LineEnding;
-
-    TUIUtils.ShowInfoMessage(FWindow, ChangesText);
-  end
-  else
-  begin
-    TUIUtils.ShowErrorMessage(FWindow, 'Error al actualizar el perfil');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error en la actualización')));
-
-    // Recargar información original
-    LoadCurrentUser;
-  end;
+  LoadFromUser;
 end;
 
 // ============================================================================
 // Callbacks
 // ============================================================================
 
-procedure OnUpdateClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnProfileSaveClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  ProfileWindow: TProfileWindow;
+  Win: TProfileWindow;
 begin
-  ProfileWindow := TProfileWindow(data);
-  ProfileWindow.UpdateProfile;
+  Win := TProfileWindow(data);
+  if Win <> nil then
+  begin
+    Win.SaveToUser;
+    // Mantener la ventana abierta para que el usuario vea los cambios
+    if (Win.Window <> nil) and GTK_IS_WIDGET(Win.Window) then
+      gtk_widget_show_all(Win.Window);
+  end;
 end;
 
-procedure OnCancelClicked(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnProfileCancelClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  ProfileWindow: TProfileWindow;
+  Win: TProfileWindow;
 begin
-  ProfileWindow := TProfileWindow(data);
-
-  if TUIUtils.ShowConfirmDialog(ProfileWindow.Window, 'Cancelar Cambios',
-                               '¿Está seguro que desea cancelar? Se perderán los cambios no guardados.') then
-  begin
-    ProfileWindow.LoadCurrentUser; // Recargar datos originales
-    ProfileWindow.Hide;
-  end;
+  Win := TProfileWindow(data);
+  if (Win <> nil) and (Win.Window <> nil) and GTK_IS_WIDGET(Win.Window) then
+    gtk_widget_hide(Win.Window); // Solo ocultar (no destruir), consistente con UIBase
 end;
 
 end.

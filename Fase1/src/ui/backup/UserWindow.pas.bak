@@ -66,6 +66,16 @@ procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
 procedure OnUserWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
 
+// Callbacks destroy de subventanas (para invalidar punteros)
+procedure OnInboxWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnComposeWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnContactWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnTrashWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnScheduleWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnScheduledWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnProfileWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+procedure OnReportsWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+
 var
   UserWin: TUserWindow;
 
@@ -188,7 +198,7 @@ begin
   UnreadCount := UserInbox.GetUnreadCount;
 
   if UnreadCount > 0 then
-    Text := Format('📬 Tienes %d correos no leídos', [UnreadCount])
+    Text := '📬 Tienes ' + IntToStr(UnreadCount) + ' correos no leídos'
   else
     Text := '✅ No tienes correos no leídos';
 
@@ -221,50 +231,35 @@ procedure TUserWindow.CloseAllSubWindows;
 begin
   if FInboxWin <> nil then
   begin
-    FInboxWin.Free;
-    FInboxWin := nil;
+    FInboxWin.Free;   FInboxWin := nil;
   end;
-
   if FComposeWin <> nil then
   begin
-    FComposeWin.Free;
-    FComposeWin := nil;
+    FComposeWin.Free; FComposeWin := nil;
   end;
-
   if FContactWin <> nil then
   begin
-    FContactWin.Free;
-    FContactWin := nil;
+    FContactWin.Free; FContactWin := nil;
   end;
-
   if FTrashWin <> nil then
   begin
-    FTrashWin.Free;
-    FTrashWin := nil;
+    FTrashWin.Free;   FTrashWin := nil;
   end;
-
   if FScheduleWin <> nil then
   begin
-    FScheduleWin.Free;
-    FScheduleWin := nil;
+    FScheduleWin.Free; FScheduleWin := nil;
   end;
-
   if FScheduledWin <> nil then
   begin
-    FScheduledWin.Free;
-    FScheduledWin := nil;
+    FScheduledWin.Free; FScheduledWin := nil;
   end;
-
   if FProfileWin <> nil then
   begin
-    FProfileWin.Free;
-    FProfileWin := nil;
+    FProfileWin.Free; FProfileWin := nil;
   end;
-
   if FReportsWin <> nil then
   begin
-    FReportsWin.Free;
-    FReportsWin := nil;
+    FReportsWin.Free; FReportsWin := nil;
   end;
 end;
 
@@ -274,116 +269,124 @@ end;
 
 procedure OnInboxClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FInboxWin = nil then
-    UserWindow.FInboxWin := TInboxWindow.Create(UserWindow.Window);
-
-  UserWindow.FInboxWin.Show;
-  UserWindow.FInboxWin.RefreshInbox;
+  UW := TUserWindow(data);
+  if (UW.FInboxWin = nil) or (UW.FInboxWin.Window = nil) then
+  begin
+    UW.FInboxWin := TInboxWindow.Create(UW.Window);
+    g_signal_connect(UW.FInboxWin.Window, 'destroy', G_CALLBACK(@OnInboxWindowDestroy), UW);
+  end;
+  UW.FInboxWin.Show;
+  UW.FInboxWin.RefreshInbox;
 end;
 
 procedure OnComposeClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FComposeWin = nil then
-    UserWindow.FComposeWin := TComposeWindow.Create(UserWindow.Window);
-
-  UserWindow.FComposeWin.Show;
+  UW := TUserWindow(data);
+  if (UW.FComposeWin = nil) or (UW.FComposeWin.Window = nil) then
+  begin
+    UW.FComposeWin := TComposeWindow.Create(UW.Window);
+    g_signal_connect(UW.FComposeWin.Window, 'destroy', G_CALLBACK(@OnComposeWindowDestroy), UW);
+  end;
+  UW.FComposeWin.Show;
 end;
 
 procedure OnContactsClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FContactWin = nil then
-    UserWindow.FContactWin := TContactWindow.Create(UserWindow.Window);
-
-  UserWindow.FContactWin.Show;
+  UW := TUserWindow(data);
+  if (UW.FContactWin = nil) or (UW.FContactWin.Window = nil) then
+  begin
+    UW.FContactWin := TContactWindow.Create(UW.Window);
+    g_signal_connect(UW.FContactWin.Window, 'destroy', G_CALLBACK(@OnContactWindowDestroy), UW);
+  end;
+  UW.FContactWin.Show;
 end;
 
 procedure OnTrashClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FTrashWin = nil then
-    UserWindow.FTrashWin := TTrashWindow.Create(UserWindow.Window);
-
-  UserWindow.FTrashWin.Show;
-  UserWindow.FTrashWin.RefreshTrash;
+  UW := TUserWindow(data);
+  if (UW.FTrashWin = nil) or (UW.FTrashWin.Window = nil) then
+  begin
+    UW.FTrashWin := TTrashWindow.Create(UW.Window);
+    g_signal_connect(UW.FTrashWin.Window, 'destroy', G_CALLBACK(@OnTrashWindowDestroy), UW);
+  end;
+  UW.FTrashWin.Show;
+  UW.FTrashWin.RefreshTrash;
 end;
 
 procedure OnScheduleClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FScheduleWin = nil then
-    UserWindow.FScheduleWin := TScheduleWindow.Create(UserWindow.Window);
-
-  UserWindow.FScheduleWin.Show;
+  UW := TUserWindow(data);
+  if (UW.FScheduleWin = nil) or (UW.FScheduleWin.Window = nil) then
+  begin
+    UW.FScheduleWin := TScheduleWindow.Create(UW.Window);
+    g_signal_connect(UW.FScheduleWin.Window, 'destroy', G_CALLBACK(@OnScheduleWindowDestroy), UW);
+  end;
+  UW.FScheduleWin.Show;
 end;
 
 procedure OnScheduledClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FScheduledWin = nil then
-    UserWindow.FScheduledWin := TScheduledWindow.Create(UserWindow.Window);
-
-  UserWindow.FScheduledWin.Show;
-  UserWindow.FScheduledWin.RefreshScheduled;
+  UW := TUserWindow(data);
+  if (UW.FScheduledWin = nil) or (UW.FScheduledWin.Window = nil) then
+  begin
+    UW.FScheduledWin := TScheduledWindow.Create(UW.Window);
+    g_signal_connect(UW.FScheduledWin.Window, 'destroy', G_CALLBACK(@OnScheduledWindowDestroy), UW);
+  end;
+  UW.FScheduledWin.Show;
+  UW.FScheduledWin.RefreshScheduled;
 end;
 
 procedure OnProfileClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FProfileWin = nil then
-    UserWindow.FProfileWin := TProfileWindow.Create(UserWindow.Window);
-
-  UserWindow.FProfileWin.Show;
-  UserWindow.FProfileWin.LoadCurrentUser;
+  UW := TUserWindow(data);
+  if (UW.FProfileWin = nil) or (UW.FProfileWin.Window = nil) then
+  begin
+    UW.FProfileWin := TProfileWindow.Create(UW.Window);
+    g_signal_connect(UW.FProfileWin.Window, 'destroy', G_CALLBACK(@OnProfileWindowDestroy), UW);
+  end;
+  UW.FProfileWin.Show;
+  UW.FProfileWin.LoadCurrentUser;
 end;
 
 procedure OnReportsClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
-
-  if UserWindow.FReportsWin = nil then
-    UserWindow.FReportsWin := TReportsWindow.Create(UserWindow.Window);
-
-  UserWindow.FReportsWin.Show;
+  UW := TUserWindow(data);
+  if (UW.FReportsWin = nil) or (UW.FReportsWin.Window = nil) then
+  begin
+    UW.FReportsWin := TReportsWindow.Create(UW.Window);
+    g_signal_connect(UW.FReportsWin.Window, 'destroy', G_CALLBACK(@OnReportsWindowDestroy), UW);
+  end;
+  UW.FReportsWin.Show;
 end;
 
 procedure OnLogoutClicked(widget: PGtkWidget; data: gpointer); cdecl;
 var
-  UserWindow: TUserWindow;
+  UW: TUserWindow;
 begin
-  UserWindow := TUserWindow(data);
+  UW := TUserWindow(data);
 
-  if TUIUtils.ShowConfirmDialog(UserWindow.Window, 'Cerrar Sesión',
+  if TUIUtils.ShowConfirmDialog(UW.Window, 'Cerrar Sesión',
                                '¿Está seguro que desea cerrar sesión?') then
   begin
-    UserWindow.CloseAllSubWindows;
+    UW.CloseAllSubWindows;
     LogoutUser;
-    UserWindow.Hide;
+    UW.Hide;
 
     // Mostrar ventana de login
     if LoginWin = nil then
@@ -397,5 +400,50 @@ begin
   gtk_main_quit;
 end;
 
+// ============================================================================
+// Callbacks destroy de subventanas (invalidan punteros en TUserWindow)
+// ============================================================================
+
+procedure OnInboxWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FInboxWin := nil;
+end;
+
+procedure OnComposeWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FComposeWin := nil;
+end;
+
+procedure OnContactWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FContactWin := nil;
+end;
+
+procedure OnTrashWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FTrashWin := nil;
+end;
+
+procedure OnScheduleWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FScheduleWin := nil;
+end;
+
+procedure OnScheduledWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FScheduledWin := nil;
+end;
+
+procedure OnProfileWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FProfileWin := nil;
+end;
+
+procedure OnReportsWindowDestroy(widget: PGtkWidget; data: gpointer); cdecl;
+begin
+  if data <> nil then TUserWindow(data).FReportsWin := nil;
+end;
+
 end.
+
 

@@ -8,7 +8,6 @@ uses
   GTK2, GDK2, GLib2, SysUtils, Classes, DataStructures, SystemCore;
 
 type
-  // Clase base para todas las ventanas
   TBaseWindow = class
   protected
     FWindow: PGtkWidget;
@@ -20,6 +19,9 @@ type
     procedure SetupWindow; virtual;
     procedure SetupComponents; virtual; abstract;
     procedure ConnectSignals; virtual;
+
+    // helper para validar widgets
+    function IsValidWidget(W: PGtkWidget): Boolean; inline;
 
   public
     constructor Create(ATitle: String; AWidth: Integer = 400; AHeight: Integer = 300; AParent: PGtkWidget = nil);
@@ -35,10 +37,8 @@ type
     property Title: String read FTitle write FTitle;
   end;
 
-  // Callback procedure para botones
   TButtonCallback = procedure(widget: PGtkWidget; data: gpointer); cdecl;
 
-  // Utilidades para crear widgets comúnmente usados
   TUIUtils = class
   public
     class function CreateLabel(Text: String; Bold: Boolean = False): PGtkWidget;
@@ -52,27 +52,48 @@ type
     class function CreateTable(Rows, Cols: Integer): PGtkWidget;
     class function CreateComboBox: PGtkWidget;
 
-    // ULTRA SEGURO: Solo funciones que funcionan garantizadamente
     class function ShowMessageDialog(Parent: PGtkWidget; MessageType: TGtkMessageType;
-                                   Title, Message: String): Integer;
+                                     Title, Message: String): Integer;
     class function ShowConfirmDialog(Parent: PGtkWidget; Title, Message: String): Boolean;
     class procedure ShowInfoMessage(Parent: PGtkWidget; Message: String);
     class procedure ShowErrorMessage(Parent: PGtkWidget; Message: String);
 
-    // FUNCIONES COMPLETAMENTE SEGURAS - solo consola + ventana básica
     class function ShowSafeMessageDialog(Parent: PGtkWidget; Title, Message: String): Integer;
     class procedure ShowSafeInfoMessage(Parent: PGtkWidget; Message: String);
     class procedure ShowSafeErrorMessage(Parent: PGtkWidget; Message: String);
 
-    // FUNCIONES DE EMERGENCIA - solo consola
     class procedure ShowConsoleMessage(MessageType, Message: String);
   end;
 
 implementation
 
-// ============================================================================
-// TBaseWindow Implementation
-// ============================================================================
+// ---------- Callbacks base ----------
+
+function OnBaseWindowDeleteEvent(widget: PGtkWidget; event: PGdkEvent; data: gpointer): gboolean; cdecl;
+begin
+  if (widget <> nil) and GTK_IS_WIDGET(widget) then
+    gtk_widget_hide(widget);
+  Result := True; // evita destrucción por GTK
+end;
+
+procedure OnBaseWindowDestroyed(widget: PGtkWidget; data: gpointer); cdecl;
+var
+  SelfRef: TBaseWindow;
+begin
+  if data <> nil then
+  begin
+    SelfRef := TBaseWindow(data);
+    if (SelfRef <> nil) and (SelfRef.FWindow = widget) then
+      SelfRef.FWindow := nil;
+  end;
+end;
+
+// ---------- TBaseWindow ----------
+
+function TBaseWindow.IsValidWidget(W: PGtkWidget): Boolean;
+begin
+  Result := (W <> nil) and GTK_IS_WIDGET(W);
+end;
 
 constructor TBaseWindow.Create(ATitle: String; AWidth: Integer; AHeight: Integer; AParent: PGtkWidget);
 begin
@@ -81,7 +102,6 @@ begin
   FWidth := AWidth;
   FHeight := AHeight;
   FParentWindow := AParent;
-
   SetupWindow;
   SetupComponents;
   ConnectSignals;
@@ -89,8 +109,10 @@ end;
 
 destructor TBaseWindow.Destroy;
 begin
-  if FWindow <> nil then
+  // Solo destruir si realmente sigue siendo widget válido
+  if IsValidWidget(FWindow) then
     gtk_widget_destroy(FWindow);
+  FWindow := nil;
   inherited;
 end;
 
@@ -101,53 +123,53 @@ begin
   gtk_window_set_default_size(GTK_WINDOW(FWindow), FWidth, FHeight);
   gtk_window_set_resizable(GTK_WINDOW(FWindow), True);
 
-  if FParentWindow <> nil then
+  if IsValidWidget(FParentWindow) then
   begin
     gtk_window_set_transient_for(GTK_WINDOW(FWindow), GTK_WINDOW(FParentWindow));
     gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER_ON_PARENT);
   end
   else
     gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER);
+
+  g_signal_connect(G_OBJECT(FWindow), 'delete-event', G_CALLBACK(@OnBaseWindowDeleteEvent), nil);
+  g_signal_connect(G_OBJECT(FWindow), 'destroy',      G_CALLBACK(@OnBaseWindowDestroyed), Self);
 end;
 
 procedure TBaseWindow.ConnectSignals;
 begin
-  // Las clases derivadas pueden sobrescribir este método
 end;
 
 procedure TBaseWindow.Show;
 begin
-  if FWindow <> nil then
+  if IsValidWidget(FWindow) then
     gtk_widget_show_all(FWindow);
 end;
 
 procedure TBaseWindow.Hide;
 begin
-  if FWindow <> nil then
+  if IsValidWidget(FWindow) then
     gtk_widget_hide(FWindow);
 end;
 
 procedure TBaseWindow.SetModal(Modal: Boolean);
 begin
-  if FWindow <> nil then
+  if IsValidWidget(FWindow) then
     gtk_window_set_modal(GTK_WINDOW(FWindow), Modal);
 end;
 
 procedure TBaseWindow.SetPosition(Position: TGtkWindowPosition);
 begin
-  if FWindow <> nil then
+  if IsValidWidget(FWindow) then
     gtk_window_set_position(GTK_WINDOW(FWindow), Position);
 end;
 
 procedure TBaseWindow.CenterOnParent;
 begin
-  if (FWindow <> nil) and (FParentWindow <> nil) then
+  if IsValidWidget(FWindow) and IsValidWidget(FParentWindow) then
     gtk_window_set_position(GTK_WINDOW(FWindow), GTK_WIN_POS_CENTER_ON_PARENT);
 end;
 
-// ============================================================================
-// TUIUtils Implementation
-// ============================================================================
+// ---------- TUIUtils ----------
 
 class function TUIUtils.CreateLabel(Text: String; Bold: Boolean): PGtkWidget;
 begin
@@ -165,7 +187,7 @@ end;
 
 class function TUIUtils.CreateEntry(Placeholder: String): PGtkWidget;
 begin
-  Result := gtk_entry_new;
+  Result := gtk_entry_new; // GTK2 sin placeholder
 end;
 
 class function TUIUtils.CreateTextView: PGtkWidget;
@@ -183,8 +205,7 @@ end;
 class function TUIUtils.CreateScrolledWindow: PGtkWidget;
 begin
   Result := gtk_scrolled_window_new(nil, nil);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(Result),
-                                GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(Result), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 end;
 
 class function TUIUtils.CreateHBox(Spacing: Integer): PGtkWidget;
@@ -209,17 +230,14 @@ begin
   Result := gtk_combo_box_new_text;
 end;
 
-// FUNCIONES DE DIÁLOGO - NIVEL 1: Intentar GTK con fallback completo
 class function TUIUtils.ShowMessageDialog(Parent: PGtkWidget; MessageType: TGtkMessageType;
-                                        Title, Message: String): Integer;
+  Title, Message: String): Integer;
 begin
   try
-    // NIVEL 1: Intentar función segura
     Result := ShowSafeMessageDialog(Parent, Title, Message);
   except
     on E: Exception do
     begin
-      // NIVEL 2: Fallback a consola
       ShowConsoleMessage(Title, Message);
       Result := GTK_RESPONSE_OK;
     end;
@@ -229,12 +247,10 @@ end;
 class function TUIUtils.ShowConfirmDialog(Parent: PGtkWidget; Title, Message: String): Boolean;
 begin
   try
-    // NIVEL 1: Intentar función segura
     Result := (ShowSafeMessageDialog(Parent, Title, Message + ' (Presiona OK para SÍ)') = GTK_RESPONSE_OK);
   except
     on E: Exception do
     begin
-      // NIVEL 2: Fallback a consola y asumir SÍ
       ShowConsoleMessage(Title, Message + ' - Asumiendo SÍ');
       Result := True;
     end;
@@ -247,9 +263,7 @@ begin
     ShowSafeInfoMessage(Parent, Message);
   except
     on E: Exception do
-    begin
       ShowConsoleMessage('INFO', Message);
-    end;
   end;
 end;
 
@@ -259,29 +273,21 @@ begin
     ShowSafeErrorMessage(Parent, Message);
   except
     on E: Exception do
-    begin
       ShowConsoleMessage('ERROR', Message);
-    end;
   end;
 end;
 
-// FUNCIONES SEGURAS - NIVEL 2: Ventana básica sin mensajes complejos
 class function TUIUtils.ShowSafeMessageDialog(Parent: PGtkWidget; Title, Message: String): Integer;
 var
-  Dialog: PGtkWidget;
-  VBox: PGtkWidget;
-  Label1: PGtkWidget;
-  Button: PGtkWidget;
-  Response: Integer;
+  Dialog, VBox, Label1, Button: PGtkWidget;
 begin
   try
-    // Crear ventana básica sin usar gtk_message_dialog
     Dialog := gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(Dialog), PChar(Title));
     gtk_window_set_default_size(GTK_WINDOW(Dialog), 350, 150);
     gtk_window_set_modal(GTK_WINDOW(Dialog), True);
 
-    if Parent <> nil then
+    if (Parent <> nil) and GTK_IS_WIDGET(Parent) then
     begin
       gtk_window_set_transient_for(GTK_WINDOW(Dialog), GTK_WINDOW(Parent));
       gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER_ON_PARENT);
@@ -289,37 +295,26 @@ begin
     else
       gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER);
 
-    // Crear contenido simple
     VBox := CreateVBox(15);
     gtk_container_add(GTK_CONTAINER(Dialog), VBox);
     gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
 
-    // Mensaje
     Label1 := CreateLabel(Message);
     gtk_misc_set_alignment(GTK_MISC(Label1), 0.5, 0.5);
     gtk_label_set_line_wrap(GTK_LABEL(Label1), True);
     gtk_label_set_justify(GTK_LABEL(Label1), GTK_JUSTIFY_CENTER);
     gtk_box_pack_start(GTK_BOX(VBox), Label1, True, True, 0);
 
-    // Botón OK
     Button := gtk_button_new_with_label('OK');
     gtk_widget_set_size_request(Button, 80, 30);
     gtk_box_pack_start(GTK_BOX(VBox), Button, False, False, 0);
 
-    // Mostrar todo
     gtk_widget_show_all(Dialog);
+    g_signal_connect_swapped(G_OBJECT(Button), 'clicked', G_CALLBACK(@gtk_widget_destroy), Dialog);
 
-    // Conectar señal para cerrar
-    g_signal_connect_swapped(G_OBJECT(Button), 'clicked',
-                             G_CALLBACK(@gtk_widget_destroy), Dialog);
-
-    // Simular diálogo modal manualmente
-    Response := GTK_RESPONSE_OK;
-
-    // En lugar de gtk_dialog_run, simplemente mostrar y continuar
+    // no corremos gtk_dialog_run; devolvemos OK y destruimos
     gtk_widget_destroy(Dialog);
-
-    Result := Response;
+    Result := GTK_RESPONSE_OK;
   except
     on E: Exception do
     begin
@@ -335,9 +330,7 @@ begin
     ShowSafeMessageDialog(Parent, 'Información', Message);
   except
     on E: Exception do
-    begin
       ShowConsoleMessage('INFO', Message);
-    end;
   end;
 end;
 
@@ -347,24 +340,18 @@ begin
     ShowSafeMessageDialog(Parent, 'Error', Message);
   except
     on E: Exception do
-    begin
       ShowConsoleMessage('ERROR', Message);
-    end;
   end;
 end;
 
-// FUNCIONES DE EMERGENCIA - NIVEL 3: Solo consola
 class procedure TUIUtils.ShowConsoleMessage(MessageType, Message: String);
 begin
   try
-    WriteLn('');
-    WriteLn('=== ' + MessageType + ' ===');
-    WriteLn(Message);
-    WriteLn('================');
-    WriteLn('');
+    WriteLn(''); WriteLn('=== ' + MessageType + ' ==='); WriteLn(Message); WriteLn('================'); WriteLn('');
   except
-    // Si ni siquiera WriteLn funciona, no hay nada más que hacer
+    // nada
   end;
 end;
 
 end.
+

@@ -64,12 +64,14 @@ begin
 
   // Título
   Label1 := TUIUtils.CreateLabel('Actualizar Perfil de Usuario', True);
-  gtk_label_set_markup(GTK_LABEL(Label1), '<span size="large" weight="bold">Actualizar Perfil de Usuario</span>');
+  gtk_label_set_markup(GTK_LABEL(Label1),
+    Pgchar(UTF8String('<span size="large" weight="bold">Actualizar Perfil de Usuario</span>')));
   gtk_box_pack_start(GTK_BOX(FMainVBox), Label1, False, False, 10);
 
   // Información
   InfoLabel := TUIUtils.CreateLabel('Puedes actualizar tu nombre de usuario y número de teléfono.');
-  gtk_label_set_markup(GTK_LABEL(InfoLabel), '<span style="italic">Puedes actualizar tu nombre de usuario y número de teléfono.</span>');
+  gtk_label_set_markup(GTK_LABEL(InfoLabel),
+    Pgchar(UTF8String('<span style="italic">Puedes actualizar tu nombre de usuario y número de teléfono.</span>')));
   gtk_box_pack_start(GTK_BOX(FMainVBox), InfoLabel, False, False, 5);
 
   // Tabla para organizar campos
@@ -97,7 +99,8 @@ begin
   gtk_table_attach(GTK_TABLE(Table), Label1, 0, 1, 2, 3, GTK_FILL, GTK_FILL, 5, 8);
 
   FEmailLabel := TUIUtils.CreateLabel('');
-  gtk_label_set_markup(GTK_LABEL(FEmailLabel), '<span foreground="gray">No modificable</span>');
+  gtk_label_set_markup(GTK_LABEL(FEmailLabel),
+    Pgchar(UTF8String('<span foreground="gray">No modificable</span>')));
   gtk_misc_set_alignment(GTK_MISC(FEmailLabel), 0.0, 0.5);
   gtk_table_attach(GTK_TABLE(Table), FEmailLabel, 1, 2, 2, 3,
                   GTK_EXPAND or GTK_FILL, GTK_FILL, 5, 8);
@@ -141,51 +144,53 @@ begin
     Exit;
   end;
 
-  gtk_entry_set_text(GTK_ENTRY(FNameEntry), PChar(CurrentUser^.Nombre));
-  gtk_entry_set_text(GTK_ENTRY(FUserEntry), PChar(CurrentUser^.Usuario));
-  gtk_label_set_text(GTK_LABEL(FEmailLabel), PChar(CurrentUser^.Email));
-  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), PChar(CurrentUser^.Telefono));
+  gtk_entry_set_text(GTK_ENTRY(FNameEntry),  Pgchar(UTF8String(CurrentUser^.Nombre)));
+  gtk_entry_set_text(GTK_ENTRY(FUserEntry),  Pgchar(UTF8String(CurrentUser^.Usuario)));
+  gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String(CurrentUser^.Email)));
+  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), Pgchar(UTF8String(CurrentUser^.Telefono)));
 
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Información cargada desde el perfil actual');
+  gtk_label_set_text(GTK_LABEL(FStatusLabel),
+    Pgchar(UTF8String('Información cargada desde el perfil actual')));
 end;
 
 procedure TProfileWindow.ClearForm;
 begin
-  gtk_entry_set_text(GTK_ENTRY(FNameEntry), '');
-  gtk_entry_set_text(GTK_ENTRY(FUserEntry), '');
-  gtk_label_set_text(GTK_LABEL(FEmailLabel), '');
-  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), '');
-  gtk_label_set_text(GTK_LABEL(FStatusLabel), '');
+  gtk_entry_set_text(GTK_ENTRY(FNameEntry),  Pgchar(UTF8String('')));
+  gtk_entry_set_text(GTK_ENTRY(FUserEntry),  Pgchar(UTF8String('')));
+  gtk_label_set_text(GTK_LABEL(FEmailLabel), Pgchar(UTF8String('')));
+  gtk_entry_set_text(GTK_ENTRY(FPhoneEntry), Pgchar(UTF8String('')));
+  gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('')));
 end;
 
 function TProfileWindow.ValidateForm: Boolean;
 var
   Name, User, Phone: String;
+  i: Integer;  // <-- NECESARIO para el for
 begin
   Result := False;
 
-  Name := gtk_entry_get_text(GTK_ENTRY(FNameEntry));
-  User := gtk_entry_get_text(GTK_ENTRY(FUserEntry));
-  Phone := gtk_entry_get_text(GTK_ENTRY(FPhoneEntry));
+  Name  := UTF8String(gtk_entry_get_text(GTK_ENTRY(FNameEntry)));
+  User  := UTF8String(gtk_entry_get_text(GTK_ENTRY(FUserEntry)));
+  Phone := UTF8String(gtk_entry_get_text(GTK_ENTRY(FPhoneEntry)));
 
   if Length(Trim(Name)) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su nombre completo');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Nombre requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Nombre requerido')));
     Exit;
   end;
 
   if Length(Trim(User)) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su nombre de usuario');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Nombre de usuario requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Nombre de usuario requerido')));
     Exit;
   end;
 
   if Length(Trim(Phone)) = 0 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Por favor ingrese su número de teléfono');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Teléfono requerido');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono requerido')));
     Exit;
   end;
 
@@ -193,18 +198,17 @@ begin
   if Length(Phone) < 8 then
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'El número de teléfono debe tener al menos 8 dígitos');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Teléfono muy corto');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono muy corto')));
     Exit;
   end;
 
   // Validar que el teléfono contenga solo números
-  // Línea corregida
   for i := 1 to Length(Phone) do
   begin
     if not (Phone[i] in ['0'..'9']) then
     begin
       TUIUtils.ShowErrorMessage(FWindow, 'El número de teléfono debe contener solo dígitos');
-      gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error: Teléfono con caracteres inválidos');
+      gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error: Teléfono con caracteres inválidos')));
       Exit;
     end;
   end;
@@ -216,6 +220,7 @@ procedure TProfileWindow.UpdateProfile;
 var
   Name, User, Phone: String;
   OldName, OldUser, OldPhone: String;
+  ChangesText: String; // <-- mover var aquí
 begin
   if not IsUserLoggedIn then
   begin
@@ -225,20 +230,20 @@ begin
 
   if not ValidateForm then Exit;
 
-  Name := Trim(gtk_entry_get_text(GTK_ENTRY(FNameEntry)));
-  User := Trim(gtk_entry_get_text(GTK_ENTRY(FUserEntry)));
-  Phone := Trim(gtk_entry_get_text(GTK_ENTRY(FPhoneEntry)));
+  Name  := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FNameEntry))));
+  User  := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FUserEntry))));
+  Phone := Trim(UTF8String(gtk_entry_get_text(GTK_ENTRY(FPhoneEntry))));
 
   // Guardar valores anteriores para comparación
-  OldName := CurrentUser^.Nombre;
-  OldUser := CurrentUser^.Usuario;
+  OldName  := CurrentUser^.Nombre;
+  OldUser  := CurrentUser^.Usuario;
   OldPhone := CurrentUser^.Telefono;
 
   // Verificar si hay cambios
   if (Name = OldName) and (User = OldUser) and (Phone = OldPhone) then
   begin
     TUIUtils.ShowInfoMessage(FWindow, 'No se detectaron cambios en el perfil');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Sin cambios detectados');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Sin cambios detectados')));
     Exit;
   end;
 
@@ -246,7 +251,7 @@ begin
   if not TUIUtils.ShowConfirmDialog(FWindow, 'Confirmar Actualización',
                                    '¿Está seguro que desea actualizar su perfil con esta información?') then
   begin
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Actualización cancelada');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Actualización cancelada')));
     Exit;
   end;
 
@@ -254,10 +259,9 @@ begin
   if UpdateUserProfile(CurrentUser^.Email, Name, User, Phone) then
   begin
     TUIUtils.ShowInfoMessage(FWindow, 'Perfil actualizado exitosamente');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Perfil actualizado correctamente');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Perfil actualizado correctamente')));
 
     // Mostrar resumen de cambios
-    var ChangesText: String;
     ChangesText := 'Cambios realizados:' + LineEnding;
 
     if Name <> OldName then
@@ -272,7 +276,7 @@ begin
   else
   begin
     TUIUtils.ShowErrorMessage(FWindow, 'Error al actualizar el perfil');
-    gtk_label_set_text(GTK_LABEL(FStatusLabel), 'Error en la actualización');
+    gtk_label_set_text(GTK_LABEL(FStatusLabel), Pgchar(UTF8String('Error en la actualización')));
 
     // Recargar información original
     LoadCurrentUser;
