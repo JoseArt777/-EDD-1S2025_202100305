@@ -1,20 +1,103 @@
 program EDDMail;
 {$mode objfpc}{$H+}
+
 uses
-  SysUtils,
+  SysUtils, DateUtils,
   edd_types in 'units/estructuras/edd_types.pas',
-  lista_simple in 'units/estructuras/lista_simple.pas';
+  // estructuras
+  lista_simple in 'units/estructuras/lista_simple.pas',
+  lista_doble in 'units/estructuras/lista_doble.pas',
+  lista_circular in 'units/estructuras/lista_circular.pas',
+  pila in 'units/estructuras/pila.pas',
+  cola in 'units/estructuras/cola.pas',
+  matriz_dispersa in 'units/estructuras/matriz_dispersa.pas',
+  // utilidades
+  json_parser in 'units/utilidades/json_parser.pas',
+  reportes_gen in 'units/utilidades/reportes_gen.pas',
+  validaciones in 'units/utilidades/validaciones.pas';
+
+const
+  DIR_ROOT = '../reportes/Root-Reportes';
+  DIR_USER = '../reportes/alumno-Reportes';
 
 var
   usuarios: TListaUsuarios;
-  ur: TUsuario;
+  bandeja: TListaDobleCorreos;
+  papelera: TPilaPapelera;
+  programados: TColaProgramados;
+  contactos: TListaCircularContactos;
+  relaciones: TMatrizDispersa;
+  u: TUsuario;
+  c: TCorreo;
+  tc: TContacto;     // variable para contactos
+  agregado: LongInt;
+  puede: Boolean;
 begin
+  // 1) Usuarios (root) + carga masiva JSON
   LS_Init(usuarios);
-  // Agregar usuario root
-  ur.Id := 0; ur.Nombre := 'root'; ur.Usuario := 'root'; ur.Email := 'root@edd.com'; ur.Telefono := '00000000';
-  LS_Append(usuarios, ur);
-  Writeln('EDDMail listo. Usuarios cargados: ', usuarios.Count);
-  LS_ToDot(usuarios, 'usuarios.dot');
-  LS_Clear(usuarios);
+  // root fijo
+  u.Id := 0; u.Nombre := 'root'; u.Usuario := 'root';
+  u.Email := 'root@edd.com'; u.Telefono := '00000000'; u.Password := 'root123';
+  LS_Append(usuarios, u);
+  agregado := CargarUsuariosDesdeJSON('data/usuarios.json', usuarios);
+  Writeln('Usuarios cargados desde JSON: ', agregado);
+
+  // 2) Estructuras de un usuario "alumno"
+  LD_Init(bandeja);
+  PP_Init(papelera);
+  Q_Init(programados);
+  LC_Init(contactos);
+  MD_Init(relaciones);
+
+  // contactos del alumno (asignando campo y pasando variable)
+  tc.Email := 'aux-luis@edd.com';     LC_Add(contactos, tc);
+  tc.Email := 'aux-marcosg@edd.com';  LC_Add(contactos, tc);
+
+  // bandeja de ejemplo
+  c.Id := 101; c.Remitente := 'aux-luis@edd.com'; c.Destinatario := 'alumno@edd.com';
+  c.Estado := ecNoLeido; c.Programado := False; c.Asunto := 'Bienvenida';
+  c.Fecha := Now; c.Mensaje := 'Hola!';
+  LD_PushBack(bandeja, c);
+
+  // programados (uno pasado, uno futuro)
+  c.Id := 201; c.Remitente := 'alumno@edd.com'; c.Destinatario := 'aux-luis@edd.com';
+  c.Programado := True; c.Estado := ecNoLeido; c.Asunto := 'Pregunta';
+  c.Fecha := IncMinute(Now, -1); c.Mensaje := 'Hola';
+  Q_Enqueue(programados, c);
+
+  c.Id := 202; c.Remitente := 'alumno@edd.com'; c.Destinatario := 'aux-marcosg@edd.com';
+  c.Programado := True; c.Estado := ecNoLeido; c.Asunto := 'Otra';
+  c.Fecha := IncMinute(Now, 10); c.Mensaje := 'Luego';
+  Q_Enqueue(programados, c);
+
+  // relación remitente->destinatario
+  MD_AddEdge(relaciones, 'alumno@edd.com', 'aux-luis@edd.com', 1);
+  MD_AddEdge(relaciones, 'alumno@edd.com', 'aux-marcosg@edd.com', 1);
+
+  // 3) Validación: enviar solo a contactos
+  puede := PuedeEnviarAContacto(contactos, 'aux-luis@edd.com');
+  if puede then
+    Writeln('OK: se puede enviar a aux-luis@edd.com')
+  else
+    Writeln('ERROR: ese destino no está en contactos');
+
+  // procesar programados vencidos hacia bandeja
+  Writeln('Enviados a bandeja: ', Q_ProcesarHasta(programados, Now, bandeja));
+
+  // ordenar A-Z la bandeja
+  LD_SortByAsuntoAZ(bandeja);
+
+  // 4) Reportes .dot en carpetas correctas
+  ReporteUsuariosRoot(usuarios, DIR_ROOT);
+  ReporteRelacionesRoot(relaciones, DIR_ROOT);
+
+  ReporteBandejaUsuario(bandeja, DIR_USER);
+  ReportePapeleraUsuario(papelera, DIR_USER);
+  ReporteProgramadosUsuario(programados, DIR_USER);
+  ReporteContactosUsuario(contactos, DIR_USER);
+
+  // limpiar
+  LS_Clear(usuarios); LD_Clear(bandeja); PP_Clear(papelera);
+  Q_Clear(programados); LC_Clear(contactos); MD_Clear(relaciones);
 end.
 

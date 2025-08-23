@@ -1,449 +1,93 @@
 program EDDMail;
-
 {$mode objfpc}{$H+}
 
 uses
   SysUtils, DateUtils,
-  // Importar todas las estructuras
+  edd_types in 'units/estructuras/edd_types.pas',
+  // estructuras
   lista_simple in 'units/estructuras/lista_simple.pas',
   lista_doble in 'units/estructuras/lista_doble.pas',
   lista_circular in 'units/estructuras/lista_circular.pas',
-  cola in 'units/estructuras/cola.pas',
   pila in 'units/estructuras/pila.pas',
-  matriz_dispersa in 'units/estructuras/matriz_dispersa.pas';
+  cola in 'units/estructuras/cola.pas',
+  matriz_dispersa in 'units/estructuras/matriz_dispersa.pas',
+  // utilidades
+  json_parser in 'units/utilidades/json_parser.pas',
+  reportes_gen in 'units/utilidades/reportes_gen.pas',
+  validaciones in 'units/utilidades/validaciones.pas';
 
-type
-  // Sistema principal que integra todas las estructuras
-  TSistemaEDDMail = class
-  private
-    // Estructuras principales
-    usuarios: TListaSimpleUsuarios;
-    matriz_relaciones: TMatrizDispersa;
+const
+  DIR_ROOT = '../reportes/Root-Reportes';
+  DIR_USER = '../reportes/alumno-Reportes';
 
-    // Usuario actualmente logueado
-    usuario_actual: TUsuario;
-    sesion_iniciada: Boolean;
-
-    // Estructuras específicas por usuario (se cargan al hacer login)
-    bandeja_entrada: TListaDobleCorreos;
-    contactos: TListaCircularContactos;
-    correos_programados: TColaCorreosProgramados;
-    papelera: TPilaPapelera;
-
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    // Sistema de autenticación
-    function IniciarSesion(email, password: string): Boolean;
-    procedure CerrarSesion;
-    function RegistrarUsuario(usuario: TUsuario): Boolean;
-
-    // Menús principales
-    procedure MenuPrincipal;
-    procedure MenuRoot;
-    procedure MenuUsuarioEstandar;
-
-    // Funciones del Root
-    procedure CargaMasiva;
-    procedure GenerarReporteUsuarios;
-    procedure GenerarReporteRelaciones;
-
-    // Funciones del usuario estándar
-    procedure MostrarBandejaEntrada;
-    procedure EnviarCorreo;
-    procedure ProgramarCorreo;
-    procedure MostrarCorreosProgramados;
-    procedure MostrarPapelera;
-    procedure AgregarContacto;
-    procedure MostrarContactos;
-    procedure ActualizarPerfil;
-    procedure GenerarReportesUsuario;
-
-    // Utilidades
-    procedure CargarDatosUsuario(email: string);
-    procedure GuardarDatosUsuario;
-    function ValidarEmail(email: string): Boolean;
-    procedure MostrarMensaje(mensaje: string);
-    function LeerOpcion: Integer;
-    function LeerTexto(prompt: string): string;
-  end;
-
-// Variables globales
 var
-  sistema: TSistemaEDDMail;
-
-constructor TSistemaEDDMail.Create;
+  usuarios: TListaUsuarios;
+  bandeja: TListaDobleCorreos;
+  papelera: TPilaPapelera;
+  programados: TColaProgramados;
+  contactos: TListaCircularContactos;
+  relaciones: TMatrizDispersa;
+  u: TUsuario;
+  c: TCorreo;
+  agregado: LongInt;
+  puede: Boolean;
 begin
-  // Inicializar estructuras principales
-  usuarios := TListaSimpleUsuarios.Create;
-  matriz_relaciones := TMatrizDispersa.Create;
+  // 1) Usuarios (root) + carga masiva JSON
+  LS_Init(usuarios);
+  // root fijo
+  u.Id := 0; u.Nombre := 'root'; u.Usuario := 'root'; u.Email := 'root@edd.com'; u.Telefono := '00000000'; u.Password := 'root123';
+  LS_Append(usuarios, u);
+  agregado := CargarUsuariosDesdeJSON('data/usuarios.json', usuarios);
+  Writeln('Usuarios cargados desde JSON: ', agregado);
 
-  // Inicializar estructuras de usuario (vacías hasta login)
-  bandeja_entrada := TListaDobleCorreos.Create;
-  contactos := TListaCircularContactos.Create;
-  correos_programados := TColaCorreosProgramados.Create;
-  papelera := TPilaPapelera.Create;
+  // 2) Estructuras de un usuario "alumno"
+  LD_Init(bandeja);
+  PP_Init(papelera);
+  Q_Init(programados);
+  LC_Init(contactos);
+  MD_Init(relaciones);
 
-  sesion_iniciada := False;
+  // contactos del alumno
+  LC_Add(contactos, TContacto(Email:'aux-luis@edd.com'));
+  LC_Add(contactos, TContacto(Email:'aux-marcosg@edd.com'));
 
-  // Crear usuario root por defecto
-  var usuarioRoot: TUsuario;
-  usuarioRoot.nombre := 'Administrador';
-  usuarioRoot.usuario := 'root';
-  usuarioRoot.email := 'root@edd.com';
-  usuarioRoot.telefono := '00000000';
-  usuarioRoot.password := 'root123';
+  // bandeja de ejemplo
+  c.Id := 101; c.Remitente := 'aux-luis@edd.com'; c.Destinatario := 'alumno@edd.com';
+  c.Estado := ecNoLeido; c.Programado := False; c.Asunto := 'Bienvenida'; c.Fecha := Now; c.Mensaje := 'Hola!'; LD_PushBack(bandeja, c);
 
-  try
-    usuarios.Insertar(usuarioRoot);
-  except
-    // El usuario root ya existe
-  end;
+  // programados (uno pasado, uno futuro)
+  c.Id := 201; c.Remitente := 'alumno@edd.com'; c.Destinatario := 'aux-luis@edd.com';
+  c.Programado := True; c.Estado := ecNoLeido; c.Asunto := 'Pregunta'; c.Fecha := IncMinute(Now, -1); c.Mensaje := 'Hola'; Q_Enqueue(programados, c);
 
-  WriteLn('=== SISTEMA EDDMAIL INICIADO ===');
-end;
+  c.Id := 202; c.Remitente := 'alumno@edd.com'; c.Destinatario := 'aux-marcosg@edd.com';
+  c.Programado := True; c.Estado := ecNoLeido; c.Asunto := 'Otra'; c.Fecha := IncMinute(Now, 10); c.Mensaje := 'Luego'; Q_Enqueue(programados, c);
 
-destructor TSistemaEDDMail.Destroy;
-begin
-  usuarios.Free;
-  matriz_relaciones.Free;
-  bandeja_entrada.Free;
-  contactos.Free;
-  correos_programados.Free;
-  papelera.Free;
-  inherited Destroy;
-end;
+  // relación remitente->destinatario
+  MD_AddEdge(relaciones, 'alumno@edd.com', 'aux-luis@edd.com', 1);
+  MD_AddEdge(relaciones, 'alumno@edd.com', 'aux-marcosg@edd.com', 1);
 
-function TSistemaEDDMail.IniciarSesion(email, password: string): Boolean;
-var
-  nodoUsuario: PNodoUsuario;
-begin
-  Result := False;
+  // 3) Validación: enviar solo a contactos
+  puede := PuedeEnviarAContacto(contactos, 'aux-luis@edd.com');
+  if puede then Writeln('OK: se puede enviar a aux-luis@edd.com')
+  else Writeln('ERROR: ese destino no está en contactos');
 
-  if usuarios.ValidarCredenciales(email, password) then
-  begin
-    nodoUsuario := usuarios.Buscar(email);
-    if nodoUsuario <> nil then
-    begin
-      usuario_actual := nodoUsuario^.datos;
-      sesion_iniciada := True;
-      CargarDatosUsuario(email);
-      Result := True;
-      WriteLn('Sesión iniciada correctamente para: ', usuario_actual.nombre);
-    end;
-  end
-  else
-    WriteLn('Credenciales incorrectas');
-end;
+  // procesar programados vencidos hacia bandeja
+  Writeln('Enviados a bandeja: ', Q_ProcesarHasta(programados, Now, bandeja));
 
-procedure TSistemaEDDMail.CerrarSesion;
-begin
-  if sesion_iniciada then
-  begin
-    GuardarDatosUsuario;
-    sesion_iniciada := False;
-    WriteLn('Sesión cerrada');
-  end;
-end;
+  // ordenar A-Z la bandeja
+  LD_SortByAsuntoAZ(bandeja);
 
-function TSistemaEDDMail.RegistrarUsuario(usuario: TUsuario): Boolean;
-begin
-  Result := False;
-  try
-    usuarios.Insertar(usuario);
-    Result := True;
-    WriteLn('Usuario registrado exitosamente');
-  except
-    on E: Exception do
-      WriteLn('Error al registrar usuario: ', E.Message);
-  end;
-end;
+  // 4) Reportes .dot en carpetas correctas
+  ReporteUsuariosRoot(usuarios, DIR_ROOT);
+  ReporteRelacionesRoot(relaciones, DIR_ROOT);
 
-procedure TSistemaEDDMail.MenuPrincipal;
-var
-  opcion: Integer;
-  email, password: string;
-  nuevoUsuario: TUsuario;
-begin
-  repeat
-    WriteLn;
-    WriteLn('=== EDDMAIL - SISTEMA DE CORREOS ===');
-    WriteLn('1. Iniciar Sesión');
-    WriteLn('2. Crear Cuenta');
-    WriteLn('3. Salir');
-    Write('Seleccione una opción: ');
-    opcion := LeerOpcion;
+  ReporteBandejaUsuario(bandeja, DIR_USER);
+  ReportePapeleraUsuario(papelera, DIR_USER);
+  ReporteProgramadosUsuario(programados, DIR_USER);
+  ReporteContactosUsuario(contactos, DIR_USER);
 
-    case opcion of
-      1: begin
-        email := LeerTexto('Email: ');
-        password := LeerTexto('Password: ');
-        if IniciarSesion(email, password) then
-        begin
-          if usuario_actual.email = 'root@edd.com' then
-            MenuRoot
-          else
-            MenuUsuarioEstandar;
-        end;
-      end;
-
-      2: begin
-        WriteLn('=== CREAR NUEVA CUENTA ===');
-        nuevoUsuario.nombre := LeerTexto('Nombre: ');
-        nuevoUsuario.usuario := LeerTexto('Usuario: ');
-        nuevoUsuario.email := LeerTexto('Email: ');
-        nuevoUsuario.telefono := LeerTexto('Teléfono: ');
-        nuevoUsuario.password := LeerTexto('Password: ');
-        RegistrarUsuario(nuevoUsuario);
-      end;
-
-      3: WriteLn('¡Gracias por usar EDDMail!');
-
-      else
-        WriteLn('Opción inválida');
-    end;
-  until opcion = 3;
-end;
-
-procedure TSistemaEDDMail.MenuRoot;
-var
-  opcion: Integer;
-begin
-  repeat
-    WriteLn;
-    WriteLn('=== MENÚ ADMINISTRADOR ===');
-    WriteLn('1. Carga Masiva');
-    WriteLn('2. Reporte de Usuarios');
-    WriteLn('3. Reporte de Relaciones');
-    WriteLn('4. Cerrar Sesión');
-    Write('Seleccione una opción: ');
-    opcion := LeerOpcion;
-
-    case opcion of
-      1: CargaMasiva;
-      2: GenerarReporteUsuarios;
-      3: GenerarReporteRelaciones;
-      4: CerrarSesion;
-      else
-        WriteLn('Opción inválida');
-    end;
-  until opcion = 4;
-end;
-
-procedure TSistemaEDDMail.MenuUsuarioEstandar;
-var
-  opcion: Integer;
-begin
-  repeat
-    WriteLn;
-    WriteLn('=== MENÚ USUARIO: ', usuario_actual.nombre, ' ===');
-    WriteLn('1. Bandeja de Entrada');
-    WriteLn('2. Enviar Correo');
-    WriteLn('3. Programar Correo');
-    WriteLn('4. Correos Programados');
-    WriteLn('5. Papelera');
-    WriteLn('6. Agregar Contacto');
-    WriteLn('7. Ver Contactos');
-    WriteLn('8. Actualizar Perfil');
-    WriteLn('9. Generar Reportes');
-    WriteLn('10. Cerrar Sesión');
-    Write('Seleccione una opción: ');
-    opcion := LeerOpcion;
-
-    case opcion of
-      1: MostrarBandejaEntrada;
-      2: EnviarCorreo;
-      3: ProgramarCorreo;
-      4: MostrarCorreosProgramados;
-      5: MostrarPapelera;
-      6: AgregarContacto;
-      7: MostrarContactos;
-      8: ActualizarPerfil;
-      9: GenerarReportesUsuario;
-      10: CerrarSesion;
-      else
-        WriteLn('Opción inválida');
-    end;
-  until opcion = 10;
-end;
-
-// Implementar todas las funciones restantes...
-
-procedure TSistemaEDDMail.CargaMasiva;
-begin
-  WriteLn('=== CARGA MASIVA ===');
-  WriteLn('Función en desarrollo...');
-  // TODO: Implementar carga desde JSON
-end;
-
-procedure TSistemaEDDMail.GenerarReporteUsuarios;
-var
-  reporte: string;
-  archivo: TextFile;
-begin
-  WriteLn('=== GENERANDO REPORTE DE USUARIOS ===');
-  reporte := usuarios.GenerarReporte;
-
-  // Crear directorio si no existe
-  if not DirectoryExists('Root-Reportes') then
-    CreateDir('Root-Reportes');
-
-  // Guardar reporte
-  AssignFile(archivo, 'Root-Reportes/reporte_usuarios.dot');
-  Rewrite(archivo);
-  WriteLn(archivo, reporte);
-  CloseFile(archivo);
-
-  WriteLn('Reporte guardado en Root-Reportes/reporte_usuarios.dot');
-end;
-
-procedure TSistemaEDDMail.GenerarReporteRelaciones;
-var
-  reporte: string;
-  archivo: TextFile;
-begin
-  WriteLn('=== GENERANDO REPORTE DE RELACIONES ===');
-  reporte := matriz_relaciones.GenerarReporteGraphviz;
-
-  if not DirectoryExists('Root-Reportes') then
-    CreateDir('Root-Reportes');
-
-  AssignFile(archivo, 'Root-Reportes/reporte_relaciones.dot');
-  Rewrite(archivo);
-  WriteLn(archivo, reporte);
-  CloseFile(archivo);
-
-  WriteLn('Reporte guardado en Root-Reportes/reporte_relaciones.dot');
-end;
-
-procedure TSistemaEDDMail.MostrarBandejaEntrada;
-begin
-  WriteLn('=== BANDEJA DE ENTRADA ===');
-  if bandeja_entrada.EstaVacia then
-    WriteLn('No hay correos en la bandeja de entrada')
-  else
-  begin
-    bandeja_entrada.MostrarTodos;
-    WriteLn('Correos no leídos: ', bandeja_entrada.ContarNoLeidos);
-  end;
-end;
-
-procedure TSistemaEDDMail.EnviarCorreo;
-var
-  destinatario, asunto, mensaje: string;
-  correo: TCorreo;
-begin
-  WriteLn('=== ENVIAR CORREO ===');
-  destinatario := LeerTexto('Para: ');
-
-  // Verificar que el destinatario esté en contactos
-  if not contactos.ExisteContacto(destinatario) then
-  begin
-    WriteLn('Error: El destinatario no está en sus contactos');
-    Exit;
-  end;
-
-  asunto := LeerTexto('Asunto: ');
-  mensaje := LeerTexto('Mensaje: ');
-
-  // Crear correo
-  correo.remitente := usuario_actual.email;
-  correo.destinatario := destinatario;
-  correo.asunto := asunto;
-  correo.mensaje := mensaje;
-  correo.fecha := Now;
-  correo.estado := ecNoLeido;
-  correo.programado := False;
-
-  // TODO: Agregar a la bandeja del destinatario
-  // Por ahora solo registramos la relación en la matriz
-  matriz_relaciones.AgregarRelacion(usuario_actual.email, destinatario);
-
-  WriteLn('Correo enviado exitosamente');
-end;
-
-// Continuar implementando el resto de funciones...
-
-procedure TSistemaEDDMail.CargarDatosUsuario(email: string);
-begin
-  // TODO: Cargar datos específicos del usuario desde archivos
-  WriteLn('Cargando datos del usuario: ', email);
-end;
-
-procedure TSistemaEDDMail.GuardarDatosUsuario;
-begin
-  // TODO: Guardar datos del usuario actual
-  WriteLn('Guardando datos del usuario');
-end;
-
-function TSistemaEDDMail.ValidarEmail(email: string): Boolean;
-begin
-  Result := (Length(email) > 0) and (Pos('@', email) > 0);
-end;
-
-procedure TSistemaEDDMail.MostrarMensaje(mensaje: string);
-begin
-  WriteLn('>>> ', mensaje);
-end;
-
-function TSistemaEDDMail.LeerOpcion: Integer;
-var
-  input: string;
-begin
-  ReadLn(input);
-  Result := StrToIntDef(input, 0);
-end;
-
-function TSistemaEDDMail.LeerTexto(prompt: string): string;
-begin
-  Write(prompt);
-  ReadLn(Result);
-end;
-
-// Implementar funciones restantes...
-procedure TSistemaEDDMail.ProgramarCorreo;
-begin
-  WriteLn('Función ProgramarCorreo - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.MostrarCorreosProgramados;
-begin
-  WriteLn('Función MostrarCorreosProgramados - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.MostrarPapelera;
-begin
-  WriteLn('Función MostrarPapelera - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.AgregarContacto;
-begin
-  WriteLn('Función AgregarContacto - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.MostrarContactos;
-begin
-  WriteLn('Función MostrarContactos - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.ActualizarPerfil;
-begin
-  WriteLn('Función ActualizarPerfil - En desarrollo');
-end;
-
-procedure TSistemaEDDMail.GenerarReportesUsuario;
-begin
-  WriteLn('Función GenerarReportesUsuario - En desarrollo');
-end;
-
-// PROGRAMA PRINCIPAL
-begin
-  sistema := TSistemaEDDMail.Create;
-  try
-    sistema.MenuPrincipal;
-  finally
-    sistema.Free;
-  end;
+  // limpiar
+  LS_Clear(usuarios); LD_Clear(bandeja); PP_Clear(papelera);
+  Q_Clear(programados); LC_Clear(contactos); MD_Clear(relaciones);
 end.
 

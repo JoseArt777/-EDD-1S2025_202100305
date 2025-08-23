@@ -1,0 +1,25 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nombre": "Luis Garcia",
+      "usuario": "auxluis",
+      "email": "aux-luis@edd.com",
+      "telefono": "12345678"
+    },
+    {
+      "id": 2,
+      "nombre": "Marcos Itzep",
+      "usuario": "auxmarcos",
+      "email": "aux-marcosg@edd.com",
+      "telefono": "87654321"
+    },
+    {
+      "id": 3,
+      "nombre": "Alumno Demo",
+      "usuario": "alumno",
+      "email": "alumno@edd.com",
+      "telefono": "55555555"
+    }
+  ]
+}
