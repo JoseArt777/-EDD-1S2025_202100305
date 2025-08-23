@@ -1,8 +1,0 @@
-digraph Relaciones {
-  rankdir=LR;
-  sender_alumno_edd.com [shape=box,label="alumno@edd.com"];
-  recv_aux-luis_edd.com [shape=ellipse,label="aux-luis@edd.com"];
-  sender_alumno_edd.com -> recv_aux-luis_edd.com [label="1"];
-  recv_aux-marcosg_edd.com [shape=ellipse,label="aux-marcosg@edd.com"];
-  sender_alumno_edd.com -> recv_aux-marcosg_edd.com [label="1"];
-}

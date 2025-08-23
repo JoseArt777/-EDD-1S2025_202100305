@@ -1,6 +1,0 @@
-digraph Bandeja {
-  rankdir=LR; node [shape=record];
-  c133636822192576 [label="NL | Bienvenida | aux-luis@edd.com"];
-  c133636822192576 -> c133636822192672 [dir=both];
-  c133636822192672 [label="NL | Pregunta | alumno@edd.com"];
-}

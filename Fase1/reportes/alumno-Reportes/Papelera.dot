@@ -1,3 +1,0 @@
-digraph Papelera {
-  rankdir=TB; node [shape=box];
-}

@@ -1,4 +1,0 @@
-digraph Usuarios {
-  rankdir=LR; node [shape=record];
-  u129516225745152 [label="root\nroot@edd.com"];
-}
