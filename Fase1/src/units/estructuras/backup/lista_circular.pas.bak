@@ -7,9 +7,6 @@ interface
 uses SysUtils;
 
 type
-  // Array estático para compatibilidad
-  TArrayContactos = array of TContacto;
-
   // Registro para almacenar datos del contacto
   TContacto = record
     id: Integer;
@@ -19,6 +16,9 @@ type
     telefono: string;
     fechaAgregado: TDateTime;
   end;
+
+  // Array dinámico para compatibilidad
+  TArrayContactos = array of TContacto;
 
   // Puntero al nodo de la lista circular
   PNodoContacto = ^TNodoContacto;
@@ -675,4 +675,3 @@ begin
 end;
 
 end.
-

@@ -1,0 +1,9 @@
+digraph Contactos {
+  rankdir=LR; node [shape=circle];
+  n131747447742624 [label="aux-luis@edd.com"];
+  n131747447742624 -> n131747447742656;
+  n131747447742656 [label="aux-marcosg@edd.com"];
+  n131747447742656 -> n131747447742688;
+  n131747447742688 [label="root@edd.com"];
+  n131747447742688 -> n131747447742624;
+}

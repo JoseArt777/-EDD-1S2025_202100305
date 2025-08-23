@@ -1,0 +1,8 @@
+digraph Usuarios {
+  rankdir=LR; node [shape=record];
+  u131747447775488 [label="Alumno\nalumno@edd.com"];
+  u131747447775488 -> u131747447775552;
+  u131747447775552 [label="Luis Garcia\naux-luis@edd.com"];
+  u131747447775552 -> u131747447775616;
+  u131747447775616 [label="Marcos Itzep\naux-marcosg@edd.com"];
+}

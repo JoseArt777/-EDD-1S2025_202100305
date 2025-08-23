@@ -1,0 +1,6 @@
+digraph Programados {
+  rankdir=LR; node [shape=box];
+  n131747447710048 [label="Pregunta @ 22-8-25 20:26:23"];
+  n131747447710048 -> n131747447710144;
+  n131747447710144 [label="Otra @ 22-8-25 20:37:23"];
+}

@@ -1,677 +1,138 @@
 unit lista_circular;
-
 {$mode objfpc}{$H+}
-
 interface
-
-uses SysUtils;
+uses
+  SysUtils, edd_types;
 
 type
-  // Registro para almacenar datos del contacto
-  TContacto = record
-    id: Integer;
-    nombre: string;
-    usuario: string;
-    email: string;
-    telefono: string;
-    fechaAgregado: TDateTime;
+  PNodeContacto = ^TNodeContacto;
+  TNodeContacto = record
+    Data: TContacto;
+    Next: PNodeContacto;
   end;
 
-  // Array dinámico para compatibilidad
-  TArrayContactos = array of TContacto;
-
-  // Puntero al nodo de la lista circular
-  PNodoContacto = ^TNodoContacto;
-
-  // Nodo de la lista circular
-  TNodoContacto = record
-    datos: TContacto;
-    siguiente: PNodoContacto;
+  TListaCircularContactos = record
+    Tail: PNodeContacto; // tail->next = head
+    Count: LongInt;
   end;
 
-  // Clase para manejar la lista circular de contactos
-  TListaCircularContactos = class
-  private
-    actual: PNodoContacto;  // Puntero al nodo actual (para navegación)
-    contador: Integer;
-    contadorID: Integer;
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    // Operaciones básicas
-    procedure Agregar(contacto: TContacto);
-    function EliminarPorEmail(email: string): Boolean;
-    function BuscarPorEmail(email: string): PNodoContacto;
-    function BuscarPorUsuario(usuario: string): PNodoContacto;
-    function BuscarPorID(id: Integer): PNodoContacto;
-
-    // Navegación circular
-    function SiguienteContacto: PNodoContacto;
-    function AnteriorContacto: PNodoContacto;
-    function ContactoActual: PNodoContacto;
-    procedure IrAPrimerContacto;
-    procedure IrAContacto(email: string);
-
-    // Operaciones de consulta
-    function EstaVacia: Boolean;
-    function ObtenerCantidad: Integer;
-    function ExisteContacto(email: string): Boolean;
-    procedure MostrarTodos;
-    procedure MostrarContacto(nodo: PNodoContacto);
-
-    // Operaciones de ordenamiento
-    procedure OrdenarPorNombre;
-    procedure OrdenarPorEmail;
-    procedure OrdenarPorFechaAgregado;
-
-    // Búsquedas avanzadas
-    function BuscarPorNombre(nombre: string): TListaCircularContactos;
-    function ObtenerContactosRecientes(dias: Integer): TListaCircularContactos;
-
-    // Operaciones para reportes
-    function GenerarReporte: string;
-    function GenerarReporteHTML: string;
-    function ListarContactosArray: TArrayContactos;
-
-    // Utilidades
-    procedure LimpiarLista;
-    function ClonarLista: TListaCircularContactos;
-    procedure ModificarContacto(email: string; nuevosDatos: TContacto);
-
-    // Navegación especial
-    function RecorrerCompleto: TArrayContactos;
-    procedure MostrarNavegacion(pasos: Integer);
-  end;
+procedure LC_Init(var L: TListaCircularContactos);
+procedure LC_Clear(var L: TListaCircularContactos);
+procedure LC_Add(var L: TListaCircularContactos; const C: TContacto);
+function  LC_RemoveByEmail(var L: TListaCircularContactos; const Email: AnsiString): Boolean;
+function  LC_Find(var L: TListaCircularContactos; const Email: AnsiString): PNodeContacto;
+function  LC_NextEmail(var L: TListaCircularContactos; const Email: AnsiString; out NextEmail: AnsiString): Boolean;
+procedure LC_ToDot(const L: TListaCircularContactos; const FilePath: AnsiString);
 
 implementation
 
-uses DateUtils;
-
-constructor TListaCircularContactos.Create;
+procedure LC_Init(var L: TListaCircularContactos);
 begin
-  actual := nil;
-  contador := 0;
-  contadorID := 0;
+  L.Tail := nil; L.Count := 0;
 end;
 
-destructor TListaCircularContactos.Destroy;
+procedure LC_Clear(var L: TListaCircularContactos);
+var cur, head, tmp: PNodeContacto;
 begin
-  LimpiarLista;
-  inherited Destroy;
+  if L.Tail = nil then Exit;
+  head := L.Tail^.Next;
+  cur := head;
+  repeat
+    tmp := cur^.Next;
+    Dispose(cur);
+    cur := tmp;
+  until cur = head;
+  L.Tail := nil; L.Count := 0;
 end;
 
-procedure TListaCircularContactos.Agregar(contacto: TContacto);
-var
-  nuevoNodo: PNodoContacto;
+procedure LC_Add(var L: TListaCircularContactos; const C: TContacto);
+var n: PNodeContacto;
 begin
-  // Verificar que el contacto no exista
-  if ExisteContacto(contacto.email) then
-    raise Exception.Create('El contacto ya existe');
-
-  // Crear nuevo nodo
-  New(nuevoNodo);
-  Inc(contadorID);
-  contacto.id := contadorID;
-  contacto.fechaAgregado := Now;
-  nuevoNodo^.datos := contacto;
-
-  if actual = nil then
+  New(n); n^.Data := C;
+  if L.Tail = nil then
   begin
-    // Primer nodo - apunta a sí mismo
-    nuevoNodo^.siguiente := nuevoNodo;
-    actual := nuevoNodo;
+    n^.Next := n;
+    L.Tail := n;
   end
   else
   begin
-    // Insertar después del nodo actual
-    nuevoNodo^.siguiente := actual^.siguiente;
-    actual^.siguiente := nuevoNodo;
+    n^.Next := L.Tail^.Next; // new head
+    L.Tail^.Next := n;
+    L.Tail := n;
   end;
-
-  Inc(contador);
+  Inc(L.Count);
 end;
 
-function TListaCircularContactos.EliminarPorEmail(email: string): Boolean;
-var
-  anterior, nodoAEliminar: PNodoContacto;
-  i: Integer;
+function LC_RemoveByEmail(var L: TListaCircularContactos; const Email: AnsiString): Boolean;
+var prev, cur, head: PNodeContacto;
 begin
   Result := False;
-
-  if EstaVacia then
-    Exit;
-
-  // Si solo hay un nodo
-  if contador = 1 then
-  begin
-    if LowerCase(actual^.datos.email) = LowerCase(email) then
+  if L.Tail = nil then Exit;
+  head := L.Tail^.Next;
+  prev := L.Tail; cur := head;
+  repeat
+    if SameText(cur^.Data.Email, Email) then
     begin
-      Dispose(actual);
-      actual := nil;
-      contador := 0;
-      Result := True;
-    end;
-    Exit;
-  end;
-
-  // Buscar el nodo a eliminar y su anterior
-  anterior := actual;
-  nodoAEliminar := actual^.siguiente;
-
-  // Si el nodo actual es el que se va a eliminar
-  if LowerCase(actual^.datos.email) = LowerCase(email) then
-  begin
-    // Buscar el anterior al actual
-    while anterior^.siguiente <> actual do
-      anterior := anterior^.siguiente;
-    nodoAEliminar := actual;
-    actual := actual^.siguiente;
-  end
-  else
-  begin
-    // Buscar el nodo en el resto de la lista
-    while (nodoAEliminar <> actual) and
-          (LowerCase(nodoAEliminar^.datos.email) <> LowerCase(email)) do
-    begin
-      anterior := nodoAEliminar;
-      nodoAEliminar := nodoAEliminar^.siguiente;
-    end;
-
-    if nodoAEliminar = actual then
-      Exit; // No encontrado
-  end;
-
-  // Eliminar el nodo
-  anterior^.siguiente := nodoAEliminar^.siguiente;
-  Dispose(nodoAEliminar);
-  Dec(contador);
-  Result := True;
-end;
-
-function TListaCircularContactos.BuscarPorEmail(email: string): PNodoContacto;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := nil;
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 1 to contador do
-  begin
-    if LowerCase(nodo^.datos.email) = LowerCase(email) then
-    begin
-      Result := nodo;
-      Exit;
-    end;
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-function TListaCircularContactos.BuscarPorUsuario(usuario: string): PNodoContacto;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := nil;
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 1 to contador do
-  begin
-    if LowerCase(nodo^.datos.usuario) = LowerCase(usuario) then
-    begin
-      Result := nodo;
-      Exit;
-    end;
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-function TListaCircularContactos.BuscarPorID(id: Integer): PNodoContacto;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := nil;
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 1 to contador do
-  begin
-    if nodo^.datos.id = id then
-    begin
-      Result := nodo;
-      Exit;
-    end;
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-function TListaCircularContactos.SiguienteContacto: PNodoContacto;
-begin
-  if actual <> nil then
-  begin
-    actual := actual^.siguiente;
-    Result := actual;
-  end
-  else
-    Result := nil;
-end;
-
-function TListaCircularContactos.AnteriorContacto: PNodoContacto;
-var
-  temp: PNodoContacto;
-begin
-  Result := nil;
-
-  if EstaVacia then
-    Exit;
-
-  if contador = 1 then
-  begin
-    Result := actual;
-    Exit;
-  end;
-
-  // Buscar el anterior al actual
-  temp := actual;
-  while temp^.siguiente <> actual do
-    temp := temp^.siguiente;
-
-  actual := temp;
-  Result := actual;
-end;
-
-function TListaCircularContactos.ContactoActual: PNodoContacto;
-begin
-  Result := actual;
-end;
-
-procedure TListaCircularContactos.IrAPrimerContacto;
-begin
-  // En una lista circular, el "primer" contacto es arbitrario
-  // Mantenemos el actual como referencia
-end;
-
-procedure TListaCircularContactos.IrAContacto(email: string);
-var
-  nodo: PNodoContacto;
-begin
-  nodo := BuscarPorEmail(email);
-  if nodo <> nil then
-    actual := nodo;
-end;
-
-function TListaCircularContactos.EstaVacia: Boolean;
-begin
-  Result := actual = nil;
-end;
-
-function TListaCircularContactos.ObtenerCantidad: Integer;
-begin
-  Result := contador;
-end;
-
-function TListaCircularContactos.ExisteContacto(email: string): Boolean;
-begin
-  Result := BuscarPorEmail(email) <> nil;
-end;
-
-procedure TListaCircularContactos.MostrarTodos;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  if EstaVacia then
-  begin
-    WriteLn('La lista de contactos está vacía');
-    Exit;
-  end;
-
-  WriteLn('=== LISTA DE CONTACTOS (CIRCULAR) ===');
-  WriteLn('Total de contactos: ', contador);
-
-  nodo := actual;
-  for i := 1 to contador do
-  begin
-    WriteLn('--- Contacto ', i, ' ---');
-    MostrarContacto(nodo);
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-procedure TListaCircularContactos.MostrarContacto(nodo: PNodoContacto);
-begin
-  if nodo <> nil then
-  begin
-    WriteLn('ID: ', nodo^.datos.id);
-    WriteLn('Nombre: ', nodo^.datos.nombre);
-    WriteLn('Usuario: ', nodo^.datos.usuario);
-    WriteLn('Email: ', nodo^.datos.email);
-    WriteLn('Teléfono: ', nodo^.datos.telefono);
-    WriteLn('Fecha agregado: ', DateTimeToStr(nodo^.datos.fechaAgregado));
-    if nodo = actual then
-      WriteLn('** CONTACTO ACTUAL **');
-    WriteLn('------------------------');
-  end;
-end;
-
-procedure TListaCircularContactos.OrdenarPorNombre;
-var
-  contactos: TArrayContactos;
-  i, j: Integer;
-  temp: TContacto;
-begin
-  if contador <= 1 then
-    Exit;
-
-  // Convertir a array para ordenar
-  contactos := ListarContactosArray;
-
-  // Algoritmo burbuja
-  for i := 0 to Length(contactos) - 2 do
-    for j := 0 to Length(contactos) - 2 - i do
-      if LowerCase(contactos[j].nombre) > LowerCase(contactos[j + 1].nombre) then
+      if cur = prev then
       begin
-        temp := contactos[j];
-        contactos[j] := contactos[j + 1];
-        contactos[j + 1] := temp;
-      end;
-
-  // Reconstruir la lista
-  LimpiarLista;
-  for i := 0 to Length(contactos) - 1 do
-    Agregar(contactos[i]);
-end;
-
-procedure TListaCircularContactos.OrdenarPorEmail;
-var
-  contactos: TArrayContactos;
-  i, j: Integer;
-  temp: TContacto;
-begin
-  if contador <= 1 then
-    Exit;
-
-  contactos := ListarContactosArray;
-
-  for i := 0 to Length(contactos) - 2 do
-    for j := 0 to Length(contactos) - 2 - i do
-      if LowerCase(contactos[j].email) > LowerCase(contactos[j + 1].email) then
+        // only one element
+        Dispose(cur); L.Tail := nil; L.Count := 0; Exit(True);
+      end
+      else
       begin
-        temp := contactos[j];
-        contactos[j] := contactos[j + 1];
-        contactos[j + 1] := temp;
+        prev^.Next := cur^.Next;
+        if cur = L.Tail then L.Tail := prev;
+        Dispose(cur); Dec(L.Count);
+        Exit(True);
       end;
-
-  LimpiarLista;
-  for i := 0 to Length(contactos) - 1 do
-    Agregar(contactos[i]);
-end;
-
-procedure TListaCircularContactos.OrdenarPorFechaAgregado;
-var
-  contactos: TArrayContactos;
-  i, j: Integer;
-  temp: TContacto;
-begin
-  if contador <= 1 then
-    Exit;
-
-  contactos := ListarContactosArray;
-
-  for i := 0 to Length(contactos) - 2 do
-    for j := 0 to Length(contactos) - 2 - i do
-      if contactos[j].fechaAgregado > contactos[j + 1].fechaAgregado then
-      begin
-        temp := contactos[j];
-        contactos[j] := contactos[j + 1];
-        contactos[j + 1] := temp;
-      end;
-
-  LimpiarLista;
-  for i := 0 to Length(contactos) - 1 do
-    Agregar(contactos[i]);
-end;
-
-function TListaCircularContactos.BuscarPorNombre(nombre: string): TListaCircularContactos;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := TListaCircularContactos.Create;
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  nombre := LowerCase(nombre);
-
-  for i := 1 to contador do
-  begin
-    if Pos(nombre, LowerCase(nodo^.datos.nombre)) > 0 then
-      Result.Agregar(nodo^.datos);
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-function TListaCircularContactos.ObtenerContactosRecientes(dias: Integer): TListaCircularContactos;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-  fechaLimite: TDateTime;
-begin
-  Result := TListaCircularContactos.Create;
-
-  if EstaVacia then
-    Exit;
-
-  fechaLimite := IncDay(Now, -dias);
-  nodo := actual;
-
-  for i := 1 to contador do
-  begin
-    if nodo^.datos.fechaAgregado >= fechaLimite then
-      Result.Agregar(nodo^.datos);
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-function TListaCircularContactos.GenerarReporte: string;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := 'digraph ListaCircular {' + LineEnding;
-  Result := Result + '  rankdir=LR;' + LineEnding;
-  Result := Result + '  node [shape=record];' + LineEnding;
-
-  if EstaVacia then
-  begin
-    Result := Result + '  vacia [label="Lista Vacía"];' + LineEnding;
-  end
-  else
-  begin
-    nodo := actual;
-
-    // Generar nodos
-    for i := 1 to contador do
-    begin
-      Result := Result + Format('  contacto%d [label="ID: %d|Nombre: %s|Usuario: %s|Email: %s|Teléfono: %s"',
-        [nodo^.datos.id, nodo^.datos.id, nodo^.datos.nombre,
-         nodo^.datos.usuario, nodo^.datos.email, nodo^.datos.telefono]);
-
-      if nodo = actual then
-        Result := Result + ', style=filled, fillcolor=lightblue';
-
-      Result := Result + '];' + LineEnding;
-      nodo := nodo^.siguiente;
     end;
-
-    // Generar conexiones circulares
-    nodo := actual;
-    for i := 1 to contador do
-    begin
-      Result := Result + Format('  contacto%d -> contacto%d;' + LineEnding,
-        [nodo^.datos.id, nodo^.siguiente^.datos.id]);
-      nodo := nodo^.siguiente;
-    end;
-  end;
-
-  Result := Result + '}' + LineEnding;
+    prev := cur; cur := cur^.Next;
+  until cur = head;
 end;
 
-function TListaCircularContactos.GenerarReporteHTML: string;
-var
-  nodo: PNodoContacto;
-  i: Integer;
+function LC_Find(var L: TListaCircularContactos; const Email: AnsiString): PNodeContacto;
+var cur, head: PNodeContacto;
 begin
-  Result := '<html><head><title>Lista de Contactos</title></head><body>' + LineEnding;
-  Result := Result + '<h1>Lista Circular de Contactos</h1>' + LineEnding;
-  Result := Result + '<p>Total de contactos: ' + IntToStr(contador) + '</p>' + LineEnding;
-
-  if EstaVacia then
-  begin
-    Result := Result + '<p>No hay contactos registrados.</p>' + LineEnding;
-  end
-  else
-  begin
-    Result := Result + '<table border="1">' + LineEnding;
-    Result := Result + '<tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Fecha Agregado</th></tr>' + LineEnding;
-
-    nodo := actual;
-    for i := 1 to contador do
-    begin
-      Result := Result + '<tr';
-      if nodo = actual then
-        Result := Result + ' style="background-color: #lightblue"';
-      Result := Result + '>' + LineEnding;
-
-      Result := Result + Format('<td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>',
-        [nodo^.datos.id, nodo^.datos.nombre, nodo^.datos.usuario,
-         nodo^.datos.email, nodo^.datos.telefono, DateTimeToStr(nodo^.datos.fechaAgregado)]);
-
-      Result := Result + '</tr>' + LineEnding;
-      nodo := nodo^.siguiente;
-    end;
-
-    Result := Result + '</table>' + LineEnding;
-  end;
-
-  Result := Result + '</body></html>' + LineEnding;
+  Result := nil;
+  if L.Tail = nil then Exit;
+  head := L.Tail^.Next;
+  cur := head;
+  repeat
+    if SameText(cur^.Data.Email, Email) then Exit(cur);
+    cur := cur^.Next;
+  until cur = head;
 end;
 
-function TListaCircularContactos.ListarContactosArray: TArrayContactos;
-var
-  nodo: PNodoContacto;
-  i: Integer;
+function LC_NextEmail(var L: TListaCircularContactos; const Email: AnsiString; out NextEmail: AnsiString): Boolean;
+var p: PNodeContacto;
 begin
-  SetLength(Result, contador);
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 0 to contador - 1 do
+  p := LC_Find(L, Email);
+  if p <> nil then
   begin
-    Result[i] := nodo^.datos;
-    nodo := nodo^.siguiente;
+    NextEmail := p^.Next^.Data.Email; Exit(True);
   end;
+  Result := False;
 end;
 
-procedure TListaCircularContactos.LimpiarLista;
-var
-  nodo, siguiente: PNodoContacto;
-  i: Integer;
+procedure LC_ToDot(const L: TListaCircularContactos; const FilePath: AnsiString);
+var f: Text; cur, head: PNodeContacto;
 begin
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 1 to contador do
+  Assign(f, FilePath); Rewrite(f);
+  Writeln(f, 'digraph Contactos {');
+  Writeln(f, '  rankdir=LR; node [shape=circle];');
+  if L.Tail <> nil then
   begin
-    siguiente := nodo^.siguiente;
-    Dispose(nodo);
-    nodo := siguiente;
+    head := L.Tail^.Next;
+    cur := head;
+    repeat
+      Writeln(f, '  n', PtrUInt(cur), ' [label="', cur^.Data.Email, '"];');
+      Writeln(f, '  n', PtrUInt(cur), ' -> n', PtrUInt(cur^.Next), ';');
+      cur := cur^.Next;
+    until cur = head;
   end;
-
-  actual := nil;
-  contador := 0;
-end;
-
-function TListaCircularContactos.ClonarLista: TListaCircularContactos;
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  Result := TListaCircularContactos.Create;
-
-  if EstaVacia then
-    Exit;
-
-  nodo := actual;
-  for i := 1 to contador do
-  begin
-    Result.Agregar(nodo^.datos);
-    nodo := nodo^.siguiente;
-  end;
-end;
-
-procedure TListaCircularContactos.ModificarContacto(email: string; nuevosDatos: TContacto);
-var
-  nodo: PNodoContacto;
-begin
-  nodo := BuscarPorEmail(email);
-  if nodo <> nil then
-  begin
-    // Mantener ID y fecha de agregado original
-    nuevosDatos.id := nodo^.datos.id;
-    nuevosDatos.fechaAgregado := nodo^.datos.fechaAgregado;
-    nodo^.datos := nuevosDatos;
-  end
-  else
-    raise Exception.Create('Contacto no encontrado');
-end;
-
-function TListaCircularContactos.RecorrerCompleto: TArrayContactos;
-begin
-  Result := ListarContactosArray;
-end;
-
-procedure TListaCircularContactos.MostrarNavegacion(pasos: Integer);
-var
-  nodo: PNodoContacto;
-  i: Integer;
-begin
-  if EstaVacia then
-  begin
-    WriteLn('No hay contactos para navegar');
-    Exit;
-  end;
-
-  WriteLn('=== NAVEGACIÓN CIRCULAR ===');
-  WriteLn('Contacto actual:');
-  MostrarContacto(actual);
-
-  nodo := actual;
-  WriteLn('Navegando ', pasos, ' pasos hacia adelante:');
-
-  for i := 1 to pasos do
-  begin
-    nodo := nodo^.siguiente;
-    WriteLn('Paso ', i, ':');
-    MostrarContacto(nodo);
-  end;
-
-  // El actual no cambia
+  Writeln(f, '}');
+  Close(f);
 end;
 
 end.
+

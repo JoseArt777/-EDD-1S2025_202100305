@@ -23,7 +23,6 @@ var
   eliminado: TCorreo;
   encontrado: TCorreo;
   nEnviados: LongInt;
-  tc: TContacto;
 begin
   // Usuarios
   LS_Init(usuarios);
@@ -60,9 +59,10 @@ begin
 
   // Contactos (lista circular)
   LC_Init(contactos);
-  tc.Email := 'aux-luis@edd.com'; LC_Add(contactos, tc);
-  tc.Email := 'aux-marcosg@edd.com'; LC_Add(contactos, tc);
-  tc.Email := 'root@edd.com'; LC_Add(contactos, tc);
+      var tc: TContacto;
+  var tc: TContacto; begin tc.Email := 'aux-luis@edd.com'; LC_Add(contactos, tc); end;
+      tc.Email := 'aux-marcosg@edd.com'; LC_Add(contactos, tc);
+      tc.Email := 'root@edd.com'; LC_Add(contactos, tc);
   LC_ToDot(contactos, 'out_contactos.dot');
 
   // Matriz Dispersa (relaciones)

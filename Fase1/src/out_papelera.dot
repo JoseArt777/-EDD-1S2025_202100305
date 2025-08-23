@@ -1,0 +1,4 @@
+digraph Papelera {
+  rankdir=TB; node [shape=box];
+  n131747447709760 [label="Aviso"];
+}

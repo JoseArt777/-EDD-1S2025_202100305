@@ -1,0 +1,139 @@
+unit pila;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  SysUtils;
+
+type
+  // Registro para los correos en la pila
+  TCorreoEliminado = record
+    id: Integer;
+    remitente: string;
+    destinatario: string;
+    asunto: string;
+    mensaje: string;
+    fecha: TDateTime;
+  end;
+
+  PNodoPila = ^TNodoPila;
+
+  TNodoPila = record
+    datos: TCorreoEliminado;
+    siguiente: PNodoPila;
+  end;
+
+  TPilaCorreos = class
+  private
+    tope: PNodoPila;  // ← atributo, NO función
+    contador: Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure Push(correo: TCorreoEliminado);
+    function Pop: TCorreoEliminado;
+    function Peek: TCorreoEliminado;
+    function EstaVacia: Boolean;
+    function ObtenerCantidad: Integer;
+
+    procedure MostrarTodos;
+    function BuscarPorAsunto(const clave: string): TCorreoEliminado;
+  end;
+
+implementation
+
+constructor TPilaCorreos.Create;
+begin
+  tope := nil;
+  contador := 0;
+end;
+
+destructor TPilaCorreos.Destroy;
+begin
+  while not EstaVacia do
+    Pop;
+  inherited Destroy;
+end;
+
+procedure TPilaCorreos.Push(correo: TCorreoEliminado);
+var
+  nuevoNodo: PNodoPila;
+begin
+  New(nuevoNodo);
+  nuevoNodo^.datos := correo;
+  nuevoNodo^.siguiente := tope;
+  tope := nuevoNodo;     // ← se usa como campo, no como función
+  Inc(contador);
+end;
+
+function TPilaCorreos.Pop: TCorreoEliminado;
+var
+  nodoEliminado: PNodoPila;
+begin
+  if EstaVacia then
+    raise Exception.Create('La pila está vacía');
+
+  nodoEliminado := tope;
+  Result := nodoEliminado^.datos;
+  tope := nodoEliminado^.siguiente;
+  Dispose(nodoEliminado);
+  Dec(contador);
+end;
+
+function TPilaCorreos.Peek: TCorreoEliminado;
+begin
+  if EstaVacia then
+    raise Exception.Create('La pila está vacía');
+  Result := tope^.datos;
+end;
+
+function TPilaCorreos.EstaVacia: Boolean;
+begin
+  Result := tope = nil;
+end;
+
+function TPilaCorreos.ObtenerCantidad: Integer;
+begin
+  Result := contador;
+end;
+
+procedure TPilaCorreos.MostrarTodos;
+var
+  actual: PNodoPila;
+begin
+  actual := tope;
+  WriteLn('=== PILA DE CORREOS ELIMINADOS ===');
+  while actual <> nil do
+  begin
+    WriteLn('ID: ', actual^.datos.id);
+    WriteLn('De: ', actual^.datos.remitente);
+    WriteLn('Para: ', actual^.datos.destinatario);
+    WriteLn('Asunto: ', actual^.datos.asunto);
+    WriteLn('Fecha: ', DateTimeToStr(actual^.datos.fecha));
+    WriteLn('-------------------');
+    actual := actual^.siguiente;
+  end;
+end;
+
+function TPilaCorreos.BuscarPorAsunto(const clave: string): TCorreoEliminado;
+var
+  actual: PNodoPila;
+begin
+  actual := tope;
+  while actual <> nil do
+  begin
+    if Pos(LowerCase(clave), LowerCase(actual^.datos.asunto)) > 0 then
+    begin
+      Result := actual^.datos;
+      Exit;
+    end;
+    actual := actual^.siguiente;
+  end;
+  raise Exception.Create('No se encontró un correo con el asunto indicado');
+end;
+
+end.
+
