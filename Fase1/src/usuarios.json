@@ -1,0 +1,37 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nombre": "Luis Garcia",
+      "usuario": "auxluis",
+      "email": "aux-luis@edd.com",
+      "telefono": "12345678",
+      "password": "luis123"
+    },
+    {
+      "id": 2,
+      "nombre": "Marcos Itzep",
+      "usuario": "auxmarcos",
+      "email": "aux-marcosg@edd.com",
+      "telefono": "87654321",
+      "password": "marcos123"
+    },
+    {
+      "id": 3,
+      "nombre": "Ana López",
+      "usuario": "analo",
+      "email": "ana@edd.com",
+      "telefono": "55501234",
+      "password": "ana2025"
+    },
+    {
+      "id": 4,
+      "nombre": "Carlos Pérez",
+      "usuario": "carlosp",
+      "email": "carlos@edd.com",
+      "telefono": "55443322",
+      "password": "carlos321"
+    }
+  ]
+}
+

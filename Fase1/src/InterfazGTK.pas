@@ -5,300 +5,809 @@ unit InterfazGTK;
 interface
 
 uses
-  Classes, SysUtils, glib2, gdk2, gtk2, EstructurasDatos;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  FileUtil, EstructurasDatos;
 
 type
   TInterfazEDDMail = class
   private
     FSistema: TEDDMailSystem;
-    FVentanaPrincipal: PGtkWidget;
-    FVentanaLogin: PGtkWidget;
+    FFormLogin: TForm;
+    FFormPrincipal: TForm;
     FUsuarioActivo: Boolean;
-    FEntryEmail: PGtkWidget;
-    FEntryPassword: PGtkWidget;
+    FEditEmail: TEdit;
+    FEditPassword: TEdit;
     
-    procedure CrearVentanaLogin;
-    procedure CrearVentanaPrincipal;
+    procedure CrearFormLogin;
+    procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
     procedure CrearInterfazUsuario;
-    procedure MostrarMensaje(Titulo: String; Mensaje: String);
+    procedure MostrarMensaje(Titulo, Mensaje: String);
+    
+    // Event handlers
+    procedure OnLoginClick(Sender: TObject);
+    procedure OnCrearCuentaClick(Sender: TObject);
+    procedure OnCargaMasivaClick(Sender: TObject);
+    procedure OnReporteUsuariosClick(Sender: TObject);
+    procedure OnReporteRelacionesClick(Sender: TObject);
+    procedure OnCerrarSesionClick(Sender: TObject);
+    procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure OnKeyPress(Sender: TObject; var Key: Char);
     
   public
     constructor Create;
     destructor Destroy; override;
     procedure Ejecutar;
-    
-    procedure OnLoginClick(widget: PGtkWidget; data: gpointer);
-    procedure OnCrearCuentaClick(widget: PGtkWidget; data: gpointer);
-    procedure OnCargaMasivaClick(widget: PGtkWidget; data: gpointer);
-    procedure OnReporteUsuariosClick(widget: PGtkWidget; data: gpointer);
-    procedure OnReporteRelacionesClick(widget: PGtkWidget; data: gpointer);
-    procedure OnCerrarSesionClick(widget: PGtkWidget; data: gpointer);
   end;
-
-var
-  InterfazGlobal: TInterfazEDDMail;
-
-procedure LoginCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure CrearCuentaCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure CargaMasivaCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure ReporteUsuariosCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure ReporteRelacionesCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure CerrarSesionCallback(widget: PGtkWidget; data: gpointer); cdecl;
-procedure DestruirVentana(widget: PGtkWidget; data: gpointer); cdecl;
 
 implementation
 
-procedure LoginCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnLoginClick(widget, data);
-end;
-
-procedure CrearCuentaCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnCrearCuentaClick(widget, data);
-end;
-
-procedure CargaMasivaCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnCargaMasivaClick(widget, data);
-end;
-
-procedure ReporteUsuariosCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnReporteUsuariosClick(widget, data);
-end;
-
-procedure ReporteRelacionesCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnReporteRelacionesClick(widget, data);
-end;
-
-procedure CerrarSesionCallback(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  if InterfazGlobal <> nil then
-    InterfazGlobal.OnCerrarSesionClick(widget, data);
-end;
-
-procedure DestruirVentana(widget: PGtkWidget; data: gpointer); cdecl;
-begin
-  gtk_main_quit();
-end;
+uses
+  LCLIntf, LCLType;
 
 constructor TInterfazEDDMail.Create;
 begin
   inherited Create;
   FSistema := TEDDMailSystem.Create;
   FUsuarioActivo := False;
-  InterfazGlobal := Self;
+  FFormLogin := nil;
+  FFormPrincipal := nil;
 end;
 
 destructor TInterfazEDDMail.Destroy;
 begin
   FSistema.Free;
+  if Assigned(FFormLogin) then
+    FFormLogin.Free;
+  if Assigned(FFormPrincipal) then
+    FFormPrincipal.Free;
   inherited Destroy;
 end;
 
 procedure TInterfazEDDMail.Ejecutar;
 begin
-  gtk_init(@argc, @argv);
-  CrearVentanaLogin;
-  gtk_main();
+  Application.Initialize;
+  CrearFormLogin;
+  Application.Run;
 end;
 
-procedure TInterfazEDDMail.CrearVentanaLogin;
+procedure TInterfazEDDMail.CrearFormLogin;
 var
-  VBox: PGtkWidget;
-  HBoxBotones: PGtkWidget;
-  Label: PGtkWidget;
-  BtnLogin: PGtkWidget;
-  BtnCrearCuenta: PGtkWidget;
+  Panel: TPanel;
+  LabelTitulo, LabelEmail, LabelPassword: TLabel;
+  BtnLogin, BtnCrearCuenta: TButton;
 begin
-  FVentanaLogin := gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(FVentanaLogin), 'EDDMail - Iniciar Sesión');
-  gtk_window_set_default_size(GTK_WINDOW(FVentanaLogin), 400, 300);
-  gtk_window_set_position(GTK_WINDOW(FVentanaLogin), GTK_WIN_POS_CENTER);
-  
-  g_signal_connect(FVentanaLogin, 'destroy', G_CALLBACK(@DestruirVentana), nil);
-  
-  VBox := gtk_vbox_new(False, 10);
-  gtk_container_add(GTK_CONTAINER(FVentanaLogin), VBox);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
-  
-  Label := gtk_label_new('EDDMail');
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 20);
-  
-  Label := gtk_label_new('Email:');
-  gtk_misc_set_alignment(GTK_MISC(Label), 0.0, 0.5);
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 0);
-  
-  FEntryEmail := gtk_entry_new();
-  gtk_box_pack_start(GTK_BOX(VBox), FEntryEmail, False, False, 5);
-  
-  Label := gtk_label_new('Password:');
-  gtk_misc_set_alignment(GTK_MISC(Label), 0.0, 0.5);
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 0);
-  
-  FEntryPassword := gtk_entry_new();
-  gtk_entry_set_visibility(GTK_ENTRY(FEntryPassword), False);
-  gtk_box_pack_start(GTK_BOX(VBox), FEntryPassword, False, False, 5);
-  
-  HBoxBotones := gtk_hbox_new(True, 10);
-  gtk_box_pack_start(GTK_BOX(VBox), HBoxBotones, False, False, 20);
-  
-  BtnLogin := gtk_button_new_with_label('Iniciar Sesión');
-  gtk_box_pack_start(GTK_BOX(HBoxBotones), BtnLogin, True, True, 0);
-  g_signal_connect(BtnLogin, 'clicked', G_CALLBACK(@LoginCallback), nil);
-  
-  BtnCrearCuenta := gtk_button_new_with_label('Crear Cuenta');
-  gtk_box_pack_start(GTK_BOX(HBoxBotones), BtnCrearCuenta, True, True, 0);
-  g_signal_connect(BtnCrearCuenta, 'clicked', G_CALLBACK(@CrearCuentaCallback), nil);
-  
-  gtk_widget_show_all(FVentanaLogin);
+  FFormLogin := TForm.Create(nil);
+  with FFormLogin do
+  begin
+    Caption := 'EDDMail - Iniciar Sesión';
+    Width := 450;
+    Height := 350;
+    Position := poScreenCenter;
+    BorderStyle := bsDialog;
+    OnClose := @Self.OnFormClose;   // <- uso Self
+    KeyPreview := True;
+    OnKeyPress := @Self.OnKeyPress; // <- uso Self
+  end;
+
+  Panel := TPanel.Create(FFormLogin);
+  with Panel do
+  begin
+    Parent := FFormLogin;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := clForm;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'EDDMail - Sistema de Correos';
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clNavy;
+    Left := 80;
+    Top := 30;
+    AutoSize := True;
+  end;
+
+  LabelEmail := TLabel.Create(Panel);
+  with LabelEmail do
+  begin
+    Parent := Panel;
+    Caption := 'Email:';
+    Left := 20;
+    Top := 90;
+    Font.Style := [fsBold];
+  end;
+
+  FEditEmail := TEdit.Create(Panel);
+  with FEditEmail do
+  begin
+    Parent := Panel;
+    Left := 20;
+    Top := 110;
+    Width := 370;
+    Text := 'root@edd.com';
+    TabOrder := 0;
+  end;
+
+  LabelPassword := TLabel.Create(Panel);
+  with LabelPassword do
+  begin
+    Parent := Panel;
+    Caption := 'Password:';
+    Left := 20;
+    Top := 150;
+    Font.Style := [fsBold];
+  end;
+
+  FEditPassword := TEdit.Create(Panel);
+  with FEditPassword do
+  begin
+    Parent := Panel;
+    Left := 20;
+    Top := 170;
+    Width := 370;
+    PasswordChar := '*';
+    Text := 'root123';
+    TabOrder := 1;
+  end;
+
+  BtnLogin := TButton.Create(Panel);
+  with BtnLogin do
+  begin
+    Parent := Panel;
+    Caption := 'Iniciar Sesión';
+    Left := 90;
+    Top := 220;
+    Width := 120;
+    Height := 35;
+    TabOrder := 2;
+    Default := True;
+    OnClick := @Self.OnLoginClick;   // <- uso Self
+    Font.Style := [fsBold];
+  end;
+
+  BtnCrearCuenta := TButton.Create(Panel);
+  with BtnCrearCuenta do
+  begin
+    Parent := Panel;
+    Caption := 'Crear Cuenta';
+    Left := 230;
+    Top := 220;
+    Width := 120;
+    Height := 35;
+    TabOrder := 3;
+    OnClick := @Self.OnCrearCuentaClick; // <- uso Self
+  end;
+
+  FFormLogin.Show;
 end;
 
-procedure TInterfazEDDMail.CrearVentanaPrincipal;
+
+procedure TInterfazEDDMail.CrearFormPrincipal;
 begin
-  gtk_widget_hide(FVentanaLogin);
+  FFormLogin.Hide;
   
-  FVentanaPrincipal := gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(FVentanaPrincipal), 'EDDMail - Sistema de Correos');
-  gtk_window_set_default_size(GTK_WINDOW(FVentanaPrincipal), 800, 600);
-  gtk_window_set_position(GTK_WINDOW(FVentanaPrincipal), GTK_WIN_POS_CENTER);
-  
-  g_signal_connect(FVentanaPrincipal, 'destroy', G_CALLBACK(@DestruirVentana), nil);
+  FFormPrincipal := TForm.Create(nil);
+  with FFormPrincipal do
+  begin
+    Caption := 'EDDMail - Sistema de Correos';
+    Width := 800;
+    Height := 600;
+    Position := poScreenCenter;
+    OnClose := @OnFormClose;
+  end;
   
   if FSistema.GetUsuarioActual^.Email = 'root@edd.com' then
     CrearInterfazRoot
   else
     CrearInterfazUsuario;
     
-  gtk_widget_show_all(FVentanaPrincipal);
+  FFormPrincipal.Show;
 end;
 
 procedure TInterfazEDDMail.CrearInterfazRoot;
 var
-  VBox: PGtkWidget;
-  Label: PGtkWidget;
-  BtnCargaMasiva: PGtkWidget;
-  BtnReporteUsuarios: PGtkWidget;
-  BtnReporteRelaciones: PGtkWidget;
-  BtnCerrarSesion: PGtkWidget;
+  Panel: TPanel;
+  LabelTitulo, LabelInfo: TLabel;
+  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones, BtnCerrarSesion: TButton;
+  YPos: Integer;
 begin
-  VBox := gtk_vbox_new(False, 10);
-  gtk_container_add(GTK_CONTAINER(FVentanaPrincipal), VBox);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 20);
+  Panel := TPanel.Create(FFormPrincipal);
+  with Panel do
+  begin
+    Parent := FFormPrincipal;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := clForm;
+  end;
   
-  Label := gtk_label_new('Root - Panel de Administración');
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 10);
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Root - Panel de Administración';
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clMaroon;
+    Left := 20;
+    Top := 20;
+    AutoSize := True;
+  end;
   
-  BtnCargaMasiva := gtk_button_new_with_label('Carga Masiva');
-  gtk_box_pack_start(GTK_BOX(VBox), BtnCargaMasiva, False, False, 5);
-  g_signal_connect(BtnCargaMasiva, 'clicked', G_CALLBACK(@CargaMasivaCallback), nil);
+  LabelInfo := TLabel.Create(Panel);
+  with LabelInfo do
+  begin
+    Parent := Panel;
+    Caption := 'Bienvenido Administrador. Seleccione una opción:';
+    Left := 20;
+    Top := 50;
+    Font.Color := clGray;
+  end;
   
-  BtnReporteUsuarios := gtk_button_new_with_label('Reporte de Usuarios');
-  gtk_box_pack_start(GTK_BOX(VBox), BtnReporteUsuarios, False, False, 5);
-  g_signal_connect(BtnReporteUsuarios, 'clicked', G_CALLBACK(@ReporteUsuariosCallback), nil);
+  YPos := 90;
   
-  BtnReporteRelaciones := gtk_button_new_with_label('Reporte de Relaciones');
-  gtk_box_pack_start(GTK_BOX(VBox), BtnReporteRelaciones, False, False, 5);
-  g_signal_connect(BtnReporteRelaciones, 'clicked', G_CALLBACK(@ReporteRelacionesCallback), nil);
+  BtnCargaMasiva := TButton.Create(Panel);
+  with BtnCargaMasiva do
+  begin
+    Parent := Panel;
+    Caption := 'Carga Masiva de Usuarios (JSON)';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnCargaMasivaClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 60);
   
-  BtnCerrarSesion := gtk_button_new_with_label('Cerrar Sesión');
-  gtk_box_pack_start(GTK_BOX(VBox), BtnCerrarSesion, False, False, 20);
-  g_signal_connect(BtnCerrarSesion, 'clicked', G_CALLBACK(@CerrarSesionCallback), nil);
+  BtnReporteUsuarios := TButton.Create(Panel);
+  with BtnReporteUsuarios do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reporte de Usuarios';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnReporteUsuariosClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 60);
+  
+  BtnReporteRelaciones := TButton.Create(Panel);
+  with BtnReporteRelaciones do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reporte de Relaciones';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnReporteRelacionesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 100);
+  
+  BtnCerrarSesion := TButton.Create(Panel);
+  with BtnCerrarSesion do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar Sesión';
+    Left := 20;
+    Top := YPos;
+    Width := 200;
+    Height := 35;
+    OnClick := @OnCerrarSesionClick;
+    Font.Color := clRed;
+    Font.Style := [fsBold];
+  end;
 end;
 
 procedure TInterfazEDDMail.CrearInterfazUsuario;
 var
-  VBox: PGtkWidget;
-  Label: PGtkWidget;
+  Panel: TPanel;
+  LabelSaludo, LabelMenu, LabelInfo: TLabel;
   Usuario: PUsuario;
-  BtnCerrarSesion: PGtkWidget;
+  BtnBandeja, BtnEnviar, BtnPapelera, BtnProgramar, BtnContactos, BtnPerfil, BtnReportes, BtnCerrarSesion: TButton;
+  YPos: Integer;
 begin
-  VBox := gtk_vbox_new(False, 5);
-  gtk_container_add(GTK_CONTAINER(FVentanaPrincipal), VBox);
-  gtk_container_set_border_width(GTK_CONTAINER(VBox), 15);
+  Panel := TPanel.Create(FFormPrincipal);
+  with Panel do
+  begin
+    Parent := FFormPrincipal;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := clForm;
+  end;
   
   Usuario := FSistema.GetUsuarioActual;
   
-  Label := gtk_label_new(PChar('Hola: ' + Usuario^.Nombre));
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 10);
+  LabelSaludo := TLabel.Create(Panel);
+  with LabelSaludo do
+  begin
+    Parent := Panel;
+    Caption := 'Hola: ' + Usuario^.Nombre;
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clNavy;
+    Left := 20;
+    Top := 20;
+    AutoSize := True;
+  end;
   
-  Label := gtk_label_new('Menu de Usuario Estándar');
-  gtk_box_pack_start(GTK_BOX(VBox), Label, False, False, 10);
+  LabelMenu := TLabel.Create(Panel);
+  with LabelMenu do
+  begin
+    Parent := Panel;
+    Caption := 'Menú de Usuario Estándar';
+    Left := 20;
+    Top := 50;
+    Font.Style := [fsBold];
+  end;
   
-  BtnCerrarSesion := gtk_button_new_with_label('Cerrar Sesión');
-  gtk_box_pack_start(GTK_BOX(VBox), BtnCerrarSesion, False, False, 10);
-  g_signal_connect(BtnCerrarSesion, 'clicked', G_CALLBACK(@CerrarSesionCallback), nil);
+  LabelInfo := TLabel.Create(Panel);
+  with LabelInfo do
+  begin
+    Parent := Panel;
+    Caption := 'Email: ' + Usuario^.Email + ' | Teléfono: ' + Usuario^.Telefono;
+    Left := 20;
+    Top := 70;
+    Font.Color := clGray;
+  end;
+  
+  YPos := 110;
+  
+  // Primera columna de botones
+  BtnBandeja := TButton.Create(Panel);
+  with BtnBandeja do
+  begin
+    Parent := Panel;
+    Caption := 'Bandeja de Entrada';
+    Left := 20;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Ver correos recibidos';
+    ShowHint := True;
+  end;
+  
+  BtnEnviar := TButton.Create(Panel);
+  with BtnEnviar do
+  begin
+    Parent := Panel;
+    Caption := 'Enviar Correo';
+    Left := 220;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Enviar un nuevo correo';
+    ShowHint := True;
+  end;
+  Inc(YPos, 50);
+  
+  BtnPapelera := TButton.Create(Panel);
+  with BtnPapelera do
+  begin
+    Parent := Panel;
+    Caption := 'Papelera';
+    Left := 20;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Ver correos eliminados';
+    ShowHint := True;
+  end;
+  
+  BtnProgramar := TButton.Create(Panel);
+  with BtnProgramar do
+  begin
+    Parent := Panel;
+    Caption := 'Programar Correo';
+    Left := 220;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Programar envío automático';
+    ShowHint := True;
+  end;
+  Inc(YPos, 50);
+  
+  BtnContactos := TButton.Create(Panel);
+  with BtnContactos do
+  begin
+    Parent := Panel;
+    Caption := 'Contactos';
+    Left := 20;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Gestionar contactos';
+    ShowHint := True;
+  end;
+  
+  BtnPerfil := TButton.Create(Panel);
+  with BtnPerfil do
+  begin
+    Parent := Panel;
+    Caption := 'Actualizar Perfil';
+    Left := 220;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Modificar información personal';
+    ShowHint := True;
+  end;
+  Inc(YPos, 50);
+  
+  BtnReportes := TButton.Create(Panel);
+  with BtnReportes do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reportes';
+    Left := 20;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    Hint := 'Generar reportes personales';
+    ShowHint := True;
+  end;
+  Inc(YPos, 80);
+  
+  BtnCerrarSesion := TButton.Create(Panel);
+  with BtnCerrarSesion do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar Sesión';
+    Left := 20;
+    Top := YPos;
+    Width := 180;
+    Height := 35;
+    OnClick := @OnCerrarSesionClick;
+    Font.Color := clRed;
+    Font.Style := [fsBold];
+  end;
 end;
 
-procedure TInterfazEDDMail.OnLoginClick(widget: PGtkWidget; data: gpointer);
+// Event handlers
+procedure TInterfazEDDMail.OnLoginClick(Sender: TObject);
 var
-  Email: String;
-  Password: String;
+  Email, Password: String;
 begin
-  Email := gtk_entry_get_text(GTK_ENTRY(FEntryEmail));
-  Password := gtk_entry_get_text(GTK_ENTRY(FEntryPassword));
+  Email := Trim(FEditEmail.Text);
+  Password := Trim(FEditPassword.Text);
+  
+  if (Email = '') or (Password = '') then
+  begin
+    MostrarMensaje('Error', 'Por favor ingrese email y password');
+    Exit;
+  end;
   
   if FSistema.IniciarSesion(Email, Password) then
   begin
     FUsuarioActivo := True;
-    CrearVentanaPrincipal;
+    CrearFormPrincipal;
   end
   else
   begin
     MostrarMensaje('Error', 'Credenciales incorrectas');
+    FEditPassword.Text := '';
+    FEditPassword.SetFocus;
   end;
 end;
 
-procedure TInterfazEDDMail.OnCrearCuentaClick(widget: PGtkWidget; data: gpointer);
+procedure TInterfazEDDMail.OnCrearCuentaClick(Sender: TObject);
+var
+  FormRegistro: TForm;
+  PanelRegistro: TPanel;
+  EditNombre, EditUsuario, EditEmail, EditTelefono, EditPassword: TEdit;
+  LabelNombre, LabelUsuario, LabelEmail, LabelTelefono, LabelPassword: TLabel;
+  BtnRegistrar, BtnCancelar: TButton;
+  YPos: Integer;
+  ModalResult: Integer;
 begin
-  MostrarMensaje('Info', 'Crear cuenta - Funcionalidad no implementada');
+  FormRegistro := TForm.Create(nil);
+  try
+    with FormRegistro do
+    begin
+      Caption := 'Crear Nueva Cuenta';
+      Width := 400;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+    
+    PanelRegistro := TPanel.Create(FormRegistro);
+    with PanelRegistro do
+    begin
+      Parent := FormRegistro;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+    
+    YPos := 20;
+    
+    // Nombre
+    LabelNombre := TLabel.Create(PanelRegistro);
+    with LabelNombre do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Nombre completo:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditNombre := TEdit.Create(PanelRegistro);
+    with EditNombre do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 0;
+    end;
+    Inc(YPos, 40);
+    
+    // Usuario
+    LabelUsuario := TLabel.Create(PanelRegistro);
+    with LabelUsuario do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Nombre de usuario:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditUsuario := TEdit.Create(PanelRegistro);
+    with EditUsuario do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 1;
+    end;
+    Inc(YPos, 40);
+    
+    // Email
+    LabelEmail := TLabel.Create(PanelRegistro);
+    with LabelEmail do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Email:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditEmail := TEdit.Create(PanelRegistro);
+    with EditEmail do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 2;
+    end;
+    Inc(YPos, 40);
+    
+    // Teléfono
+    LabelTelefono := TLabel.Create(PanelRegistro);
+    with LabelTelefono do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Teléfono:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditTelefono := TEdit.Create(PanelRegistro);
+    with EditTelefono do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 3;
+    end;
+    Inc(YPos, 40);
+    
+    // Password
+    LabelPassword := TLabel.Create(PanelRegistro);
+    with LabelPassword do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Password:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditPassword := TEdit.Create(PanelRegistro);
+    with EditPassword do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      PasswordChar := '*';
+      TabOrder := 4;
+    end;
+    Inc(YPos, 50);
+    
+    // Botones
+    BtnRegistrar := TButton.Create(PanelRegistro);
+    with BtnRegistrar do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Registrar';
+      Left := 100;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+    
+    BtnCancelar := TButton.Create(PanelRegistro);
+    with BtnCancelar do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Cancelar';
+      Left := 200;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+    
+    ModalResult := FormRegistro.ShowModal;
+    
+    if ModalResult = mrOk then
+    begin
+      if (Trim(EditNombre.Text) = '') or (Trim(EditUsuario.Text) = '') or 
+         (Trim(EditEmail.Text) = '') or (Trim(EditPassword.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Todos los campos son obligatorios');
+        Exit;
+      end;
+      
+      if FSistema.RegistrarUsuario(
+        Trim(EditNombre.Text),
+        Trim(EditUsuario.Text),
+        Trim(EditEmail.Text),
+        Trim(EditTelefono.Text),
+        Trim(EditPassword.Text)
+      ) then
+      begin
+        MostrarMensaje('Éxito', 'Usuario registrado correctamente');
+        FEditEmail.Text := Trim(EditEmail.Text);
+        FEditPassword.Text := '';
+      end
+      else
+        MostrarMensaje('Error', 'Error al registrar usuario. El email ya existe.');
+    end;
+    
+  finally
+    FormRegistro.Free;
+  end;
 end;
 
-procedure TInterfazEDDMail.OnCargaMasivaClick(widget: PGtkWidget; data: gpointer);
+procedure TInterfazEDDMail.OnCargaMasivaClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
 begin
-  MostrarMensaje('Info', 'Carga masiva - Funcionalidad no implementada');
+  OpenDialog := TOpenDialog.Create(nil);
+  try
+    with OpenDialog do
+    begin
+      Title := 'Seleccionar archivo JSON';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+      if Execute then
+      begin
+        try
+          FSistema.CargarUsuariosDesdeJSON(FileName);
+          MostrarMensaje('Éxito', 'Usuarios cargados desde: ' + ExtractFileName(FileName));
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar JSON: ' + E.Message);
+        end;
+      end;
+    end;
+  finally
+    OpenDialog.Free;
+  end;
 end;
 
-procedure TInterfazEDDMail.OnReporteUsuariosClick(widget: PGtkWidget; data: gpointer);
+procedure TInterfazEDDMail.OnReporteUsuariosClick(Sender: TObject);
 begin
-  FSistema.GenerarReporteUsuarios('Root-Reportes');
-  MostrarMensaje('Éxito', 'Reporte de usuarios generado');
+  try
+    FSistema.GenerarReporteUsuarios('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de usuarios generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- usuarios.dot (código Graphviz)' + LineEnding +
+      '- usuarios.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
 end;
 
-procedure TInterfazEDDMail.OnReporteRelacionesClick(widget: PGtkWidget; data: gpointer);
+procedure TInterfazEDDMail.OnReporteRelacionesClick(Sender: TObject);
 begin
-  FSistema.GenerarReporteRelaciones('Root-Reportes');
-  MostrarMensaje('Éxito', 'Reporte de relaciones generado');
+  try
+    FSistema.GenerarReporteRelaciones('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de relaciones generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- relaciones.dot (código Graphviz)' + LineEnding +
+      '- relaciones.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
 end;
 
-procedure TInterfazEDDMail.OnCerrarSesionClick(widget: PGtkWidget; data: gpointer);
+procedure TInterfazEDDMail.OnCerrarSesionClick(Sender: TObject);
 begin
   FSistema.CerrarSesion;
   FUsuarioActivo := False;
-  gtk_widget_destroy(FVentanaPrincipal);
-  gtk_widget_show(FVentanaLogin);
   
-  gtk_entry_set_text(GTK_ENTRY(FEntryEmail), '');
-  gtk_entry_set_text(GTK_ENTRY(FEntryPassword), '');
+  if Assigned(FFormPrincipal) then
+  begin
+    FFormPrincipal.Close;
+    FFormPrincipal := nil;
+  end;
+  
+  FEditEmail.Text := '';
+  FEditPassword.Text := '';
+  FFormLogin.Show;
+  FEditEmail.SetFocus;
 end;
 
-procedure TInterfazEDDMail.MostrarMensaje(Titulo: String; Mensaje: String);
-var
-  Dialogo: PGtkWidget;
+procedure TInterfazEDDMail.OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  Dialogo := gtk_message_dialog_new(GTK_WINDOW(FVentanaPrincipal),
-    GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, PChar(Mensaje));
-  gtk_window_set_title(GTK_WINDOW(Dialogo), PChar(Titulo));
-  gtk_dialog_run(GTK_DIALOG(Dialogo));
-  gtk_widget_destroy(Dialogo);
+  if Sender = FFormLogin then
+  begin
+    Application.Terminate;
+  end
+  else if Sender = FFormPrincipal then
+  begin
+    CloseAction := caFree;
+    FFormPrincipal := nil;
+    if Assigned(FFormLogin) then
+      FFormLogin.Show;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnKeyPress(Sender: TObject; var Key: Char);
+begin
+  if Key = #13 then // Enter
+  begin
+    OnLoginClick(Sender);
+    Key := #0;
+  end;
+end;
+
+procedure TInterfazEDDMail.MostrarMensaje(Titulo, Mensaje: String);
+begin
+  ShowMessage(Mensaje);
 end;
 
 end.

@@ -1,0 +1,6 @@
+digraph G {
+    label="Matriz Dispersa - Relaciones de Correos";
+    fontsize=16;
+    node [shape=box];
+    matriz [label="Matriz Dispersa\n(Sin relaciones aún)", style=filled, fillcolor=lightyellow];
+}
