@@ -17,6 +17,9 @@ type
     fechaAgregado: TDateTime;
   end;
 
+  // Array dinámico para compatibilidad
+  TArrayContactos = array of TContacto;
+
   // Puntero al nodo de la lista circular
   PNodoContacto = ^TNodoContacto;
 
@@ -69,7 +72,7 @@ type
     // Operaciones para reportes
     function GenerarReporte: string;
     function GenerarReporteHTML: string;
-    function ListarContactosArray: TArray<TContacto>;
+    function ListarContactosArray: TArrayContactos;
 
     // Utilidades
     procedure LimpiarLista;
@@ -77,7 +80,7 @@ type
     procedure ModificarContacto(email: string; nuevosDatos: TContacto);
 
     // Navegación especial
-    function RecorrerCompleto: TArray<TContacto>;
+    function RecorrerCompleto: TArrayContactos;
     procedure MostrarNavegacion(pasos: Integer);
   end;
 
@@ -363,7 +366,7 @@ end;
 
 procedure TListaCircularContactos.OrdenarPorNombre;
 var
-  contactos: TArray<TContacto>;
+  contactos: TArrayContactos;
   i, j: Integer;
   temp: TContacto;
 begin
@@ -391,7 +394,7 @@ end;
 
 procedure TListaCircularContactos.OrdenarPorEmail;
 var
-  contactos: TArray<TContacto>;
+  contactos: TArrayContactos;
   i, j: Integer;
   temp: TContacto;
 begin
@@ -416,7 +419,7 @@ end;
 
 procedure TListaCircularContactos.OrdenarPorFechaAgregado;
 var
-  contactos: TArray<TContacto>;
+  contactos: TArrayContactos;
   i, j: Integer;
   temp: TContacto;
 begin
@@ -566,7 +569,7 @@ begin
   Result := Result + '</body></html>' + LineEnding;
 end;
 
-function TListaCircularContactos.ListarContactosArray: TArray<TContacto>;
+function TListaCircularContactos.ListarContactosArray: TArrayContactos;
 var
   nodo: PNodoContacto;
   i: Integer;
@@ -638,7 +641,7 @@ begin
     raise Exception.Create('Contacto no encontrado');
 end;
 
-function TListaCircularContactos.RecorrerCompleto: TArray<TContacto>;
+function TListaCircularContactos.RecorrerCompleto: TArrayContactos;
 begin
   Result := ListarContactosArray;
 end;
@@ -672,4 +675,3 @@ begin
 end;
 
 end.
-
