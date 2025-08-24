@@ -17,7 +17,12 @@ type
     FUsuarioActivo: Boolean;
     FEditEmail: TEdit;
     FEditPassword: TEdit;
-    
+
+    // Controles para comunidades
+    FEditNombreComunidad: TEdit;
+    FEditEmailUsuario: TEdit;
+    FMemoComunidades: TMemo;
+
     procedure CrearFormLogin;
     procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
@@ -33,7 +38,13 @@ type
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-    
+
+        // Nuevos event handlers para comunidades
+    procedure OnGestionarComunidadesClick(Sender: TObject);
+    procedure OnReporteComunidadesClick(Sender: TObject);
+    procedure OnCrearComunidadClick(Sender: TObject);
+    procedure OnAsignarUsuarioClick(Sender: TObject);
+    procedure OnListarComunidadesClick(Sender: TObject);
   public
     constructor Create;
     destructor Destroy; override;
@@ -85,11 +96,11 @@ begin
     Height := 350;
     Position := poScreenCenter;
     BorderStyle := bsDialog;
-    OnClose := @OnFormClose;
+    OnClose := @Self.OnFormClose;   // <- uso Self
     KeyPreview := True;
-    OnKeyPress := @OnKeyPress;
+    OnKeyPress := @Self.OnKeyPress; // <- uso Self
   end;
-  
+
   Panel := TPanel.Create(FFormLogin);
   with Panel do
   begin
@@ -99,7 +110,7 @@ begin
     BorderWidth := 20;
     Color := clForm;
   end;
-  
+
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
@@ -112,7 +123,7 @@ begin
     Top := 30;
     AutoSize := True;
   end;
-  
+
   LabelEmail := TLabel.Create(Panel);
   with LabelEmail do
   begin
@@ -122,7 +133,7 @@ begin
     Top := 90;
     Font.Style := [fsBold];
   end;
-  
+
   FEditEmail := TEdit.Create(Panel);
   with FEditEmail do
   begin
@@ -130,10 +141,10 @@ begin
     Left := 20;
     Top := 110;
     Width := 370;
-    Text := 'root@edd.com'; // Valor por defecto para facilitar pruebas
+    Text := 'root@edd.com';
     TabOrder := 0;
   end;
-  
+
   LabelPassword := TLabel.Create(Panel);
   with LabelPassword do
   begin
@@ -143,7 +154,7 @@ begin
     Top := 150;
     Font.Style := [fsBold];
   end;
-  
+
   FEditPassword := TEdit.Create(Panel);
   with FEditPassword do
   begin
@@ -152,10 +163,10 @@ begin
     Top := 170;
     Width := 370;
     PasswordChar := '*';
-    Text := 'root123'; // Valor por defecto para facilitar pruebas
+    Text := 'root123';
     TabOrder := 1;
   end;
-  
+
   BtnLogin := TButton.Create(Panel);
   with BtnLogin do
   begin
@@ -167,10 +178,10 @@ begin
     Height := 35;
     TabOrder := 2;
     Default := True;
-    OnClick := @OnLoginClick;
+    OnClick := @Self.OnLoginClick;   // <- uso Self
     Font.Style := [fsBold];
   end;
-  
+
   BtnCrearCuenta := TButton.Create(Panel);
   with BtnCrearCuenta do
   begin
@@ -181,11 +192,12 @@ begin
     Width := 120;
     Height := 35;
     TabOrder := 3;
-    OnClick := @OnCrearCuentaClick;
+    OnClick := @Self.OnCrearCuentaClick; // <- uso Self
   end;
-  
+
   FFormLogin.Show;
 end;
+
 
 procedure TInterfazEDDMail.CrearFormPrincipal;
 begin
@@ -213,7 +225,8 @@ procedure TInterfazEDDMail.CrearInterfazRoot;
 var
   Panel: TPanel;
   LabelTitulo, LabelInfo: TLabel;
-  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones, BtnCerrarSesion: TButton;
+  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
+  BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
   YPos: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
@@ -225,7 +238,7 @@ begin
     BorderWidth := 20;
     Color := clForm;
   end;
-  
+
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
@@ -238,7 +251,7 @@ begin
     Top := 20;
     AutoSize := True;
   end;
-  
+
   LabelInfo := TLabel.Create(Panel);
   with LabelInfo do
   begin
@@ -248,9 +261,9 @@ begin
     Top := 50;
     Font.Color := clGray;
   end;
-  
+
   YPos := 90;
-  
+
   BtnCargaMasiva := TButton.Create(Panel);
   with BtnCargaMasiva do
   begin
@@ -264,7 +277,7 @@ begin
     Font.Style := [fsBold];
   end;
   Inc(YPos, 60);
-  
+
   BtnReporteUsuarios := TButton.Create(Panel);
   with BtnReporteUsuarios do
   begin
@@ -278,7 +291,7 @@ begin
     Font.Style := [fsBold];
   end;
   Inc(YPos, 60);
-  
+
   BtnReporteRelaciones := TButton.Create(Panel);
   with BtnReporteRelaciones do
   begin
@@ -291,8 +304,37 @@ begin
     OnClick := @OnReporteRelacionesClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 100);
-  
+  Inc(YPos, 60);
+
+  // NUEVOS BOTONES
+  BtnGestionarComunidades := TButton.Create(Panel);
+  with BtnGestionarComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Gestionar Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnGestionarComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 60);
+
+  BtnReporteComunidades := TButton.Create(Panel);
+  with BtnReporteComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reporte de Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnReporteComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 80);
+
   BtnCerrarSesion := TButton.Create(Panel);
   with BtnCerrarSesion do
   begin

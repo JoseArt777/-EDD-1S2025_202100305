@@ -128,6 +128,7 @@ type
     function IniciarSesion(Email, Password: String): Boolean;
     procedure CerrarSesion;
     function GetUsuarioActual: PUsuario;
+    function ListarComunidades: String;
 
     // Funciones para carga masiva (ROOT)
     procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
@@ -222,7 +223,41 @@ begin
     Actual := Actual^.Siguiente;
   end;
 end;
+function TEDDMailSystem.ListarComunidades: String;
+var
+  Comunidad: PComunidad;
+  UsuarioCom: PUsuarioComunidad;
+begin
+  Result := '';
+  Comunidad := FComunidades;
 
+  if Comunidad = nil then
+  begin
+    Result := 'No hay comunidades creadas.';
+    Exit;
+  end;
+
+  while Comunidad <> nil do
+  begin
+    Result := Result + 'Comunidad: ' + Comunidad^.Nombre + LineEnding;
+    Result := Result + 'Usuarios:' + LineEnding;
+
+    UsuarioCom := Comunidad^.UsuariosList;
+    if UsuarioCom = nil then
+      Result := Result + '  (sin usuarios)' + LineEnding
+    else
+    begin
+      while UsuarioCom <> nil do
+      begin
+        Result := Result + '  - ' + UsuarioCom^.Email + LineEnding;
+        UsuarioCom := UsuarioCom^.Siguiente;
+      end;
+    end;
+
+    Result := Result + LineEnding;
+    Comunidad := Comunidad^.Siguiente;
+  end;
+end;
 function TEDDMailSystem.ValidarCredenciales(Email, Password: String): PUsuario;
 var
   Usuario: PUsuario;
@@ -301,6 +336,7 @@ var
   FileStream: TFileStream;
   JsonString: String;
   i: Integer;
+  PasswordUsuario: String;
 begin
   try
     if not FileExists(RutaArchivo) then
@@ -332,12 +368,18 @@ begin
       for i := 0 to UsuariosArray.Count - 1 do
       begin
         UsuarioObj := UsuariosArray.Objects[i];
+              // Leer password del JSON si existe, sino usar genérico
+      if UsuarioObj.Find('password') <> nil then
+        PasswordUsuario := UsuarioObj.Strings['password']
+      else
+        PasswordUsuario := 'password123';
         if RegistrarUsuario(
           UsuarioObj.Strings['nombre'],
           UsuarioObj.Strings['usuario'],
           UsuarioObj.Strings['email'],
           UsuarioObj.Strings['telefono'],
-          'password123' // Password por defecto
+          PasswordUsuario  // <- Password del JSON
+
         ) then
           WriteLn('Usuario cargado: ', UsuarioObj.Strings['email'])
         else

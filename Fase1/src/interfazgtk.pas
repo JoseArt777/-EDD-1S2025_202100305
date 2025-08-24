@@ -213,7 +213,8 @@ procedure TInterfazEDDMail.CrearInterfazRoot;
 var
   Panel: TPanel;
   LabelTitulo, LabelInfo: TLabel;
-  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones, BtnCerrarSesion: TButton;
+  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
+  BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
   YPos: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
@@ -292,7 +293,34 @@ begin
     Font.Style := [fsBold];
   end;
   Inc(YPos, 100);
+   // NUEVOS BOTONES:
+  BtnGestionarComunidades := TButton.Create(Panel);
+  with BtnGestionarComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Gestionar Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnGestionarComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 60);
 
+  BtnReporteComunidades := TButton.Create(Panel);
+  with BtnReporteComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reporte de Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnReporteComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 80);
   BtnCerrarSesion := TButton.Create(Panel);
   with BtnCerrarSesion do
   begin

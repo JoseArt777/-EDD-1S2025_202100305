@@ -17,7 +17,12 @@ type
     FUsuarioActivo: Boolean;
     FEditEmail: TEdit;
     FEditPassword: TEdit;
-    
+
+    // Controles para comunidades
+    FEditNombreComunidad: TEdit;
+    FEditEmailUsuario: TEdit;
+    FMemoComunidades: TMemo;
+
     procedure CrearFormLogin;
     procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
@@ -33,7 +38,13 @@ type
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-    
+
+        // Nuevos event handlers para comunidades
+    procedure OnGestionarComunidadesClick(Sender: TObject);
+    procedure OnReporteComunidadesClick(Sender: TObject);
+    procedure OnCrearComunidadClick(Sender: TObject);
+    procedure OnAsignarUsuarioClick(Sender: TObject);
+    procedure OnListarComunidadesClick(Sender: TObject);
   public
     constructor Create;
     destructor Destroy; override;
@@ -214,7 +225,8 @@ procedure TInterfazEDDMail.CrearInterfazRoot;
 var
   Panel: TPanel;
   LabelTitulo, LabelInfo: TLabel;
-  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones, BtnCerrarSesion: TButton;
+  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
+  BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
   YPos: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
@@ -226,7 +238,7 @@ begin
     BorderWidth := 20;
     Color := clForm;
   end;
-  
+
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
@@ -239,7 +251,7 @@ begin
     Top := 20;
     AutoSize := True;
   end;
-  
+
   LabelInfo := TLabel.Create(Panel);
   with LabelInfo do
   begin
@@ -249,9 +261,9 @@ begin
     Top := 50;
     Font.Color := clGray;
   end;
-  
+
   YPos := 90;
-  
+
   BtnCargaMasiva := TButton.Create(Panel);
   with BtnCargaMasiva do
   begin
@@ -265,7 +277,7 @@ begin
     Font.Style := [fsBold];
   end;
   Inc(YPos, 60);
-  
+
   BtnReporteUsuarios := TButton.Create(Panel);
   with BtnReporteUsuarios do
   begin
@@ -279,7 +291,7 @@ begin
     Font.Style := [fsBold];
   end;
   Inc(YPos, 60);
-  
+
   BtnReporteRelaciones := TButton.Create(Panel);
   with BtnReporteRelaciones do
   begin
@@ -292,8 +304,37 @@ begin
     OnClick := @OnReporteRelacionesClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 100);
-  
+  Inc(YPos, 60);
+
+  // NUEVOS BOTONES
+  BtnGestionarComunidades := TButton.Create(Panel);
+  with BtnGestionarComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Gestionar Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnGestionarComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 60);
+
+  BtnReporteComunidades := TButton.Create(Panel);
+  with BtnReporteComunidades do
+  begin
+    Parent := Panel;
+    Caption := 'Generar Reporte de Comunidades';
+    Left := 20;
+    Top := YPos;
+    Width := 300;
+    Height := 40;
+    OnClick := @OnReporteComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, 80);
+
   BtnCerrarSesion := TButton.Create(Panel);
   with BtnCerrarSesion do
   begin
@@ -809,5 +850,208 @@ procedure TInterfazEDDMail.MostrarMensaje(Titulo, Mensaje: String);
 begin
   ShowMessage(Mensaje);
 end;
+procedure TInterfazEDDMail.OnGestionarComunidadesClick(Sender: TObject);
+var
+  FormComunidades: TForm;
+  PanelComunidades: TPanel;
+  LabelTitulo, LabelNombreCom, LabelUsuario: TLabel;
+  BtnCrearComunidad, BtnAsignarUsuario, BtnListarComunidades, BtnCerrar: TButton;
+  YPos: Integer;
+begin
+  FormComunidades := TForm.Create(nil);
+  try
+    with FormComunidades do
+    begin
+      Caption := 'Gestión de Comunidades';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
 
+    PanelComunidades := TPanel.Create(FormComunidades);
+    with PanelComunidades do
+    begin
+      Parent := FormComunidades;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(PanelComunidades);
+    with LabelTitulo do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Gestión de Comunidades';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    // Crear Comunidad
+    LabelNombreCom := TLabel.Create(PanelComunidades);
+    with LabelNombreCom do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditNombreComunidad := TEdit.Create(PanelComunidades);
+    with FEditNombreComunidad do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnCrearComunidad := TButton.Create(PanelComunidades);
+    with BtnCrearComunidad do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Crear';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnCrearComunidadClick;
+    end;
+    Inc(YPos, 50);
+
+    // Asignar Usuario
+    LabelUsuario := TLabel.Create(PanelComunidades);
+    with LabelUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Email del Usuario a Asignar:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditEmailUsuario := TEdit.Create(PanelComunidades);
+    with FEditEmailUsuario do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnAsignarUsuario := TButton.Create(PanelComunidades);
+    with BtnAsignarUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Asignar';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnAsignarUsuarioClick;
+    end;
+    Inc(YPos, 50);
+
+    // Lista de comunidades
+    FMemoComunidades := TMemo.Create(PanelComunidades);
+    with FMemoComunidades do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 520;
+      Height := 200;
+      ReadOnly := True;
+      ScrollBars := ssVertical;
+    end;
+
+    BtnListarComunidades := TButton.Create(PanelComunidades);
+    with BtnListarComunidades do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Listar Comunidades';
+      Left := 20;
+      Top := YPos + 210;
+      Width := 150;
+      Height := 30;
+      OnClick := @Self.OnListarComunidadesClick;
+    end;
+
+    BtnCerrar := TButton.Create(PanelComunidades);
+    with BtnCerrar do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Cerrar';
+      Left := 460;
+      Top := YPos + 210;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormComunidades.ShowModal;
+
+  finally
+    FormComunidades.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCrearComunidadClick(Sender: TObject);
+begin
+  if Trim(FEditNombreComunidad.Text) <> '' then
+  begin
+    if FSistema.CrearComunidad(Trim(FEditNombreComunidad.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Comunidad creada: ' + FEditNombreComunidad.Text);
+      FEditNombreComunidad.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: La comunidad ya existe');
+  end
+  else
+    MostrarMensaje('Error', 'Ingrese un nombre para la comunidad');
+end;
+
+procedure TInterfazEDDMail.OnAsignarUsuarioClick(Sender: TObject);
+begin
+  if (Trim(FEditNombreComunidad.Text) <> '') and (Trim(FEditEmailUsuario.Text) <> '') then
+  begin
+    if FSistema.AgregarUsuarioAComunidad(Trim(FEditNombreComunidad.Text), Trim(FEditEmailUsuario.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Usuario asignado correctamente');
+      FEditEmailUsuario.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: Comunidad no existe o usuario no encontrado');
+  end
+  else
+    MostrarMensaje('Error', 'Complete ambos campos');
+end;
+
+procedure TInterfazEDDMail.OnListarComunidadesClick(Sender: TObject);
+begin
+  FMemoComunidades.Lines.Text := FSistema.ListarComunidades;
+end;
+
+procedure TInterfazEDDMail.OnReporteComunidadesClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteComunidades('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de comunidades generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- comunidades.dot (código Graphviz)' + LineEnding +
+      '- comunidades.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
 end.
