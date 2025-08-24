@@ -378,7 +378,8 @@ begin
           UsuarioObj.Strings['usuario'],
           UsuarioObj.Strings['email'],
           UsuarioObj.Strings['telefono'],
-          'password123' // Password por defecto
+          PasswordUsuario  // <- Password del JSON
+
         ) then
           WriteLn('Usuario cargado: ', UsuarioObj.Strings['email'])
         else
@@ -520,19 +521,92 @@ begin
 end;
 
 function TEDDMailSystem.CrearComunidad(Nombre: String): Boolean;
+var
+  NuevaComunidad, Ultima: PComunidad;
+  IdCounter: Integer;
 begin
   Result := False;
-  // Implementar lista de comunidades
-  WriteLn('Creando comunidad: ', Nombre);
-  Result := True; // Simular éxito
+
+  // Verificar que no exista
+  Ultima := FComunidades;
+  while Ultima <> nil do
+  begin
+    if Ultima^.Nombre = Nombre then
+      Exit; // Ya existe
+    if Ultima^.Siguiente = nil then
+      Break;
+    Ultima := Ultima^.Siguiente;
+  end;
+
+  // Crear nueva comunidad
+  New(NuevaComunidad);
+  IdCounter := 1;
+  if FComunidades <> nil then
+  begin
+    Ultima := FComunidades;
+    while Ultima^.Siguiente <> nil do
+    begin
+      Inc(IdCounter);
+      Ultima := Ultima^.Siguiente;
+    end;
+  end;
+
+  NuevaComunidad^.Id := IdCounter;
+  NuevaComunidad^.Nombre := Nombre;
+  NuevaComunidad^.UsuariosList := nil;
+  NuevaComunidad^.Siguiente := nil;
+
+  if FComunidades = nil then
+    FComunidades := NuevaComunidad
+  else
+    Ultima^.Siguiente := NuevaComunidad;
+
+  Result := True;
 end;
 
 function TEDDMailSystem.AgregarUsuarioAComunidad(NombreComunidad, EmailUsuario: String): Boolean;
+var
+  Comunidad: PComunidad;
+  Usuario: PUsuario;
+  NuevoUsuarioCom, UltimoUsuarioCom: PUsuarioComunidad;
 begin
   Result := False;
-  // Implementar lista de listas para usuarios en comunidades
-  WriteLn('Agregando usuario ', EmailUsuario, ' a comunidad ', NombreComunidad);
-  Result := True; // Simular éxito
+
+  // Buscar comunidad
+  Comunidad := FComunidades;
+  while (Comunidad <> nil) and (Comunidad^.Nombre <> NombreComunidad) do
+    Comunidad := Comunidad^.Siguiente;
+
+  if Comunidad = nil then
+    Exit;
+
+  // Verificar que el usuario existe
+  Usuario := BuscarUsuario(EmailUsuario);
+  if Usuario = nil then
+    Exit;
+
+  // Verificar que no esté ya en la comunidad
+  UltimoUsuarioCom := Comunidad^.UsuariosList;
+  while UltimoUsuarioCom <> nil do
+  begin
+    if UltimoUsuarioCom^.Email = EmailUsuario then
+      Exit; // Ya está en la comunidad
+    if UltimoUsuarioCom^.Siguiente = nil then
+      Break;
+    UltimoUsuarioCom := UltimoUsuarioCom^.Siguiente;
+  end;
+
+  // Agregar usuario a la comunidad
+  New(NuevoUsuarioCom);
+  NuevoUsuarioCom^.Email := EmailUsuario;
+  NuevoUsuarioCom^.Siguiente := nil;
+
+  if Comunidad^.UsuariosList = nil then
+    Comunidad^.UsuariosList := NuevoUsuarioCom
+  else
+    UltimoUsuarioCom^.Siguiente := NuevoUsuarioCom;
+
+  Result := True;
 end;
 
 function TEDDMailSystem.GetComunidades: PComunidad;
@@ -679,9 +753,75 @@ begin
 end;
 
 procedure TEDDMailSystem.GenerarReporteComunidades(RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Comunidad: PComunidad;
+  UsuarioCom: PUsuarioComunidad;
+  Process: TProcess;
 begin
-  // Implementar reporte de lista de listas
-  WriteLn('Generando reporte de comunidades...');
+  try
+    ForceDirectories(RutaCarpeta);
+
+    AssignFile(Archivo, RutaCarpeta + '/comunidades.dot');
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Lista de Listas - Comunidades";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=box];');
+
+    if FComunidades = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin comunidades", style=filled, fillcolor=lightgray];');
+    end
+    else
+    begin
+      Comunidad := FComunidades;
+      while Comunidad <> nil do
+      begin
+        WriteLn(Archivo, Format('    com%d [label="Comunidad: %s", style=filled, fillcolor=lightblue];',
+          [Comunidad^.Id, Comunidad^.Nombre]));
+
+        UsuarioCom := Comunidad^.UsuariosList;
+        while UsuarioCom <> nil do
+        begin
+          WriteLn(Archivo, Format('    user_%s [label="%s", style=filled, fillcolor=lightyellow];',
+            [StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll]), UsuarioCom^.Email]));
+          WriteLn(Archivo, Format('    com%d -> user_%s;',
+            [Comunidad^.Id, StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll])]));
+          UsuarioCom := UsuarioCom^.Siguiente;
+        end;
+
+        Comunidad := Comunidad^.Siguiente;
+      end;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar imagen
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(RutaCarpeta + '/comunidades.dot');
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(RutaCarpeta + '/comunidades.png');
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte de comunidades: ', E.Message);
+  end;
 end;
 
 end.

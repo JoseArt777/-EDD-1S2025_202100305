@@ -9,7 +9,7 @@
         <IsPartOfProject Value="True"/>
         <TopLine Value="48"/>
         <CursorPos X="5" Y="66"/>
-        <UsageCount Value="23"/>
+        <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -18,15 +18,14 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="23"/>
+        <UsageCount Value="24"/>
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <TopLine Value="1032"/>
-        <CursorPos X="43" Y="1041"/>
-        <UsageCount Value="10"/>
+        <CursorPos X="8" Y="1040"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -39,14 +38,15 @@
       <Unit>
         <Filename Value="estructurasdatos.pas"/>
         <UnitName Value="EstructurasDatos"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="367"/>
-        <CursorPos X="11" Y="381"/>
-        <UsageCount Value="10"/>
+        <TopLine Value="814"/>
+        <CursorPos X="24" Y="805"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="11">
+    <JumpHistory HistoryIndex="15">
       <Position>
         <Filename Value="EDDMail.lpr"/>
         <Caret Line="66" Column="5"/>
@@ -94,6 +94,22 @@
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="143" Column="23" TopLine="132"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="376" Column="18" TopLine="367"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="558" Column="35" TopLine="548"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="607" Column="37" TopLine="593"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="10" Column="59"/>
       </Position>
     </JumpHistory>
     <RunParams>

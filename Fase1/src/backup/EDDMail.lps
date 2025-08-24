@@ -22,43 +22,34 @@
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="1"/>
         <TopLine Value="1032"/>
-        <CursorPos X="43" Y="1041"/>
-        <UsageCount Value="10"/>
+        <CursorPos X="8" Y="1040"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="interfazgtk.pas"/>
         <UnitName Value="InterfazGTK"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <CursorPos X="207" Y="417"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="estructurasdatos.pas"/>
         <UnitName Value="EstructurasDatos"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="243"/>
-        <CursorPos X="5" Y="260"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="808"/>
+        <CursorPos X="5" Y="825"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="11">
+    <JumpHistory HistoryIndex="14">
       <Position>
         <Filename Value="EDDMail.lpr"/>
         <Caret Line="66" Column="5"/>
-      </Position>
-      <Position>
-        <Filename Value="interfazgtk.pas"/>
-        <Caret Line="6" Column="16"/>
-      </Position>
-      <Position>
-        <Filename Value="interfazgtk.pas"/>
-        <Caret Line="5" Column="22"/>
       </Position>
       <Position>
         <Filename Value="InterfazGTK.pas"/>
@@ -95,6 +86,26 @@
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="9" Column="25"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="260" Column="5" TopLine="243"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="143" Column="23" TopLine="132"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="376" Column="18" TopLine="367"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="558" Column="35" TopLine="548"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="607" Column="37" TopLine="593"/>
       </Position>
     </JumpHistory>
     <RunParams>

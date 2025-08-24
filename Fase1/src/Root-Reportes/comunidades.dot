@@ -1,0 +1,19 @@
+digraph G {
+    label="Lista de Listas - Comunidades";
+    fontsize=16;
+    node [shape=box];
+    com1 [label="Comunidad: Hola", style=filled, fillcolor=lightblue];
+    user_aux_luis_edd_com [label="aux-luis@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_aux_luis_edd_com;
+    com1 [label="Comunidad: Adios", style=filled, fillcolor=lightblue];
+    user_aux_luis_edd_com [label="aux-luis@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_aux_luis_edd_com;
+    user_aux_marcosg_edd_com [label="aux-marcosg@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_aux_marcosg_edd_com;
+    com2 [label="Comunidad: Q", style=filled, fillcolor=lightblue];
+    user_aux_marcosg_edd_com [label="aux-marcosg@edd.com", style=filled, fillcolor=lightyellow];
+    com2 -> user_aux_marcosg_edd_com;
+    com3 [label="Comunidad: Ejemplo", style=filled, fillcolor=lightblue];
+    user_aux_marcosg_edd_com [label="aux-marcosg@edd.com", style=filled, fillcolor=lightyellow];
+    com3 -> user_aux_marcosg_edd_com;
+}
