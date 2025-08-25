@@ -42,6 +42,7 @@ type
         // Nuevos event handlers para comunidades
     procedure OnGestionarComunidadesClick(Sender: TObject);
     procedure OnReporteComunidadesClick(Sender: TObject);
+    procedure OnActualizarPerfilClick(Sender: TObject);  // <- Agregar esto
     procedure OnCrearComunidadClick(Sender: TObject);
     procedure OnAsignarUsuarioClick(Sender: TObject);
     procedure OnListarComunidadesClick(Sender: TObject);
@@ -484,6 +485,8 @@ begin
     Height := 35;
     Hint := 'Modificar información personal';
     ShowHint := True;
+    OnClick := @OnActualizarPerfilClick;  // <- Agregar esta línea
+
   end;
   Inc(YPos, 50);
   
@@ -511,6 +514,7 @@ begin
     Width := 180;
     Height := 35;
     OnClick := @OnCerrarSesionClick;
+
     Font.Color := clRed;
     Font.Style := [fsBold];
   end;
@@ -819,6 +823,8 @@ begin
   FEditEmail.Text := '';
   FEditPassword.Text := '';
   FFormLogin.Show;
+   FFormLogin.BringToFront;    // <- Agregar esta línea
+  FFormLogin.SetFocus;        // <- Agregar esta línea
   FEditEmail.SetFocus;
 end;
 
@@ -850,5 +856,397 @@ procedure TInterfazEDDMail.MostrarMensaje(Titulo, Mensaje: String);
 begin
   ShowMessage(Mensaje);
 end;
+procedure TInterfazEDDMail.OnGestionarComunidadesClick(Sender: TObject);
+var
+  FormComunidades: TForm;
+  PanelComunidades: TPanel;
+  LabelTitulo, LabelNombreCom, LabelUsuario: TLabel;
+  BtnCrearComunidad, BtnAsignarUsuario, BtnListarComunidades, BtnCerrar: TButton;
+  YPos: Integer;
+begin
+  FormComunidades := TForm.Create(nil);
+  try
+    with FormComunidades do
+    begin
+      Caption := 'Gestión de Comunidades';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
 
+    PanelComunidades := TPanel.Create(FormComunidades);
+    with PanelComunidades do
+    begin
+      Parent := FormComunidades;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(PanelComunidades);
+    with LabelTitulo do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Gestión de Comunidades';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    // Crear Comunidad
+    LabelNombreCom := TLabel.Create(PanelComunidades);
+    with LabelNombreCom do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditNombreComunidad := TEdit.Create(PanelComunidades);
+    with FEditNombreComunidad do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnCrearComunidad := TButton.Create(PanelComunidades);
+    with BtnCrearComunidad do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Crear';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnCrearComunidadClick;
+    end;
+    Inc(YPos, 50);
+
+    // Asignar Usuario
+    LabelUsuario := TLabel.Create(PanelComunidades);
+    with LabelUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Email del Usuario a Asignar:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditEmailUsuario := TEdit.Create(PanelComunidades);
+    with FEditEmailUsuario do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnAsignarUsuario := TButton.Create(PanelComunidades);
+    with BtnAsignarUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Asignar';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnAsignarUsuarioClick;
+    end;
+    Inc(YPos, 50);
+
+    // Lista de comunidades
+    FMemoComunidades := TMemo.Create(PanelComunidades);
+    with FMemoComunidades do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 520;
+      Height := 200;
+      ReadOnly := True;
+      ScrollBars := ssVertical;
+    end;
+
+    BtnListarComunidades := TButton.Create(PanelComunidades);
+    with BtnListarComunidades do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Listar Comunidades';
+      Left := 20;
+      Top := YPos + 210;
+      Width := 150;
+      Height := 30;
+      OnClick := @Self.OnListarComunidadesClick;
+    end;
+
+    BtnCerrar := TButton.Create(PanelComunidades);
+    with BtnCerrar do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Cerrar';
+      Left := 460;
+      Top := YPos + 210;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormComunidades.ShowModal;
+
+  finally
+    FormComunidades.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCrearComunidadClick(Sender: TObject);
+begin
+  if Trim(FEditNombreComunidad.Text) <> '' then
+  begin
+    if FSistema.CrearComunidad(Trim(FEditNombreComunidad.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Comunidad creada: ' + FEditNombreComunidad.Text);
+      FEditNombreComunidad.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: La comunidad ya existe');
+  end
+  else
+    MostrarMensaje('Error', 'Ingrese un nombre para la comunidad');
+end;
+
+procedure TInterfazEDDMail.OnAsignarUsuarioClick(Sender: TObject);
+begin
+  if (Trim(FEditNombreComunidad.Text) <> '') and (Trim(FEditEmailUsuario.Text) <> '') then
+  begin
+    if FSistema.AgregarUsuarioAComunidad(Trim(FEditNombreComunidad.Text), Trim(FEditEmailUsuario.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Usuario asignado correctamente');
+      FEditEmailUsuario.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: Comunidad no existe o usuario no encontrado');
+  end
+  else
+    MostrarMensaje('Error', 'Complete ambos campos');
+end;
+
+procedure TInterfazEDDMail.OnListarComunidadesClick(Sender: TObject);
+begin
+  FMemoComunidades.Lines.Text := FSistema.ListarComunidades;
+end;
+
+procedure TInterfazEDDMail.OnReporteComunidadesClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteComunidades('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de comunidades generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- comunidades.dot (código Graphviz)' + LineEnding +
+      '- comunidades.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+procedure TInterfazEDDMail.OnActualizarPerfilClick(Sender: TObject);
+var
+  FormPerfil: TForm;
+  PanelPerfil: TPanel;
+  LabelTitulo, LabelNombre, LabelUsuario, LabelTelefono, LabelEmail: TLabel;
+  EditNombre, EditUsuario, EditTelefono: TEdit;
+  BtnActualizar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  YPos: Integer;
+  ModalResult: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then
+    Exit;
+
+  FormPerfil := TForm.Create(nil);
+  try
+    with FormPerfil do
+    begin
+      Caption := 'Actualizar Perfil';
+      Width := 400;
+      Height := 350;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+
+    PanelPerfil := TPanel.Create(FormPerfil);
+    with PanelPerfil do
+    begin
+      Parent := FormPerfil;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(PanelPerfil);
+    with LabelTitulo do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Actualizar Información Personal';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    // Email (solo mostrar, no editable)
+    LabelEmail := TLabel.Create(PanelPerfil);
+    with LabelEmail do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Email (no modificable): ' + Usuario^.Email;
+      Left := 20;
+      Top := YPos;
+      Font.Color := clGray;
+    end;
+    Inc(YPos, 30);
+
+    // Nombre
+    LabelNombre := TLabel.Create(PanelPerfil);
+    with LabelNombre do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Nombre completo:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditNombre := TEdit.Create(PanelPerfil);
+    with EditNombre do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Nombre;
+      TabOrder := 0;
+    end;
+    Inc(YPos, 40);
+
+    // Usuario
+    LabelUsuario := TLabel.Create(PanelPerfil);
+    with LabelUsuario do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Nombre de usuario:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditUsuario := TEdit.Create(PanelPerfil);
+    with EditUsuario do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Usuario;
+      TabOrder := 1;
+    end;
+    Inc(YPos, 40);
+
+    // Teléfono
+    LabelTelefono := TLabel.Create(PanelPerfil);
+    with LabelTelefono do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Teléfono:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditTelefono := TEdit.Create(PanelPerfil);
+    with EditTelefono do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Telefono;
+      TabOrder := 2;
+    end;
+    Inc(YPos, 50);
+
+    // Botones
+    BtnActualizar := TButton.Create(PanelPerfil);
+    with BtnActualizar do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Actualizar';
+      Left := 100;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(PanelPerfil);
+    with BtnCancelar do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Cancelar';
+      Left := 200;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    ModalResult := FormPerfil.ShowModal;
+
+    if ModalResult = mrOk then
+    begin
+      if Trim(EditNombre.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'El nombre no puede estar vacío');
+        Exit;
+      end;
+
+      FSistema.ActualizarPerfil(Usuario,
+        Trim(EditNombre.Text),
+        Trim(EditUsuario.Text),
+        Trim(EditTelefono.Text));
+
+      MostrarMensaje('Éxito', 'Perfil actualizado correctamente');
+
+      // Actualizar la interfaz para mostrar los cambios
+      if Assigned(FFormPrincipal) then
+      begin
+        FFormPrincipal.Close;
+        CrearFormPrincipal;
+      end;
+    end;
+
+  finally
+    FormPerfil.Free;
+  end;
+end;
 end.

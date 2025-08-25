@@ -5,7 +5,7 @@ digraph G {
     fontsize=16;
     user1 [label="ID: 1|Nombre: Root Admin|Usuario: root|Email: root@edd.com|Telefono: 00000000"];
     user1 -> user1;
-    user1 [label="ID: 1|Nombre: Luis Garcia|Usuario: auxluis|Email: aux-luis@edd.com|Telefono: 12345678"];
+    user1 [label="ID: 1|Nombre: Modificado|Usuario: auxluis|Email: aux-luis@edd.com|Telefono: 40031897"];
     user1 -> user2;
     user2 [label="ID: 2|Nombre: Marcos Itzep|Usuario: auxmarcos|Email: aux-marcosg@edd.com|Telefono: 87654321"];
     user2 -> user3;
