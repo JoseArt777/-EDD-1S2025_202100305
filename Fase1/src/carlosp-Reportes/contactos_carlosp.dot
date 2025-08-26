@@ -1,0 +1,12 @@
+digraph G {
+    label="Lista Circular de Contactos - Carlos Pérez";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled, fillcolor=lightblue];
+    contact_ana_at_edd_com [label="ID: 5488|Nombre: Ana López|Usuario: analo|Email: ana@edd.com|Tel: 55501234"];
+    contact_aux_luis_at_edd_com [label="ID: 5928|Nombre: Luis Garcia|Usuario: auxluis|Email: aux-luis@edd.com|Tel: 12345678"];
+    contact_ana_at_edd_com -> contact_aux_luis_at_edd_com;
+    contact_aux_luis_at_edd_com -> contact_ana_at_edd_com;
+    edge [color=red, style=dashed];
+    contact_aux_luis_at_edd_com -> contact_ana_at_edd_com [label="circular"];
+}

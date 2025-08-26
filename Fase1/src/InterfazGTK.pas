@@ -22,6 +22,13 @@ type
   FPrimerContacto: PContacto;
   FIndiceContactoActual: Integer;
   FTotalContactos: Integer;
+
+      FFormContactos: TForm;
+    FLabelContadorContactos: TLabel;
+    FLabelNombreContacto: TLabel;
+    FLabelUsuarioContacto: TLabel;
+    FLabelEmailContacto: TLabel;
+    FLabelTelefonoContacto: TLabel;
     // Controles para comunidades
     FEditNombreComunidad: TEdit;
     FEditEmailUsuario: TEdit;
@@ -42,8 +49,9 @@ type
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-
-        // Nuevos event handlers para comunidades
+    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction); // Evento de cierre
+    procedure ActualizarVistaContacto; // Método auxiliar
+    // Nuevos event handlers para comunidades
     procedure OnGestionarComunidadesClick(Sender: TObject);
     procedure OnReporteComunidadesClick(Sender: TObject);
     procedure OnActualizarPerfilClick(Sender: TObject);  // <- Agregar esto
@@ -57,6 +65,10 @@ type
   procedure OnContactoAnteriorClick(Sender: TObject);
   procedure OnContactoSiguienteClick(Sender: TObject);
   procedure OnGenerarReporteContactosClick(Sender: TObject);
+
+
+
+
   public
     constructor Create;
     destructor Destroy; override;
@@ -1415,9 +1427,8 @@ begin
 end;
 procedure TInterfazEDDMail.OnVerContactosClick(Sender: TObject);
 var
-  FormContactos: TForm;
-  PanelContactos, PanelInfo, PanelBotones: TPanel;
-  LabelTitulo, LabelNombre, LabelUsuario, LabelEmail, LabelTelefono, LabelContador: TLabel;
+  PanelContactos, PanelInfo: TPanel;
+  LabelTitulo: TLabel;
   BtnAnterior, BtnSiguiente, BtnAgregar, BtnReporte, BtnCerrar: TButton;
   Usuario: PUsuario;
 begin
@@ -1425,179 +1436,183 @@ begin
   if Usuario = nil then
     Exit;
 
+  // Si ya existe la ventana, solo mostrarla
+  if FFormContactos <> nil then
+  begin
+    FFormContactos.Show;
+    FFormContactos.BringToFront;
+    Exit;
+  end;
+
   // Inicializar variables de navegación
   FPrimerContacto := FSistema.GetContactos(Usuario);
   FContactoActual := FPrimerContacto;
   FIndiceContactoActual := 1;
   FTotalContactos := FSistema.ContarContactos(FPrimerContacto);
 
-  FormContactos := TForm.Create(nil);
-  try
-    with FormContactos do
-    begin
-      Caption := 'Mis Contactos';
-      Width := 500;
-      Height := 400;
-      Position := poOwnerFormCenter;
-      BorderStyle := bsSizeable;
-    end;
+  FFormContactos := TForm.Create(nil);
+  with FFormContactos do
+  begin
+    Caption := 'Mis Contactos';
+    Width := 500;
+    Height := 400;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormContactosClose;  // Agregar evento de cierre
+  end;
 
-    PanelContactos := TPanel.Create(FormContactos);
-    with PanelContactos do
-    begin
-      Parent := FormContactos;
-      Align := alClient;
-      BevelOuter := bvNone;
-      BorderWidth := 10;
-    end;
+  PanelContactos := TPanel.Create(FFormContactos);
+  with PanelContactos do
+  begin
+    Parent := FFormContactos;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
 
-    LabelTitulo := TLabel.Create(PanelContactos);
-    with LabelTitulo do
+  LabelTitulo := TLabel.Create(PanelContactos);
+  with LabelTitulo do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Lista de Contactos';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 20;
+    Top := 20;
+  end;
+
+  FLabelContadorContactos := TLabel.Create(PanelContactos);
+  with FLabelContadorContactos do
+  begin
+    Parent := PanelContactos;
+    Left := 20;
+    Top := 50;
+    Font.Color := clGray;
+    if FTotalContactos = 0 then
+      Caption := 'No tiene contactos agregados'
+    else
+      Caption := Format('Contacto %d de %d', [FIndiceContactoActual, FTotalContactos]);
+  end;
+
+  // Panel para información del contacto
+  PanelInfo := TPanel.Create(PanelContactos);
+  with PanelInfo do
+  begin
+    Parent := PanelContactos;
+    Left := 20;
+    Top := 80;
+    Width := 440;
+    Height := 180;
+    BevelOuter := bvRaised;
+    Color := clWhite;
+  end;
+
+  // Crear labels para información del contacto con variables de instancia
+  if FContactoActual <> nil then
+  begin
+    FLabelNombreContacto := TLabel.Create(PanelInfo);
+    with FLabelNombreContacto do
     begin
-      Parent := PanelContactos;
-      Caption := 'Lista de Contactos';
-      Font.Size := 14;
-      Font.Style := [fsBold];
+      Parent := PanelInfo;
+      Caption := 'Nombre: ' + FContactoActual^.Nombre;
       Left := 20;
       Top := 20;
+      Font.Style := [fsBold];
     end;
 
-    LabelContador := TLabel.Create(PanelContactos);
-    with LabelContador do
+    FLabelUsuarioContacto := TLabel.Create(PanelInfo);
+    with FLabelUsuarioContacto do
     begin
-      Parent := PanelContactos;
+      Parent := PanelInfo;
+      Caption := 'Usuario: ' + FContactoActual^.Usuario;
       Left := 20;
       Top := 50;
-      Font.Color := clGray;
-      if FTotalContactos = 0 then
-        Caption := 'No tiene contactos agregados'
-      else
-        Caption := Format('Contacto %d de %d', [FIndiceContactoActual, FTotalContactos]);
     end;
 
-    // Panel para información del contacto
-    PanelInfo := TPanel.Create(PanelContactos);
-    with PanelInfo do
+    FLabelEmailContacto := TLabel.Create(PanelInfo);
+    with FLabelEmailContacto do
     begin
-      Parent := PanelContactos;
+      Parent := PanelInfo;
+      Caption := 'Email: ' + FContactoActual^.Email;
       Left := 20;
       Top := 80;
-      Width := 440;
-      Height := 180;
-      BevelOuter := bvRaised;
-      Color := clWhite;
+      Font.Color := clBlue;
     end;
 
-    // Botones de navegación
-    BtnAnterior := TButton.Create(PanelContactos);
-    with BtnAnterior do
+    FLabelTelefonoContacto := TLabel.Create(PanelInfo);
+    with FLabelTelefonoContacto do
     begin
-      Parent := PanelContactos;
-      Caption := '< Anterior';
+      Parent := PanelInfo;
+      Caption := 'Teléfono: ' + FContactoActual^.Telefono;
       Left := 20;
-      Top := 280;
-      Width := 100;
-      Height := 30;
-      Enabled := FTotalContactos > 1;
-      OnClick := @OnContactoAnteriorClick;
+      Top := 110;
     end;
-
-    BtnSiguiente := TButton.Create(PanelContactos);
-    with BtnSiguiente do
-    begin
-      Parent := PanelContactos;
-      Caption := 'Siguiente >';
-      Left := 130;
-      Top := 280;
-      Width := 100;
-      Height := 30;
-      Enabled := FTotalContactos > 1;
-      OnClick := @OnContactoSiguienteClick;
-    end;
-
-    BtnAgregar := TButton.Create(PanelContactos);
-    with BtnAgregar do
-    begin
-      Parent := PanelContactos;
-      Caption := 'Agregar Contacto';
-      Left := 250;
-      Top := 280;
-      Width := 120;
-      Height := 30;
-      OnClick := @OnAgregarContactoClick;
-    end;
-
-    BtnReporte := TButton.Create(PanelContactos);
-    with BtnReporte do
-    begin
-      Parent := PanelContactos;
-      Caption := 'Generar Reporte';
-      Left := 20;
-      Top := 320;
-      Width := 120;
-      Height := 30;
-      OnClick := @OnGenerarReporteContactosClick;
-    end;
-
-    BtnCerrar := TButton.Create(PanelContactos);
-    with BtnCerrar do
-    begin
-      Parent := PanelContactos;
-      Caption := 'Cerrar';
-      Left := 380;
-      Top := 320;
-      Width := 80;
-      Height := 30;
-      ModalResult := mrCancel;
-    end;
-
-    // Crear labels para información del contacto
-    if FContactoActual <> nil then
-    begin
-      LabelNombre := TLabel.Create(PanelInfo);
-      with LabelNombre do
-      begin
-        Parent := PanelInfo;
-        Caption := 'Nombre: ' + FContactoActual^.Nombre;
-        Left := 20;
-        Top := 20;
-        Font.Style := [fsBold];
-      end;
-
-      LabelUsuario := TLabel.Create(PanelInfo);
-      with LabelUsuario do
-      begin
-        Parent := PanelInfo;
-        Caption := 'Usuario: ' + FContactoActual^.Usuario;
-        Left := 20;
-        Top := 50;
-      end;
-
-      LabelEmail := TLabel.Create(PanelInfo);
-      with LabelEmail do
-      begin
-        Parent := PanelInfo;
-        Caption := 'Email: ' + FContactoActual^.Email;
-        Left := 20;
-        Top := 80;
-        Font.Color := clBlue;
-      end;
-
-      LabelTelefono := TLabel.Create(PanelInfo);
-      with LabelTelefono do
-      begin
-        Parent := PanelInfo;
-        Caption := 'Teléfono: ' + FContactoActual^.Telefono;
-        Left := 20;
-        Top := 110;
-      end;
-    end;
-
-    FormContactos.ShowModal;
-
-  finally
-    FormContactos.Free;
   end;
+
+  // Botones de navegación
+  BtnAnterior := TButton.Create(PanelContactos);
+  with BtnAnterior do
+  begin
+    Parent := PanelContactos;
+    Caption := '< Anterior';
+    Left := 20;
+    Top := 280;
+    Width := 100;
+    Height := 30;
+    Enabled := FTotalContactos > 1;
+    OnClick := @OnContactoAnteriorClick;
+  end;
+
+  BtnSiguiente := TButton.Create(PanelContactos);
+  with BtnSiguiente do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Siguiente >';
+    Left := 130;
+    Top := 280;
+    Width := 100;
+    Height := 30;
+    Enabled := FTotalContactos > 1;
+    OnClick := @OnContactoSiguienteClick;
+  end;
+
+  BtnAgregar := TButton.Create(PanelContactos);
+  with BtnAgregar do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Agregar Contacto';
+    Left := 250;
+    Top := 280;
+    Width := 120;
+    Height := 30;
+    OnClick := @OnAgregarContactoClick;
+  end;
+
+  BtnReporte := TButton.Create(PanelContactos);
+  with BtnReporte do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Generar Reporte';
+    Left := 20;
+    Top := 320;
+    Width := 120;
+    Height := 30;
+    OnClick := @OnGenerarReporteContactosClick;
+  end;
+
+  BtnCerrar := TButton.Create(PanelContactos);
+  with BtnCerrar do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Cerrar';
+    Left := 380;
+    Top := 320;
+    Width := 80;
+    Height := 30;
+    ModalResult := mrCancel;
+  end;
+
+  FFormContactos.ShowModal;
 end;
 
 procedure TInterfazEDDMail.OnContactoAnteriorClick(Sender: TObject);
@@ -1608,8 +1623,7 @@ begin
   if (FContactoActual = nil) or (FTotalContactos <= 1) then
     Exit;
 
-  // En lista circular, para ir al anterior necesitamos recorrer hasta encontrar
-  // el nodo que apunta al actual
+  // Buscar el contacto anterior en la lista circular
   Actual := FPrimerContacto;
   Contador := 1;
 
@@ -1624,8 +1638,8 @@ begin
   if FIndiceContactoActual < 1 then
     FIndiceContactoActual := FTotalContactos;
 
-  // Actualizar la interfaz
-  OnVerContactosClick(nil);
+  // Actualizar la vista
+  ActualizarVistaContacto;
 end;
 
 procedure TInterfazEDDMail.OnContactoSiguienteClick(Sender: TObject);
@@ -1638,9 +1652,10 @@ begin
   if FIndiceContactoActual > FTotalContactos then
     FIndiceContactoActual := 1;
 
-  // Actualizar la interfaz
-  OnVerContactosClick(nil);
+  // Actualizar la vista
+  ActualizarVistaContacto;
 end;
+
 
 procedure TInterfazEDDMail.OnGenerarReporteContactosClick(Sender: TObject);
 var
@@ -1663,5 +1678,35 @@ begin
     on E: Exception do
       MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
   end;
+end;
+procedure TInterfazEDDMail.ActualizarVistaContacto;
+begin
+  if FContactoActual = nil then
+    Exit;
+
+  if FLabelContadorContactos <> nil then
+    FLabelContadorContactos.Caption := Format('Contacto %d de %d', [FIndiceContactoActual, FTotalContactos]);
+
+  if FLabelNombreContacto <> nil then
+    FLabelNombreContacto.Caption := 'Nombre: ' + FContactoActual^.Nombre;
+
+  if FLabelUsuarioContacto <> nil then
+    FLabelUsuarioContacto.Caption := 'Usuario: ' + FContactoActual^.Usuario;
+
+  if FLabelEmailContacto <> nil then
+    FLabelEmailContacto.Caption := 'Email: ' + FContactoActual^.Email;
+
+  if FLabelTelefonoContacto <> nil then
+    FLabelTelefonoContacto.Caption := 'Teléfono: ' + FContactoActual^.Telefono;
+end;
+procedure TInterfazEDDMail.OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormContactos := nil;
+  FLabelContadorContactos := nil;
+  FLabelNombreContacto := nil;
+  FLabelUsuarioContacto := nil;
+  FLabelEmailContacto := nil;
+  FLabelTelefonoContacto := nil;
 end;
 end.
