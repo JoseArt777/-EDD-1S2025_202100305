@@ -27,6 +27,8 @@ type
     Telefono: String;
     Password: String;
     Siguiente: PUsuario;
+      ListaContactos: PContacto;  // Lista circular de contactos del usuario
+
   end;
 
   // Estructura Correo (Lista Doblemente Enlazada para bandeja de entrada)
@@ -111,8 +113,8 @@ type
     // Funciones auxiliares para correos
     function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
 
-    // Funciones auxiliares para contactos
-    function BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
+      procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto); // <- AGREGAR
+
 
     // Funciones auxiliares para matriz dispersa
     procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
@@ -142,10 +144,16 @@ type
     function GetPapelera(Usuario: PUsuario): PCorreo; // Pila
     function GetCorreosProgramados(Usuario: PUsuario): PCorreo; // Cola
     procedure ProcesarCorreosProgramados;
+      function EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
 
     // Funciones de contactos
     function AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
     function GetContactos(Usuario: PUsuario): PContacto;
+    // Funciones auxiliares para contactos
+     function BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
+     function CrearContacto(Email: String): PContacto;
+
+     function ContarContactos(PrimerContacto: PContacto): Integer;
 
     // Funciones de comunidades
     function CrearComunidad(Nombre: String): Boolean;
@@ -301,6 +309,8 @@ begin
   NuevoUsuario^.Telefono := Telefono;
   NuevoUsuario^.Password := Password;
   NuevoUsuario^.Siguiente := nil;
+  NuevoUsuario^.ListaContactos := nil; // Inicializar lista de contactos vacía
+
 
   // Agregar a la lista
   if FUsuarios = nil then
@@ -308,6 +318,52 @@ begin
   else
     Ultimo^.Siguiente := NuevoUsuario;
 
+  Result := True;
+end;
+  // Implementación mejorada de GetContactos:
+function TEDDMailSystem.GetContactos(Usuario: PUsuario): PContacto;
+begin
+  Result := nil;
+  if Usuario <> nil then
+    Result := Usuario^.ListaContactos;
+end;
+
+// Implementación mejorada de AgregarContacto:
+function TEDDMailSystem.AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
+var
+  NuevoContacto: PContacto;
+begin
+  Result := False;
+
+  if Usuario = nil then
+    Exit;
+
+  // Verificar que el contacto no sea el mismo usuario
+  if Usuario^.Email = Email then
+  begin
+    WriteLn('Error: No puede agregarse a sí mismo como contacto');
+    Exit;
+  end;
+
+  // Verificar que no esté ya en contactos
+  if BuscarContacto(Usuario, Email) <> nil then
+  begin
+    WriteLn('Error: El contacto ya existe en la lista');
+    Exit;
+  end;
+
+  // Crear el nuevo contacto
+  NuevoContacto := CrearContacto(Email);
+  if NuevoContacto = nil then
+  begin
+    WriteLn('Error: El usuario no existe en el sistema');
+    Exit;
+  end;
+
+  // Agregar a la lista circular del usuario específico
+  AgregarContactoALista(Usuario^.ListaContactos, NuevoContacto);
+
+  WriteLn('Contacto agregado exitosamente: ', Email);
   Result := True;
 end;
 
@@ -435,11 +491,103 @@ begin
   ActualizarMatrizRelaciones(FUsuarioActual^.Email, Destinatario);
 end;
 
+// Implementación mejorada de BuscarContacto:
 function TEDDMailSystem.BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
+var
+  Actual: PContacto;
+  PrimerContacto: PContacto;
+  Contador: Integer;
 begin
   Result := nil;
-  // Implementar búsqueda en lista circular de contactos del usuario
-  // Por ahora retorna nil para permitir que compile
+  if Usuario = nil then
+    Exit;
+
+  PrimerContacto := Usuario^.ListaContactos;
+  if PrimerContacto = nil then
+    Exit;
+
+  Actual := PrimerContacto;
+  Contador := 0;
+  repeat
+    if Actual^.Email = Email then
+    begin
+      Result := Actual;
+      Exit;
+    end;
+    Actual := Actual^.Siguiente;
+    Inc(Contador);
+  until (Actual = PrimerContacto) or (Contador > 1000); // Prevenir bucle infinito
+end;
+function TEDDMailSystem.EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
+var
+  Actual, Anterior: PContacto;
+  PrimerContacto: PContacto;
+  Contador: Integer;
+begin
+  Result := False;
+  if Usuario = nil then
+    Exit;
+
+  PrimerContacto := Usuario^.ListaContactos;
+  if PrimerContacto = nil then
+    Exit;
+
+  // Si solo hay un contacto
+  if PrimerContacto^.Siguiente = PrimerContacto then
+  begin
+    if PrimerContacto^.Email = Email then
+    begin
+      Dispose(PrimerContacto);
+      Usuario^.ListaContactos := nil;
+      Result := True;
+    end;
+    Exit;
+  end;
+
+  // Buscar el contacto a eliminar
+  Actual := PrimerContacto;
+  Anterior := nil;
+  Contador := 0;
+
+  // Encontrar el anterior al primero
+  repeat
+    if Actual^.Siguiente = PrimerContacto then
+    begin
+      Anterior := Actual;
+      Break;
+    end;
+    Actual := Actual^.Siguiente;
+    Inc(Contador);
+  until Contador > 1000;
+
+  // Buscar el contacto específico
+  Actual := PrimerContacto;
+  Contador := 0;
+  repeat
+    if Actual^.Email = Email then
+    begin
+      // Encontrado, eliminar
+      if Actual = PrimerContacto then
+      begin
+        // Es el primer elemento
+        Usuario^.ListaContactos := Actual^.Siguiente;
+        Anterior^.Siguiente := Usuario^.ListaContactos;
+      end
+      else
+      begin
+        // No es el primer elemento
+        Anterior^.Siguiente := Actual^.Siguiente;
+      end;
+
+      Dispose(Actual);
+      Result := True;
+      Exit;
+    end;
+
+    Anterior := Actual;
+    Actual := Actual^.Siguiente;
+    Inc(Contador);
+  until (Actual = PrimerContacto) or (Contador > 1000);
 end;
 
 procedure TEDDMailSystem.ActualizarMatrizRelaciones(Remitente, Destinatario: String);
@@ -503,22 +651,8 @@ begin
   WriteLn('Procesando correos programados...');
 end;
 
-function TEDDMailSystem.AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
-begin
-  Result := False;
-  // Implementar lista circular de contactos
-  if Usuario <> nil then
-  begin
-    WriteLn('Agregando contacto: ', Email, ' para usuario: ', Usuario^.Email);
-    Result := True; // Simular éxito por ahora
-  end;
-end;
 
-function TEDDMailSystem.GetContactos(Usuario: PUsuario): PContacto;
-begin
-  Result := nil;
-  // Retornar lista circular de contactos
-end;
+
 
 function TEDDMailSystem.CrearComunidad(Nombre: String): Boolean;
 var
@@ -746,70 +880,176 @@ begin
   WriteLn('Generando reporte de correos programados para: ', Usuario^.Email);
 end;
 
-procedure TEDDMailSystem.GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
+ function TEDDMailSystem.CrearContacto(Email: String): PContacto;
+var
+  UsuarioExistente: PUsuario;
 begin
-  // Implementar reporte de lista circular
-  WriteLn('Generando reporte de contactos para: ', Usuario^.Email);
+  Result := nil;
+
+  // Verificar que el usuario existe en el sistema
+  UsuarioExistente := BuscarUsuario(Email);
+  if UsuarioExistente = nil then
+    Exit;
+
+  // Crear nuevo contacto
+  New(Result);
+  Result^.Id := Random(9999) + 1;
+  Result^.Nombre := UsuarioExistente^.Nombre;
+  Result^.Usuario := UsuarioExistente^.Usuario;
+  Result^.Email := UsuarioExistente^.Email;
+  Result^.Telefono := UsuarioExistente^.Telefono;
+  Result^.Siguiente := nil;
+end;
+procedure TEDDMailSystem.AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto);
+var
+  Actual: PContacto;
+begin
+  if PrimerContacto = nil then
+  begin
+    // Primera inserción - crear lista circular
+    PrimerContacto := NuevoContacto;
+    NuevoContacto^.Siguiente := NuevoContacto; // Apunta a sí mismo
+  end
+  else
+  begin
+    // Buscar el último nodo (que apunta al primero)
+    Actual := PrimerContacto;
+    while Actual^.Siguiente <> PrimerContacto do
+      Actual := Actual^.Siguiente;
+
+    // Insertar el nuevo contacto
+    Actual^.Siguiente := NuevoContacto;
+    NuevoContacto^.Siguiente := PrimerContacto;
+  end;
+end;
+function TEDDMailSystem.ContarContactos(PrimerContacto: PContacto): Integer;
+var
+  Actual: PContacto;
+begin
+  Result := 0;
+  if PrimerContacto = nil then
+    Exit;
+
+  Actual := PrimerContacto;
+  repeat
+    Inc(Result);
+    Actual := Actual^.Siguiente;
+  until Actual = PrimerContacto;
 end;
 
-procedure TEDDMailSystem.GenerarReporteComunidades(RutaCarpeta: String);
+procedure TEDDMailSystem.GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
 var
   Archivo: TextFile;
-  Comunidad: PComunidad;
-  UsuarioCom: PUsuarioComunidad;
+  Contacto, PrimerContacto: PContacto;
   Process: TProcess;
+  NombreArchivo: String;
+  EmailLimpio: String;
+  SigEmailLimpio: String;  // <- DECLARAR AQUÍ
+  UltimoLimpio: String;    // <- DECLARAR AQUÍ
+  PrimeroLimpio: String;   // <- DECLARAR AQUÍ
+  UltimoEmail: String;     // <- DECLARAR AQUÍ
+  Contador: Integer;
 begin
+  if Usuario = nil then
+    Exit;
+
   try
     ForceDirectories(RutaCarpeta);
 
-    AssignFile(Archivo, RutaCarpeta + '/comunidades.dot');
+    NombreArchivo := RutaCarpeta + '/contactos_' +
+                   StringReplace(Usuario^.Usuario, ' ', '_', [rfReplaceAll]) + '.dot';
+
+    AssignFile(Archivo, NombreArchivo);
     Rewrite(Archivo);
 
     WriteLn(Archivo, 'digraph G {');
-    WriteLn(Archivo, '    label="Lista de Listas - Comunidades";');
+    WriteLn(Archivo, '    label="Lista Circular de Contactos - ' + Usuario^.Nombre + '";');
     WriteLn(Archivo, '    fontsize=16;');
-    WriteLn(Archivo, '    node [shape=box];');
+    WriteLn(Archivo, '    rankdir=LR;');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightblue];');
 
-    if FComunidades = nil then
+    PrimerContacto := GetContactos(Usuario);
+
+    if PrimerContacto = nil then
     begin
-      WriteLn(Archivo, '    empty [label="Sin comunidades", style=filled, fillcolor=lightgray];');
+      WriteLn(Archivo, '    empty [label="Sin contactos", style=filled, fillcolor=lightgray];');
     end
     else
     begin
-      Comunidad := FComunidades;
-      while Comunidad <> nil do
-      begin
-        WriteLn(Archivo, Format('    com%d [label="Comunidad: %s", style=filled, fillcolor=lightblue];',
-          [Comunidad^.Id, Comunidad^.Nombre]));
+      Contacto := PrimerContacto;
+      Contador := 0;
 
-        UsuarioCom := Comunidad^.UsuariosList;
-        while UsuarioCom <> nil do
+      repeat
+        EmailLimpio := StringReplace(Contacto^.Email, '@', '_at_', [rfReplaceAll]);
+        EmailLimpio := StringReplace(EmailLimpio, '.', '_', [rfReplaceAll]);
+        EmailLimpio := StringReplace(EmailLimpio, '-', '_', [rfReplaceAll]);
+
+        WriteLn(Archivo, Format('    contact_%s [label="ID: %d|Nombre: %s|Usuario: %s|Email: %s|Tel: %s"];',
+          [EmailLimpio, Contacto^.Id, Contacto^.Nombre, Contacto^.Usuario,
+           Contacto^.Email, Contacto^.Telefono]));
+
+        Contacto := Contacto^.Siguiente;
+        Inc(Contador);
+      until (Contacto = PrimerContacto) or (Contador > 100); // Prevenir bucle infinito
+
+      // Generar las conexiones circulares
+      Contacto := PrimerContacto;
+      Contador := 0;
+      repeat
+        EmailLimpio := StringReplace(Contacto^.Email, '@', '_at_', [rfReplaceAll]);
+        EmailLimpio := StringReplace(EmailLimpio, '.', '_', [rfReplaceAll]);
+        EmailLimpio := StringReplace(EmailLimpio, '-', '_', [rfReplaceAll]);
+
+        if Contacto^.Siguiente <> nil then
         begin
-          WriteLn(Archivo, Format('    user_%s [label="%s", style=filled, fillcolor=lightyellow];',
-            [StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll]), UsuarioCom^.Email]));
-          WriteLn(Archivo, Format('    com%d -> user_%s;',
-            [Comunidad^.Id, StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll])]));
-          UsuarioCom := UsuarioCom^.Siguiente;
+
+           SigEmailLimpio := StringReplace(Contacto^.Siguiente^.Email, '@', '_at_', [rfReplaceAll]);
+          SigEmailLimpio := StringReplace(SigEmailLimpio, '.', '_', [rfReplaceAll]);
+          SigEmailLimpio := StringReplace(SigEmailLimpio, '-', '_', [rfReplaceAll]);
+
+          WriteLn(Archivo, Format('    contact_%s -> contact_%s;', [EmailLimpio, SigEmailLimpio]));
         end;
 
-        Comunidad := Comunidad^.Siguiente;
+        Contacto := Contacto^.Siguiente;
+        Inc(Contador);
+      until (Contacto = PrimerContacto) or (Contador > 100);
+
+      // Indicar la naturaleza circular
+      WriteLn(Archivo, '    edge [color=red, style=dashed];');
+      if PrimerContacto^.Siguiente <> PrimerContacto then
+      begin
+        UltimoEmail := PrimerContacto^.Email;
+        while Contacto^.Siguiente <> PrimerContacto do
+          Contacto := Contacto^.Siguiente;
+
+        UltimoLimpio := StringReplace(Contacto^.Email, '@', '_at_', [rfReplaceAll]);
+        UltimoLimpio := StringReplace(UltimoLimpio, '.', '_', [rfReplaceAll]);
+        UltimoLimpio := StringReplace(UltimoLimpio, '-', '_', [rfReplaceAll]);
+
+         PrimeroLimpio := StringReplace(PrimerContacto^.Email, '@', '_at_', [rfReplaceAll]);
+        PrimeroLimpio := StringReplace(PrimeroLimpio, '.', '_', [rfReplaceAll]);
+        PrimeroLimpio := StringReplace(PrimeroLimpio, '-', '_', [rfReplaceAll]);
+
+        WriteLn(Archivo, Format('    contact_%s -> contact_%s [label="circular"];',
+                [UltimoLimpio, PrimeroLimpio]));
       end;
     end;
 
     WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
-    // Generar imagen
+    // Generar imagen usando Graphviz
     try
       Process := TProcess.Create(nil);
       try
         Process.Executable := 'dot';
         Process.Parameters.Add('-Tpng');
-        Process.Parameters.Add(RutaCarpeta + '/comunidades.dot');
+        Process.Parameters.Add(NombreArchivo);
         Process.Parameters.Add('-o');
-        Process.Parameters.Add(RutaCarpeta + '/comunidades.png');
+        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
         Process.Options := Process.Options + [poWaitOnExit];
         Process.Execute;
+        WriteLn('Reporte de contactos generado: ', ChangeFileExt(NombreArchivo, '.png'));
       finally
         Process.Free;
       end;
@@ -820,8 +1060,7 @@ begin
 
   except
     on E: Exception do
-      WriteLn('Error al generar reporte de comunidades: ', E.Message);
+      WriteLn('Error al generar reporte de contactos: ', E.Message);
   end;
 end;
-
 end.
