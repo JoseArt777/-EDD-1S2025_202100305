@@ -21,9 +21,9 @@ type
 
 
       FContactoActual: PContacto;
-  FPrimerContacto: PContacto;
-  FIndiceContactoActual: Integer;
-  FTotalContactos: Integer;
+      FPrimerContacto: PContacto;
+      FIndiceContactoActual: Integer;
+      FTotalContactos: Integer;
 
       FFormContactos: TForm;
     FLabelContadorContactos: TLabel;
@@ -45,6 +45,12 @@ type
     FListPapelera: TListBox;
     FMemoPapelera: TMemo;
     FEditBuscarPapelera: TEdit;
+
+    // --- Correos Programados ---
+    FFormCorreosProgramados: TForm;
+    FListCorreosProgramados: TListBox;
+    FMemoCorreoProgramado: TMemo;
+    FLabelTotalProgramados: TLabel;
     procedure CrearFormLogin;
     procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
@@ -96,7 +102,16 @@ procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
   procedure OnContactoSiguienteClick(Sender: TObject);
   procedure OnGenerarReporteContactosClick(Sender: TObject);
 
+  procedure OnProgramarCorreoClick(Sender: TObject);
 
+    // Agregar estos procedimientos en la sección private también
+  procedure OnCorreosProgramadosClick(Sender: TObject);
+  procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+  procedure CorreosProgramados_RellenarLista;
+  procedure CorreosProgramados_OnSeleccion(Sender: TObject);
+  procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
+  procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
+  procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
 
 
   public
@@ -258,7 +273,7 @@ begin
     Height := 35;
     Hint := 'Programar envío automático';
     ShowHint := True;
-    // OnClick := @OnProgramarCorreoClick; // Implementar después
+    OnClick := @OnProgramarCorreoClick; // Implementar después
   end;
   Inc(YPos, 50);
 
@@ -2317,19 +2332,512 @@ begin
 end;
 
 procedure TInterfazEDDMail.Papelera_OnEliminarDefClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
 begin
   if (FListPapelera = nil) or (FListPapelera.ItemIndex < 0) then Exit;
 
-  // por simplicidad: solo eliminamos del UI, ya que en tu CorreoManager
-  // aún no hay un método EliminarCorreoDePapelera definitivo
-  FListPapelera.Items.Delete(FListPapelera.ItemIndex);
-  FMemoPapelera.Clear;
-  MostrarMensaje('Éxito', 'Correo eliminado definitivamente de la papelera (simulado)');
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // El Id lo guardaste en Objects de la ListBox
+  IdSel := Integer(PtrInt(FListPapelera.Items.Objects[FListPapelera.ItemIndex]));
+
+  if FCorreoManager.EliminarCorreoDePapelera(Usuario, IdSel) then
+  begin
+    Papelera_RellenarLista; // refrescar UI
+    FMemoPapelera.Clear;
+    MostrarMensaje('Éxito', 'Correo eliminado definitivamente.');
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar definitivamente.');
 end;
+
 procedure TInterfazEDDMail.Papelera_OnCerrarClick(Sender: TObject);
 begin
   if Assigned(FFormPapelera) then
     FFormPapelera.Close;
+end;
+// Agregar este procedimiento en InterfazGTK.pas después de OnEnviarCorreoClick
+
+procedure TInterfazEDDMail.OnProgramarCorreoClick(Sender: TObject);
+var
+  FormProgramar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto, LabelFecha: TLabel;
+  EditPara, EditAsunto, EditFecha: TEdit;
+  MemoCuerpo: TMemo;
+  BtnProgramar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormProgramar := TForm.Create(nil);
+  try
+    with FormProgramar do
+    begin
+      Caption := 'Programar Correo';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+
+    Panel := TPanel.Create(FormProgramar);
+    with Panel do
+    begin
+      Parent := FormProgramar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+    end;
+
+    // Para
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12;
+      Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 30;
+      Width := 560;
+      TabOrder := 0;
+    end;
+
+    // Asunto
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 78;
+      Width := 560;
+      TabOrder := 1;
+    end;
+
+    // Fecha y hora de envío
+    LabelFecha := TLabel.Create(Panel);
+    with LabelFecha do
+    begin
+      Parent := Panel;
+      Caption := 'Fecha y hora de envío (dd/mm/yy hh:nn):';
+      Left := 12;
+      Top := 108;
+      Font.Style := [fsBold];
+    end;
+
+    EditFecha := TEdit.Create(Panel);
+    with EditFecha do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 126;
+      Width := 560;
+      TabOrder := 2;
+      Hint := 'Formato: 25/08/25 14:30';
+      ShowHint := True;
+      // Sugerir fecha futura como ejemplo
+      Text := FormatDateTime('dd/mm/yy hh:nn', Now + 1); // Mañana a la misma hora
+    end;
+
+    // Mensaje
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 160;
+      Width := 560;
+      Height := 240;
+      ScrollBars := ssVertical;
+      TabOrder := 3;
+    end;
+
+    // Botones
+    BtnProgramar := TButton.Create(Panel);
+    with BtnProgramar do
+    begin
+      Parent := Panel;
+      Caption := 'Programar';
+      Left := 380;
+      Top := 410;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 480;
+      Top := 410;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormProgramar.ShowModal = mrOk then
+    begin
+      if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') or (Trim(EditFecha.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Debe completar todos los campos obligatorios');
+        Exit;
+      end;
+
+      // Validar formato básico de fecha
+      try
+        StrToDateTime(Trim(EditFecha.Text));
+      except
+        MostrarMensaje('Error', 'Formato de fecha inválido. Use: dd/mm/yy hh:nn');
+        Exit;
+      end;
+
+      // Programar el correo usando CorreoManager
+      if FCorreoManager.ProgramarCorreo(
+            FSistema,
+            Usuario^.Email,
+            Trim(EditPara.Text),
+            Trim(EditAsunto.Text),
+            MemoCuerpo.Lines.Text,
+            Trim(EditFecha.Text)) then
+      begin
+        MostrarMensaje('Éxito',
+          'Correo programado exitosamente' + LineEnding +
+          'Para: ' + Trim(EditPara.Text) + LineEnding +
+          'Fecha de envío: ' + Trim(EditFecha.Text));
+      end
+      else
+      begin
+        MostrarMensaje('Error',
+          'No se pudo programar el correo.' + LineEnding +
+          'Verifique que el destinatario exista y esté en sus contactos.');
+      end;
+    end;
+
+  finally
+    FormProgramar.Free;
+  end;
+end;
+// IMPLEMENTACIÓN DE LOS PROCEDIMIENTOS:
+
+procedure TInterfazEDDMail.OnCorreosProgramadosClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnEnviar, BtnEliminar, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormCorreosProgramados) then
+  begin
+    FFormCorreosProgramados.Show;
+    FFormCorreosProgramados.BringToFront;
+    Exit;
+  end;
+
+  FFormCorreosProgramados := TForm.Create(nil);
+  with FFormCorreosProgramados do
+  begin
+    Caption := 'Correos Programados (Cola FIFO)';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormCorreosProgramadosClose;
+  end;
+
+  Panel := TPanel.Create(FFormCorreosProgramados);
+  with Panel do
+  begin
+    Parent := FFormCorreosProgramados;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Correos Programados para Envío';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  FLabelTotalProgramados := TLabel.Create(Panel);
+  with FLabelTotalProgramados do
+  begin
+    Parent := Panel;
+    Caption := 'Total: 0';
+    Left := 300;
+    Top := 14;
+    Font.Color := clGray;
+  end;
+
+  // Lista de correos programados
+  FListCorreosProgramados := TListBox.Create(Panel);
+  with FListCorreosProgramados do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 40;
+    Width := 660;
+    Height := 240;
+    OnClick := @CorreosProgramados_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo para mostrar el mensaje del correo seleccionado
+  FMemoCorreoProgramado := TMemo.Create(Panel);
+  with FMemoCorreoProgramado do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 290;
+    Width := 660;
+    Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEnviar := TButton.Create(Panel);
+  with BtnEnviar do
+  begin
+    Parent := Panel;
+    Caption := 'Enviar Programados';
+    Left := 10;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnEnviarClick;
+    Hint := 'Envía todos los correos cuya fecha ya llegó';
+    ShowHint := True;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar Seleccionado';
+    Left := 170;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnEliminarClick;
+    Hint := 'Elimina el correo programado seleccionado';
+    ShowHint := True;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 520;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos
+  CorreosProgramados_RellenarLista;
+
+  FFormCorreosProgramados.Show;
+end;
+procedure TInterfazEDDMail.OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormCorreosProgramados := nil;
+  FListCorreosProgramados := nil;
+  FMemoCorreoProgramado := nil;
+  FLabelTotalProgramados := nil;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display: String;
+  Contador: Integer;
+begin
+  if (FListCorreosProgramados = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListCorreosProgramados.Items.BeginUpdate;
+  try
+    FListCorreosProgramados.Items.Clear;
+    Contador := 0;
+
+    Correo := FCorreoManager.GetCorreosProgramados(Usuario);
+    while Correo <> nil do
+    begin
+      Display := Format('[Para: %s] %s — Envío: %s',
+        [Correo^.Destinatario, Correo^.Asunto, Correo^.FechaEnvio]);
+
+      FListCorreosProgramados.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+      Inc(Contador);
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListCorreosProgramados.Items.EndUpdate;
+  end;
+
+  // Actualizar contador
+  if Assigned(FLabelTotalProgramados) then
+    FLabelTotalProgramados.Caption := Format('Total: %d', [Contador]);
+
+  // Limpiar memo
+  if Assigned(FMemoCorreoProgramado) then
+    FMemoCorreoProgramado.Clear;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListCorreosProgramados = nil) or (FMemoCorreoProgramado = nil) then Exit;
+  if FListCorreosProgramados.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListCorreosProgramados.Items.Objects[FListCorreosProgramados.ItemIndex]));
+
+  // Buscar el correo seleccionado
+  Correo := FCorreoManager.GetCorreosProgramados(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+  begin
+    FMemoCorreoProgramado.Lines.Clear;
+    FMemoCorreoProgramado.Lines.Add('Para: ' + Correo^.Destinatario);
+    FMemoCorreoProgramado.Lines.Add('Asunto: ' + Correo^.Asunto);
+    FMemoCorreoProgramado.Lines.Add('Fecha de envío: ' + Correo^.FechaEnvio);
+    FMemoCorreoProgramado.Lines.Add('');
+    FMemoCorreoProgramado.Lines.Add('Mensaje:');
+    FMemoCorreoProgramado.Lines.Add(Correo^.Mensaje);
+  end;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnEnviarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CorreosEnviados: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // Procesar correos programados usando CorreoManager
+  CorreosEnviados := FCorreoManager.ProcesarCorreosProgramados(FSistema, Usuario);
+
+  if CorreosEnviados > 0 then
+  begin
+    MostrarMensaje('Éxito',
+      Format('Se enviaron %d correos programados exitosamente.', [CorreosEnviados]));
+    CorreosProgramados_RellenarLista; // Refrescar la lista
+  end
+  else
+  begin
+    MostrarMensaje('Información',
+      'No hay correos programados listos para enviar.' + LineEnding +
+      'Verifique que las fechas de envío ya hayan llegado.');
+  end;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo, CorreoAnterior: PCorreo;
+  Encontrado: Boolean;
+begin
+  if (FListCorreosProgramados = nil) or (FListCorreosProgramados.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListCorreosProgramados.Items.Objects[FListCorreosProgramados.ItemIndex]));
+
+  // Buscar y eliminar el correo de la cola
+  Correo := Usuario^.CorreosProgramados;
+  CorreoAnterior := nil;
+  Encontrado := False;
+
+  while (Correo <> nil) and not Encontrado do
+  begin
+    if Correo^.Id = IdSel then
+    begin
+      // Desenlazar de la cola FIFO
+      if CorreoAnterior = nil then
+        Usuario^.CorreosProgramados := Correo^.Siguiente
+      else
+        CorreoAnterior^.Siguiente := Correo^.Siguiente;
+
+      // Si había enlace hacia atrás, ajustarlo
+      if Correo^.Siguiente <> nil then
+        Correo^.Siguiente^.Anterior := CorreoAnterior;
+
+      Dispose(Correo);
+      Encontrado := True;
+      MostrarMensaje('Éxito', 'Correo programado eliminado.');
+    end
+    else
+    begin
+      CorreoAnterior := Correo;
+      Correo := Correo^.Siguiente;
+    end;
+  end;
+
+  if Encontrado then
+  begin
+    CorreosProgramados_RellenarLista; // Refrescar lista
+    FMemoCorreoProgramado.Clear;
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar el correo programado.');
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormCorreosProgramados) then
+    FFormCorreosProgramados.Close;
 end;
 
 end.
