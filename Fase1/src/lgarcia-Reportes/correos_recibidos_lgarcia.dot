@@ -1,0 +1,7 @@
+digraph G {
+    label="Lista Doblemente Enlazada - Correos Recibidos - Luis Garcia";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled];
+    correo_9471 [label="ID: 9471|Estado: NL|De: mitzep@edd.com|Asunto: Hola|Fecha: 26-08-25 23:41", fillcolor=lightblue];
+}

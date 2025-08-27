@@ -1,0 +1,12 @@
+digraph G {
+    label="Cola (FIFO) - Correos Programados - Luis Garcia";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled];
+    // COLA FIFO - Primero en entrar, primero en salir
+    correo_9578 [label="ID: 9578|Para: mshuttleworth@edd.com|Asunto: Hola|Envío: 27-08-25 23:40", fillcolor=lightyellow];
+    correo_9578 -> correo_3726 [label="siguiente"];
+    correo_3726 [label="ID: 3726|Para: mitzep@edd.com|Asunto: j|Envío: 28-08-25 00:03", fillcolor=lightyellow];
+    correo_3726 -> correo_4834 [label="siguiente"];
+    correo_4834 [label="ID: 4834|Para: mitzep@edd.com|Asunto: jad|Envío: 28-08-25 00:04", fillcolor=lightyellow];
+}

@@ -58,6 +58,11 @@ type
     procedure MostrarMensaje(Titulo, Mensaje: String);
     procedure Papelera_OnCerrarClick(Sender: TObject);
 
+    // Agregar estos procedimientos:
+  procedure OnGenerarReportesClick(Sender: TObject);
+  procedure OnReporteCorreosRecibidosClick(Sender: TObject);
+  procedure OnReportePapeleraClick(Sender: TObject);
+  procedure OnReporteCorreosProgramadosClick(Sender: TObject);
 
     procedure OnBandejaClick(Sender: TObject);
 procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -353,7 +358,7 @@ begin
     Height := 35;
     Hint := 'Generar reportes personales (Correos, Papelera, Programados, Contactos)';
     ShowHint := True;
-    // OnClick := @OnGenerarReportesClick; // Implementar después
+    OnClick := @OnGenerarReportesClick; // Implementar después
     Font.Style := [fsBold];
     Color := clYellow;
   end;
@@ -2839,5 +2844,223 @@ begin
   if Assigned(FFormCorreosProgramados) then
     FFormCorreosProgramados.Close;
 end;
+procedure TInterfazEDDMail.OnGenerarReportesClick(Sender: TObject);
+var
+  FormReportes: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelInfo: TLabel;
+  BtnCorreosRecibidos, BtnPapelera, BtnCorreosProgramados, BtnContactos, BtnCerrar: TButton;
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+  YPos: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
 
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  FormReportes := TForm.Create(nil);
+  try
+    with FormReportes do
+    begin
+      Caption := 'Generar Reportes';
+      Width := 500;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+
+    Panel := TPanel.Create(FormReportes);
+    with Panel do
+    begin
+      Parent := FormReportes;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Generar Reportes Personales';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    LabelInfo := TLabel.Create(Panel);
+    with LabelInfo do
+    begin
+      Parent := Panel;
+      Caption := 'Usuario: ' + Usuario^.Nombre + LineEnding +
+                 'Carpeta: ' + CarpetaReportes + LineEnding +
+                 'Seleccione el reporte que desea generar:';
+      Left := 20;
+      Top := YPos;
+      AutoSize := True;
+      Font.Color := clGray;
+    end;
+    Inc(YPos, 80);
+
+    // Botón: Reporte de Correos Recibidos
+    BtnCorreosRecibidos := TButton.Create(Panel);
+    with BtnCorreosRecibidos do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Correos Recibidos';
+      Left := 20;
+      Top := YPos;
+      Width := 430;
+      Height := 40;
+      Hint := 'Lista doblemente enlazada - Bandeja de entrada';
+      ShowHint := True;
+      OnClick := @OnReporteCorreosRecibidosClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 50);
+
+    // Botón: Reporte de Papelera
+    BtnPapelera := TButton.Create(Panel);
+    with BtnPapelera do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Papelera';
+      Left := 20;
+      Top := YPos;
+      Width := 430;
+      Height := 40;
+      Hint := 'Pila LIFO - Correos eliminados';
+      ShowHint := True;
+      OnClick := @OnReportePapeleraClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 50);
+
+    // Botón: Reporte de Correos Programados
+    BtnCorreosProgramados := TButton.Create(Panel);
+    with BtnCorreosProgramados do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Correos Programados';
+      Left := 20;
+      Top := YPos;
+      Width := 430;
+      Height := 40;
+      Hint := 'Cola FIFO - Correos pendientes de envío';
+      ShowHint := True;
+      OnClick := @OnReporteCorreosProgramadosClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 50);
+
+    // Botón: Reporte de Contactos (ya implementado)
+    BtnContactos := TButton.Create(Panel);
+    with BtnContactos do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Contactos';
+      Left := 20;
+      Top := YPos;
+      Width := 430;
+      Height := 40;
+      Hint := 'Lista circular - Contactos del usuario';
+      ShowHint := True;
+      OnClick := @OnGenerarReporteContactosClick; // Ya existe
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 70);
+
+    // Botón Cerrar
+    BtnCerrar := TButton.Create(Panel);
+    with BtnCerrar do
+    begin
+      Parent := Panel;
+      Caption := 'Cerrar';
+      Left := 350;
+      Top := YPos;
+      Width := 100;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormReportes.ShowModal;
+
+  finally
+    FormReportes.Free;
+  end;
+end;
+// Implementar los event handlers para cada reporte
+procedure TInterfazEDDMail.OnReporteCorreosRecibidosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReporteCorreosRecibidos(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de correos recibidos generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- correos_recibidos_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- correos_recibidos_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReportePapeleraClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReportePapelera(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de papelera generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- papelera_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- papelera_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteCorreosProgramadosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReporteCorreosProgramados(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de correos programados generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- correos_programados_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- correos_programados_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
 end.
