@@ -122,7 +122,8 @@ type
 
     function BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
-
+    function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
+    procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
   public
     constructor Create;
     destructor Destroy; override;
@@ -136,6 +137,8 @@ type
 
     // Funciones para carga masiva (ROOT)
     procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
+    procedure CargarCorreosDesdeJSON(const RutaArchivo: String);
+
     procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
     // Funciones de correo
     procedure EnviarCorreo(Destinatario, Asunto, Mensaje: String);
@@ -460,6 +463,136 @@ begin
       WriteLn('Error al cargar JSON: ', E.Message);
   end;
 end;
+function TEDDMailSystem.BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
+var
+  U: PUsuario;
+begin
+  Result := nil;
+  U := FUsuarios;
+  while U <> nil do
+  begin
+    if U^.Id = IdBuscado then
+    begin
+      Result := U;
+      Exit;
+    end;
+    U := U^.Siguiente;
+  end;
+end;
+
+procedure TEDDMailSystem.Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
+var
+  P: PCorreo;
+begin
+  if NewNode = nil then Exit;
+  NewNode^.Anterior := nil;
+  NewNode^.Siguiente := nil;
+
+  if Head = nil then
+  begin
+    Head := NewNode;
+    Exit;
+  end;
+
+  P := Head;
+  while P^.Siguiente <> nil do
+    P := P^.Siguiente;
+
+  // enlazar doblemente
+  P^.Siguiente := NewNode;
+  NewNode^.Anterior := P;
+end;
+
+procedure TEDDMailSystem.CargarCorreosDesdeJSON(const RutaArchivo: String);
+var
+  JsonData: TJSONData;
+  Root, ObjUsuario, MailObj: TJSONObject;
+  ArrCorreos, Inbox: TJSONArray;
+  i, k, UsuarioId: Integer;
+  U: PUsuario;
+  C: PCorreo;
+  FS: TFileStream;
+  S: String;
+  estadoTxt, progTxt: String;
+begin
+    S := '';  // ← agrega esta línea
+
+  if not FileExists(RutaArchivo) then
+  begin
+    WriteLn('Error: Archivo JSON de correos no existe: ', RutaArchivo);
+    Exit;
+  end;
+
+  // leer archivo completo
+  FS := TFileStream.Create(RutaArchivo, fmOpenRead);
+  try
+    SetLength(S, FS.Size);
+    if FS.Size > 0 then FS.ReadBuffer(S[1], FS.Size);
+  finally
+    FS.Free;
+  end;
+
+  if S = '' then
+  begin
+    WriteLn('Error: Archivo de correos vacío');
+    Exit;
+  end;
+
+  JsonData := GetJSON(S);
+  try
+    Root := JsonData as TJSONObject;
+    ArrCorreos := Root.Arrays['correos'];        // estructura esperada
+
+    for i := 0 to ArrCorreos.Count - 1 do
+    begin
+      ObjUsuario := ArrCorreos.Objects[i];
+      UsuarioId := ObjUsuario.Get('usuario_id', 0);
+
+      U := BuscarUsuarioPorId(UsuarioId);
+      if U = nil then
+      begin
+        WriteLn('Aviso: usuario_id ', UsuarioId, ' no existe. Se omite su bandeja.');
+        Continue;
+      end;
+
+      Inbox := ObjUsuario.Arrays['bandeja_entrada'];
+      for k := 0 to Inbox.Count - 1 do
+      begin
+        MailObj := Inbox.Objects[k];
+
+        New(C);
+        // mapear campos
+        C^.Id          := MailObj.Get('id', 0);
+        C^.Remitente   := MailObj.Get('remitente', '');
+        C^.Destinatario:= U^.Email; // destinatario es el dueño de la bandeja
+        estadoTxt      := LowerCase(MailObj.Get('estado',''));
+        if (Pos('no', estadoTxt) > 0) then C^.Estado := 'NL' else C^.Estado := 'L';
+
+        progTxt        := LowerCase(MailObj.Get('programado','no'));
+        C^.Programado  := (progTxt = 'si') or (progTxt = 'sí');
+
+        C^.Asunto      := MailObj.Get('asunto', '');
+        C^.Fecha       := MailObj.Get('fecha', '');
+        C^.Mensaje     := MailObj.Get('mensaje', '');
+        C^.FechaEnvio  := ''; // solo se usa para programados salientes
+
+        C^.Anterior := nil;
+        C^.Siguiente := nil;
+
+        // insertar al final de la bandeja (lista doble)
+        Inbox_InsertTail(U^.BandejaEntrada, C);
+
+        // actualizar matriz remitente->destinatario
+        ActualizarMatrizRelaciones(C^.Remitente, U^.Email);
+      end;
+    end;
+
+    WriteLn('Carga de correos completada desde: ', RutaArchivo);
+  finally
+    JsonData.Free;
+  end;
+end;
+
 
 function TEDDMailSystem.CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean): PCorreo;
 begin
@@ -481,26 +614,26 @@ var
   NuevoCorreo: PCorreo;
   UsuarioDestino: PUsuario;
 begin
-  if FUsuarioActual = nil then
-    Exit;
+  if FUsuarioActual = nil then Exit;
 
   UsuarioDestino := BuscarUsuario(Destinatario);
-  if UsuarioDestino = nil then
-    Exit;
+  if UsuarioDestino = nil then Exit;
 
   // Verificar que sea contacto
-  if BuscarContacto(FUsuarioActual, Destinatario) = nil then
-    Exit;
+  if BuscarContacto(FUsuarioActual, Destinatario) = nil then Exit;
 
-  NuevoCorreo := CrearCorreo(FUsuarioActual^.Email, Destinatario, Asunto, Mensaje,
-                           FormatDateTime('dd/mm/yy hh:nn', Now));
+  NuevoCorreo := CrearCorreo(
+    FUsuarioActual^.Email, Destinatario, Asunto, Mensaje,
+    FormatDateTime('dd/mm/yy hh:nn', Now)
+  );
 
-  // Agregar a bandeja de entrada del destinatario (lista doblemente enlazada)
-  // Aquí iría la lógica para agregar a la bandeja del destinatario
+  // INSERTAR en bandeja del destinatario (lista doble)
+  Inbox_InsertTail(UsuarioDestino^.BandejaEntrada, NuevoCorreo);
 
-  // Actualizar matriz de relaciones
+  // Actualizar matriz de relaciones (remitente → destinatario)
   ActualizarMatrizRelaciones(FUsuarioActual^.Email, Destinatario);
 end;
+
 
 // Implementación mejorada de BuscarContacto:
 function TEDDMailSystem.BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
@@ -602,21 +735,155 @@ begin
 end;
 
 procedure TEDDMailSystem.ActualizarMatrizRelaciones(Remitente, Destinatario: String);
+var
+  FilaHdr: PMatrizDispersaFila;
+  ColHdr: PMatrizDispersaColumna;
+  N, P: PMatrizDispersaNodo;
 begin
-  // Implementar lógica de matriz dispersa
-  WriteLn('Actualizando matriz de relaciones: ', Remitente, ' -> ', Destinatario);
+  if (Remitente = '') or (Destinatario = '') then Exit;
+
+  FilaHdr := BuscarFilaMatriz(Remitente);
+  ColHdr  := BuscarColumnaMatriz(Destinatario);
+  if (FilaHdr = nil) or (ColHdr = nil) then Exit;
+
+  // 1) Buscar si ya existe nodo (misma fila/col) recorriendo por la lista de fila
+  P := FilaHdr^.Primero;
+  while P <> nil do
+  begin
+    if (P^.Columna = ColHdr^.Columna) then
+    begin
+      Inc(P^.Cantidad); // ¡ya existía!: sumar 1
+      Exit;
+    end;
+    P := P^.Derecha;
+  end;
+
+  // 2) Crear nuevo nodo
+  New(N);
+  N^.Fila := FilaHdr^.Fila;
+  N^.Columna := ColHdr^.Columna;
+  N^.Cantidad := 1;
+  N^.RemitenteEmail := Remitente;
+  N^.DestinatarioEmail := Destinatario;
+  N^.Arriba := nil; N^.Abajo := nil; N^.Izquierda := nil; N^.Derecha := nil;
+
+  // 3) Insertar en lista de la fila (ordenado por columna)
+  if FilaHdr^.Primero = nil then
+    FilaHdr^.Primero := N
+  else
+  begin
+    P := FilaHdr^.Primero;
+    // insertar ordenado por columna
+    if N^.Columna < P^.Columna then
+    begin
+      N^.Derecha := P; P^.Izquierda := N;
+      FilaHdr^.Primero := N;
+    end
+    else
+    begin
+      while (P^.Derecha <> nil) and (P^.Derecha^.Columna < N^.Columna) do
+        P := P^.Derecha;
+      N^.Derecha := P^.Derecha;
+      if P^.Derecha <> nil then P^.Derecha^.Izquierda := N;
+      P^.Derecha := N;
+      N^.Izquierda := P;
+    end;
+  end;
+
+  // 4) Insertar en lista de la columna (ordenado por fila)
+  if ColHdr^.Primero = nil then
+    ColHdr^.Primero := N
+  else
+  begin
+    P := ColHdr^.Primero;
+    if N^.Fila < P^.Fila then
+    begin
+      N^.Abajo := P; P^.Arriba := N;
+      ColHdr^.Primero := N;
+    end
+    else
+    begin
+      while (P^.Abajo <> nil) and (P^.Abajo^.Fila < N^.Fila) do
+        P := P^.Abajo;
+      N^.Abajo := P^.Abajo;
+      if P^.Abajo <> nil then P^.Abajo^.Arriba := N;
+      P^.Abajo := N;
+      N^.Arriba := P;
+    end;
+  end;
 end;
 
+
 function TEDDMailSystem.BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
+var
+  F, Ult: PMatrizDispersaFila;
+  nextIdx: Integer;
 begin
-  Result := nil;
-  // Implementar búsqueda en filas de matriz
+  // buscar existente
+  F := FMatrizFilas; Ult := nil;
+  while F <> nil do
+  begin
+    if F^.Email = Email then
+    begin
+      Result := F; Exit;
+    end;
+    Ult := F; F := F^.Siguiente;
+  end;
+
+  // crear nueva fila
+  New(Result);
+  Result^.Email := Email;
+  Result^.Primero := nil;
+  Result^.Siguiente := nil;
+
+  // asignar índice
+  if Ult = nil then
+  begin
+    Result^.Fila := 1;
+    FMatrizFilas := Result;
+  end
+  else
+  begin
+    nextIdx := Ult^.Fila + 1;
+    Result^.Fila := nextIdx;
+    Ult^.Siguiente := Result;
+  end;
 end;
 
 function TEDDMailSystem.BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
+var
+  C, Ult: PMatrizDispersaColumna;
+  nextIdx: Integer;
 begin
-  Result := nil;
-  // Implementar búsqueda en columnas de matriz
+  // buscar existente
+  C := FMatrizColumnas; Ult := nil;
+  while C <> nil do
+  begin
+    if C^.Email = Email then
+    begin
+      Result := C; Exit;
+    end;
+    Ult := C; C := C^.Siguiente;
+  end;
+
+  // crear nueva columna
+  New(Result);
+  Result^.Email := Email;
+  Result^.Primero := nil;
+  Result^.Siguiente := nil;
+
+  // asignar índice
+  if Ult = nil then
+  begin
+    Result^.Columna := 1;
+    FMatrizColumnas := Result;
+  end
+  else
+  begin
+    nextIdx := Ult^.Columna + 1;
+    Result^.Columna := nextIdx;
+    Ult^.Siguiente := Result;
+  end;
 end;
 
 // Implementar resto de métodos...
@@ -834,21 +1101,57 @@ procedure TEDDMailSystem.GenerarReporteRelaciones(RutaCarpeta: String);
 var
   Archivo: TextFile;
   Process: TProcess;
+  F: PMatrizDispersaFila;
+  N: PMatrizDispersaNodo;
+    C: PMatrizDispersaColumna;  // ← declarar aquí
+
 begin
   try
     ForceDirectories(RutaCarpeta);
-
     AssignFile(Archivo, RutaCarpeta + '/relaciones.dot');
     Rewrite(Archivo);
 
     WriteLn(Archivo, 'digraph G {');
-    WriteLn(Archivo, '    label="Matriz Dispersa - Relaciones de Correos";');
-    WriteLn(Archivo, '    fontsize=16;');
-    WriteLn(Archivo, '    node [shape=box];');
-    WriteLn(Archivo, '    matriz [label="Matriz Dispersa\n(Sin relaciones aún)", style=filled, fillcolor=lightyellow];');
+    WriteLn(Archivo, '  rankdir=LR;');
+    WriteLn(Archivo, '  node [shape=box, style=filled, fillcolor=lightyellow];');
+    WriteLn(Archivo, '  label="Relaciones Remitente → Destinatario (Matriz Dispersa)"; fontsize=16;');
+
+    // declarar nodos por email para estética
+    WriteLn(Archivo, '  subgraph cluster_remitentes { label="Remitentes"; color=lightgray;');
+    F := FMatrizFilas;
+    while F <> nil do
+    begin
+      WriteLn(Archivo, Format('  r_%d [label="%s", fillcolor=lightblue];', [F^.Fila, F^.Email]));
+      F := F^.Siguiente;
+    end;
+    WriteLn(Archivo, '  }');
+
+    WriteLn(Archivo, '  subgraph cluster_destinatarios { label="Destinatarios"; color=lightgray;');
+    C := FMatrizColumnas;
+    while C <> nil do
+    begin
+      WriteLn(Archivo, Format('  d_%d [label="%s", fillcolor=lightgreen];', [C^.Columna, C^.Email]));
+      C := C^.Siguiente;
+    end;
+    WriteLn(Archivo, '  }');
+
+    // aristas con cantidad
+    F := FMatrizFilas;
+    while F <> nil do
+    begin
+      N := F^.Primero;
+      while N <> nil do
+      begin
+        WriteLn(Archivo, Format('  r_%d -> d_%d [label="%d"];', [N^.Fila, N^.Columna, N^.Cantidad]));
+        N := N^.Derecha;
+      end;
+      F := F^.Siguiente;
+    end;
+
     WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
+    // PNG con Graphviz
     try
       Process := TProcess.Create(nil);
       try
@@ -867,11 +1170,13 @@ begin
       on E: Exception do
         WriteLn('Error al generar imagen: ', E.Message);
     end;
+
   except
     on E: Exception do
       WriteLn('Error al generar reporte de relaciones: ', E.Message);
   end;
 end;
+
 
 procedure TEDDMailSystem.GenerarReporteCorreosRecibidos(Usuario: PUsuario; RutaCarpeta: String);
 begin

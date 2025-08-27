@@ -3,12 +3,5 @@ digraph G {
     fontsize=16;
     rankdir=LR;
     node [shape=record, style=filled, fillcolor=lightblue];
-    contact_mitzep_at_edd_com [label="ID: 5488|Nombre: Marcos Itzep|Usuario: mitzep|Email: mitzep@edd.com|Tel: 87654321"];
-    contact_gkroah_hartman_at_edd_com [label="ID: 7152|Nombre: Greg Kroah-Hartman|Usuario: gkroah-hartman|Email: gkroah-hartman@edd.com|Tel: 31628954"];
-    contact_mshuttleworth_at_edd_com [label="ID: 6028|Nombre: Mark Shuttleworth|Usuario: mshuttleworth|Email: mshuttleworth@edd.com|Tel: 76018423"];
-    contact_mitzep_at_edd_com -> contact_gkroah_hartman_at_edd_com;
-    contact_gkroah_hartman_at_edd_com -> contact_mshuttleworth_at_edd_com;
-    contact_mshuttleworth_at_edd_com -> contact_mitzep_at_edd_com;
-    edge [color=red, style=dashed];
-    contact_mshuttleworth_at_edd_com -> contact_mitzep_at_edd_com [label="circular"];
+    empty [label="Sin contactos", style=filled, fillcolor=lightgray];
 }

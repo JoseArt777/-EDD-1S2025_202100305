@@ -3,18 +3,5 @@ digraph G {
     fontsize=16;
     rankdir=TB;
     node [shape=record, style=filled];
-    // PILA - El último agregado está arriba
-    correo_3975 [label="ID: 3975|Estado: Eliminado|De: mitzep@edd.com|Asunto: lgarcia@edd.com|Fecha: 26-08-25 23:58", fillcolor=lightpink];
-    correo_3975 -> correo_9916 [label="abajo"];
-    correo_9916 [label="ID: 9916|Estado: Eliminado|De: gkroah-hartman@edd.com|Asunto: lgarcia@edd.com|Fecha: 27-08-25 00:00", fillcolor=lightpink];
-    correo_9916 -> correo_4843 [label="abajo"];
-    correo_4843 [label="ID: 4843|Estado: Eliminado|De: mitzep@edd.com|Asunto: lgarcia@edd.com|Fecha: 26-08-25 23:56", fillcolor=lightpink];
-    correo_4843 -> correo_5375 [label="abajo"];
-    correo_5375 [label="ID: 5375|Estado: Eliminado|De: gkroah-hartman@edd.com|Asunto: lgarcia@edd.com|Fecha: 26-08-25 23:56", fillcolor=lightpink];
-    correo_5375 -> correo_7458 [label="abajo"];
-    correo_7458 [label="ID: 7458|Estado: Eliminado|De: mitzep@edd.com|Asunto: hola|Fecha: 26-08-25 23:51", fillcolor=lightpink];
-    correo_7458 -> correo_9471 [label="abajo"];
-    correo_9471 [label="ID: 9471|Estado: Eliminado|De: mitzep@edd.com|Asunto: Hola|Fecha: 26-08-25 23:41", fillcolor=lightpink];
-    correo_9471 -> correo_7235 [label="abajo"];
-    correo_7235 [label="ID: 7235|Estado: Eliminado|De: gkroah-hartman@edd.com|Asunto: Hola|Fecha: 26-08-25 23:48", fillcolor=lightpink];
+    empty [label="Papelera vacía", fillcolor=lightgray];
 }
