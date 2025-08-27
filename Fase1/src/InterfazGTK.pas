@@ -884,13 +884,14 @@ end;
 
 procedure TInterfazEDDMail.OnCargaMasivaClick(Sender: TObject);
 var
-  OpenDialog: TOpenDialog;
+  OpenDialogUsuarios, OpenDialogCorreos: TOpenDialog;
 begin
-  OpenDialog := TOpenDialog.Create(nil);
+  // 1) Cargar USUARIOS
+  OpenDialogUsuarios := TOpenDialog.Create(nil);
   try
-    with OpenDialog do
+    with OpenDialogUsuarios do
     begin
-      Title := 'Seleccionar archivo JSON';
+      Title := 'Seleccionar JSON de USUARIOS';
       Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
       DefaultExt := 'json';
       if Execute then
@@ -900,12 +901,40 @@ begin
           MostrarMensaje('Éxito', 'Usuarios cargados desde: ' + ExtractFileName(FileName));
         except
           on E: Exception do
-            MostrarMensaje('Error', 'Error al cargar JSON: ' + E.Message);
+          begin
+            MostrarMensaje('Error', 'Error al cargar usuarios: ' + E.Message);
+            Exit;
+          end;
+        end;
+      end
+      else
+        Exit; // cancelado
+    end;
+  finally
+    OpenDialogUsuarios.Free;
+  end;
+
+  // 2) Cargar CORREOS
+  OpenDialogCorreos := TOpenDialog.Create(nil);
+  try
+    with OpenDialogCorreos do
+    begin
+      Title := 'Seleccionar JSON de CORREOS';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+      if Execute then
+      begin
+        try
+          FSistema.CargarCorreosDesdeJSON(FileName);
+          MostrarMensaje('Éxito', 'Correos cargados desde: ' + ExtractFileName(FileName));
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar correos: ' + E.Message);
         end;
       end;
     end;
   finally
-    OpenDialog.Free;
+    OpenDialogCorreos.Free;
   end;
 end;
 

@@ -358,7 +358,7 @@ begin
     Height := 35;
     Hint := 'Generar reportes personales (Correos, Papelera, Programados, Contactos)';
     ShowHint := True;
-    // OnClick := @OnGenerarReportesClick; // Implementar después
+    OnClick := @OnGenerarReportesClick; // Implementar después
     Font.Style := [fsBold];
     Color := clYellow;
   end;

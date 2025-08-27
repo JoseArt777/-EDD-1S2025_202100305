@@ -1,4 +1,5 @@
-unit EstructurasDatos;
+
+                    unit EstructurasDatos;
 
 {$mode objfpc}{$H+}
 
@@ -113,7 +114,7 @@ type
 
 
     // Funciones auxiliares para correos
-    function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
+    function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
 
       procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto); // <- AGREGAR
 
@@ -129,7 +130,7 @@ type
     destructor Destroy; override;
 
     // Funciones de usuario
-    function RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String): Boolean;
+    function RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer = -1): Boolean;
     function IniciarSesion(Email, Password: String): Boolean;
     procedure CerrarSesion;
     function GetUsuarioActual: PUsuario;
@@ -194,8 +195,8 @@ begin
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
 
-  // Crear usuario root por defecto
-  RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123');
+  // Crear usuario root por defecto (Id fijo = 0 para no chocar con JSON que generalmente empieza en 1)
+  RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123', 0);
 end;
 
 destructor TEDDMailSystem.Destroy;
@@ -283,10 +284,10 @@ begin
     Result := Usuario;
 end;
 
-function TEDDMailSystem.RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String): Boolean;
+function TEDDMailSystem.RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer): Boolean;
 var
-  NuevoUsuario, Ultimo: PUsuario;
-  IdCounter: Integer;
+  NuevoUsuario, Cur: PUsuario;
+  MaxId: Integer;
 begin
   Result := False;
 
@@ -294,22 +295,33 @@ begin
   if BuscarUsuario(Email) <> nil then
     Exit;
 
+  // Validar que el IdFijo (si viene) no esté duplicado
+  if (IdFijo >= 0) and (BuscarUsuarioPorId(IdFijo) <> nil) then
+  begin
+    WriteLn('Error: id duplicado en JSON: ', IdFijo, ' (', Email, ')');
+    Exit;
+  end;
+
   // Crear nuevo usuario
   New(NuevoUsuario);
 
-  // Calcular ID
-  IdCounter := 1;
-  Ultimo := FUsuarios;
-  while Ultimo <> nil do
+  // Calcular MaxId actual
+  MaxId := 0;
+  Cur := FUsuarios;
+  while Cur <> nil do
   begin
-    if Ultimo^.Siguiente = nil then
-      Break;
-    IdCounter := IdCounter + 1;
-    Ultimo := Ultimo^.Siguiente;
+    if Cur^.Id > MaxId then
+      MaxId := Cur^.Id;
+    Cur := Cur^.Siguiente;
   end;
 
+  // Asignar Id usando IdFijo o MaxId+1
+  if IdFijo >= 0 then
+    NuevoUsuario^.Id := IdFijo
+  else
+    NuevoUsuario^.Id := MaxId + 1;
+
   // Asignar valores
-  NuevoUsuario^.Id := IdCounter;
   NuevoUsuario^.Nombre := Nombre;
   NuevoUsuario^.Usuario := Usuario;
   NuevoUsuario^.Email := Email;
@@ -317,20 +329,24 @@ begin
   NuevoUsuario^.Password := Password;
   NuevoUsuario^.Siguiente := nil;
   NuevoUsuario^.ListaContactos := nil; // Inicializar lista de contactos vacía
-
-  // *** AGREGAR ESTAS 3 LÍNEAS: ***
   NuevoUsuario^.BandejaEntrada := nil;
   NuevoUsuario^.Papelera := nil;
   NuevoUsuario^.CorreosProgramados := nil;
 
-  // Agregar a la lista
+  // Agregar a la lista (al final)
   if FUsuarios = nil then
     FUsuarios := NuevoUsuario
   else
-    Ultimo^.Siguiente := NuevoUsuario;
+  begin
+    Cur := FUsuarios;
+    while Cur^.Siguiente <> nil do
+      Cur := Cur^.Siguiente;
+    Cur^.Siguiente := NuevoUsuario;
+  end;
 
   Result := True;
 end;
+
   // Implementación mejorada de GetContactos:
 function TEDDMailSystem.GetContactos(Usuario: PUsuario): PContacto;
 begin
@@ -404,7 +420,7 @@ var
   JsonString: String;
   i: Integer;
   PasswordUsuario: String;
-
+  IdJson: Integer;
 
 begin
   JsonString := '';  // *** AGREGAR ESTA INICIALIZACIÓN ***
@@ -438,18 +454,23 @@ begin
       for i := 0 to UsuariosArray.Count - 1 do
       begin
         UsuarioObj := UsuariosArray.Objects[i];
-              // Leer password del JSON si existe, sino usar genérico
-      if UsuarioObj.Find('password') <> nil then
-        PasswordUsuario := UsuarioObj.Strings['password']
-      else
-        PasswordUsuario := 'password123';
+
+        // Leer password del JSON si existe, sino usar genérico
+        if UsuarioObj.Find('password') <> nil then
+          PasswordUsuario := UsuarioObj.Strings['password']
+        else
+          PasswordUsuario := 'password123';
+
+        // Leer id del JSON (si no está, -1)
+        IdJson := UsuarioObj.Get('id', -1);
+
         if RegistrarUsuario(
           UsuarioObj.Strings['nombre'],
           UsuarioObj.Strings['usuario'],
           UsuarioObj.Strings['email'],
           UsuarioObj.Strings['telefono'],
-          PasswordUsuario  // <- Password del JSON
-
+          PasswordUsuario,  // <- Password del JSON o genérico
+          IdJson            // <- Id del JSON (o -1)
         ) then
           WriteLn('Usuario cargado: ', UsuarioObj.Strings['email'])
         else
@@ -463,6 +484,7 @@ begin
       WriteLn('Error al cargar JSON: ', E.Message);
   end;
 end;
+
 function TEDDMailSystem.BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
 var
   U: PUsuario;
@@ -594,20 +616,35 @@ begin
 end;
 
 
-function TEDDMailSystem.CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean): PCorreo;
+function TEDDMailSystem.CrearCorreo(
+  Remitente, Destinatario, Asunto, Mensaje, Fecha: String;
+  Programado: Boolean = False; IdFijo: Integer = -1
+): PCorreo;
 begin
   New(Result);
-  Result^.Id := Random(9999) + 1;
-  Result^.Remitente := Remitente;
+
+  if IdFijo >= 0 then
+    Result^.Id := IdFijo
+  else
+    Result^.Id := Random(9999) + 1; // si quieres, aquí puedes cambiar a max+1
+
+  Result^.Remitente    := Remitente;
   Result^.Destinatario := Destinatario;
-  Result^.Estado := 'NL'; // No Leído
-  Result^.Programado := Programado;
-  Result^.Asunto := Asunto;
-  Result^.Fecha := Fecha;
-  Result^.Mensaje := Mensaje;
+  Result^.Estado       := 'NL';        // No leído por defecto
+  Result^.Programado   := Programado;
+  Result^.Asunto       := Asunto;
+  Result^.Fecha        := Fecha;
+  Result^.Mensaje      := Mensaje;
+
+  if Programado then
+    Result^.FechaEnvio := Fecha      // para programados usas la fecha indicada
+  else
+    Result^.FechaEnvio := FormatDateTime('dd/mm/yy hh:nn', Now); // enviado ahora
+
   Result^.Anterior := nil;
   Result^.Siguiente := nil;
 end;
+
 
 procedure TEDDMailSystem.EnviarCorreo(Destinatario, Asunto, Mensaje: String);
 var
@@ -1183,6 +1220,7 @@ begin
   // Implementar reporte de lista doblemente enlazada
   WriteLn('Generando reporte de correos recibidos para: ', Usuario^.Email);
 end;
+
 
 procedure TEDDMailSystem.GenerarReportePapelera(Usuario: PUsuario; RutaCarpeta: String);
 begin
