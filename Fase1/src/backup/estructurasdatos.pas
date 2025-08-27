@@ -1,5 +1,4 @@
-
-                    unit EstructurasDatos;
+unit EstructurasDatos;
 
 {$mode objfpc}{$H+}
 
@@ -45,8 +44,8 @@ type
     Fecha: String;
     Mensaje: String;
     FechaEnvio: String; // Para correos programados
-    Anterior: PCorreo;
-    Siguiente: PCorreo;
+    Anterior: PCorreo;  // enlace hacia el nodo previo
+    Siguiente: PCorreo; // enlace hacia el nodo siguiente
   end;
 
   // Estructura Contacto (Lista Circular)
@@ -125,7 +124,7 @@ type
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
     function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
     procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
-  public
+   public
     constructor Create;
     destructor Destroy; override;
 
@@ -616,20 +615,35 @@ begin
 end;
 
 
-function TEDDMailSystem.CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean): PCorreo;
+function TEDDMailSystem.CrearCorreo(
+  Remitente, Destinatario, Asunto, Mensaje, Fecha: String;
+  Programado: Boolean = False; IdFijo: Integer = -1
+): PCorreo;
 begin
   New(Result);
-  Result^.Id := Random(9999) + 1;
-  Result^.Remitente := Remitente;
+
+  if IdFijo >= 0 then
+    Result^.Id := IdFijo
+  else
+    Result^.Id := Random(9999) + 1; // si quieres, aquí puedes cambiar a max+1
+
+  Result^.Remitente    := Remitente;
   Result^.Destinatario := Destinatario;
-  Result^.Estado := 'NL'; // No Leído
-  Result^.Programado := Programado;
-  Result^.Asunto := Asunto;
-  Result^.Fecha := Fecha;
-  Result^.Mensaje := Mensaje;
+  Result^.Estado       := 'NL';        // No leído por defecto
+  Result^.Programado   := Programado;
+  Result^.Asunto       := Asunto;
+  Result^.Fecha        := Fecha;
+  Result^.Mensaje      := Mensaje;
+
+  if Programado then
+    Result^.FechaEnvio := Fecha      // para programados usas la fecha indicada
+  else
+    Result^.FechaEnvio := FormatDateTime('dd/mm/yy hh:nn', Now); // enviado ahora
+
   Result^.Anterior := nil;
   Result^.Siguiente := nil;
 end;
+
 
 procedure TEDDMailSystem.EnviarCorreo(Destinatario, Asunto, Mensaje: String);
 var

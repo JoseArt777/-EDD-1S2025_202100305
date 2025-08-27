@@ -1,5 +1,4 @@
-
-                    unit EstructurasDatos;
+unit EstructurasDatos;
 
 {$mode objfpc}{$H+}
 
@@ -45,8 +44,8 @@ type
     Fecha: String;
     Mensaje: String;
     FechaEnvio: String; // Para correos programados
-    Anterior: PCorreo;
-    Siguiente: PCorreo;
+    Anterior: PCorreo;  // enlace hacia el nodo previo
+    Siguiente: PCorreo; // enlace hacia el nodo siguiente
   end;
 
   // Estructura Contacto (Lista Circular)
@@ -125,7 +124,7 @@ type
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
     function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
     procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
-  public
+   -public
     constructor Create;
     destructor Destroy; override;
 

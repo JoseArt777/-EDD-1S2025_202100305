@@ -35,8 +35,8 @@
         <Filename Value="InterfazGTK.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="922"/>
-        <CursorPos Y="940"/>
+        <TopLine Value="923"/>
+        <CursorPos X="41" Y="932"/>
         <UsageCount Value="22"/>
         <Loaded Value="True"/>
       </Unit>
@@ -172,13 +172,6 @@
         <WatchKind Value="wpkWrite"/>
         <Source Value="InterfazGTK.pas"/>
         <Line Value="4015"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="estructurasdatos.pas"/>
-        <Line Value="1"/>
       </Item>
       <Item>
         <Kind Value="bpkSource"/>

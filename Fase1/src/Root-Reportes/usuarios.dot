@@ -3,8 +3,8 @@ digraph G {
     node [shape=record, style=filled, fillcolor=lightblue];
     label="Lista Simple de Usuarios";
     fontsize=16;
-    user1 [label="ID: 1|Nombre: Root Admin|Usuario: root|Email: root@edd.com|Telefono: 00000000"];
-    user1 -> user1;
+    user0 [label="ID: 0|Nombre: Root Admin|Usuario: root|Email: root@edd.com|Telefono: 00000000"];
+    user0 -> user1;
     user1 [label="ID: 1|Nombre: Luis Garcia|Usuario: lgarcia|Email: lgarcia@edd.com|Telefono: 12345678"];
     user1 -> user2;
     user2 [label="ID: 2|Nombre: Marcos Itzep|Usuario: mitzep|Email: mitzep@edd.com|Telefono: 87654321"];
