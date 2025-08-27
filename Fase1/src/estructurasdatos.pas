@@ -27,9 +27,11 @@ type
     Telefono: String;
     Password: String;
     Siguiente: PUsuario;
-      ListaContactos: PContacto;  // Lista circular de contactos del usuario
-
-  end;
+    ListaContactos: PContacto;  // Lista circular de contactos del usuario
+    BandejaEntrada: PCorreo;      // Lista doblemente enlazada
+    Papelera: PCorreo;            // Pila LIFO
+    CorreosProgramados: PCorreo;  // Cola FIFO
+    end;
 
   // Estructura Correo (Lista Doblemente Enlazada para bandeja de entrada)
   TCorreo = record
@@ -107,8 +109,8 @@ type
     FUsuarioActual: PUsuario;
 
     // Funciones auxiliares para usuarios
-    function BuscarUsuario(Email: String): PUsuario;
-    function ValidarCredenciales(Email, Password: String): PUsuario;
+
+
 
     // Funciones auxiliares para correos
     function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
@@ -117,7 +119,7 @@ type
 
 
     // Funciones auxiliares para matriz dispersa
-    procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
+
     function BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
 
@@ -134,7 +136,7 @@ type
 
     // Funciones para carga masiva (ROOT)
     procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
-
+    procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
     // Funciones de correo
     procedure EnviarCorreo(Destinatario, Asunto, Mensaje: String);
     procedure ProgramarCorreo(Destinatario, Asunto, Mensaje, FechaEnvio: String);
@@ -145,7 +147,9 @@ type
     function GetCorreosProgramados(Usuario: PUsuario): PCorreo; // Cola
     procedure ProcesarCorreosProgramados;
       function EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
-
+      //usuarios
+    function BuscarUsuario(Email: String): PUsuario;
+    function ValidarCredenciales(Email, Password: String): PUsuario;
     // Funciones de contactos
     function AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
     function GetContactos(Usuario: PUsuario): PContacto;
@@ -311,6 +315,10 @@ begin
   NuevoUsuario^.Siguiente := nil;
   NuevoUsuario^.ListaContactos := nil; // Inicializar lista de contactos vacía
 
+  // *** AGREGAR ESTAS 3 LÍNEAS: ***
+  NuevoUsuario^.BandejaEntrada := nil;
+  NuevoUsuario^.Papelera := nil;
+  NuevoUsuario^.CorreosProgramados := nil;
 
   // Agregar a la lista
   if FUsuarios = nil then
@@ -393,7 +401,10 @@ var
   JsonString: String;
   i: Integer;
   PasswordUsuario: String;
+
+
 begin
+  JsonString := '';  // *** AGREGAR ESTA INICIALIZACIÓN ***
   try
     if not FileExists(RutaArchivo) then
     begin
@@ -629,20 +640,20 @@ end;
 
 function TEDDMailSystem.GetBandejaEntrada(Usuario: PUsuario): PCorreo;
 begin
-  Result := nil;
-  // Retornar lista doblemente enlazada de correos del usuario
+  if Usuario = nil then Exit(nil);
+  Result := Usuario^.BandejaEntrada;
 end;
 
 function TEDDMailSystem.GetPapelera(Usuario: PUsuario): PCorreo;
 begin
-  Result := nil;
-  // Retornar pila de correos eliminados
+  if Usuario = nil then Exit(nil);
+  Result := Usuario^.Papelera;
 end;
 
 function TEDDMailSystem.GetCorreosProgramados(Usuario: PUsuario): PCorreo;
 begin
-  Result := nil;
-  // Retornar cola de correos programados
+  if Usuario = nil then Exit(nil);
+  Result := Usuario^.CorreosProgramados;
 end;
 
 procedure TEDDMailSystem.ProcesarCorreosProgramados;

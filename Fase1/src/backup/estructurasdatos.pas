@@ -27,9 +27,11 @@ type
     Telefono: String;
     Password: String;
     Siguiente: PUsuario;
-      ListaContactos: PContacto;  // Lista circular de contactos del usuario
-
-  end;
+    ListaContactos: PContacto;  // Lista circular de contactos del usuario
+    BandejaEntrada: PCorreo;      // Lista doblemente enlazada
+    Papelera: PCorreo;            // Pila LIFO
+    CorreosProgramados: PCorreo;  // Cola FIFO
+    end;
 
   // Estructura Correo (Lista Doblemente Enlazada para bandeja de entrada)
   TCorreo = record
@@ -107,8 +109,8 @@ type
     FUsuarioActual: PUsuario;
 
     // Funciones auxiliares para usuarios
-    function BuscarUsuario(Email: String): PUsuario;
-    function ValidarCredenciales(Email, Password: String): PUsuario;
+
+
 
     // Funciones auxiliares para correos
     function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
@@ -117,7 +119,7 @@ type
 
 
     // Funciones auxiliares para matriz dispersa
-    procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
+
     function BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
 
@@ -134,7 +136,7 @@ type
 
     // Funciones para carga masiva (ROOT)
     procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
-
+    procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
     // Funciones de correo
     procedure EnviarCorreo(Destinatario, Asunto, Mensaje: String);
     procedure ProgramarCorreo(Destinatario, Asunto, Mensaje, FechaEnvio: String);
@@ -145,7 +147,9 @@ type
     function GetCorreosProgramados(Usuario: PUsuario): PCorreo; // Cola
     procedure ProcesarCorreosProgramados;
       function EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
-
+      //usuarios
+    function BuscarUsuario(Email: String): PUsuario;
+    function ValidarCredenciales(Email, Password: String): PUsuario;
     // Funciones de contactos
     function AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
     function GetContactos(Usuario: PUsuario): PContacto;
@@ -311,6 +315,10 @@ begin
   NuevoUsuario^.Siguiente := nil;
   NuevoUsuario^.ListaContactos := nil; // Inicializar lista de contactos vacía
 
+  // *** AGREGAR ESTAS 3 LÍNEAS: ***
+  NuevoUsuario^.BandejaEntrada := nil;
+  NuevoUsuario^.Papelera := nil;
+  NuevoUsuario^.CorreosProgramados := nil;
 
   // Agregar a la lista
   if FUsuarios = nil then
@@ -393,7 +401,10 @@ var
   JsonString: String;
   i: Integer;
   PasswordUsuario: String;
+
+
 begin
+  JsonString := '';  // *** AGREGAR ESTA INICIALIZACIÓN ***
   try
     if not FileExists(RutaArchivo) then
     begin
@@ -629,8 +640,8 @@ end;
 
 function TEDDMailSystem.GetBandejaEntrada(Usuario: PUsuario): PCorreo;
 begin
-  Result := nil;
-  // Retornar lista doblemente enlazada de correos del usuario
+  if Usuario = nil then Exit(nil);
+  Result := Usuario^.BandejaEntrada;
 end;
 
 function TEDDMailSystem.GetPapelera(Usuario: PUsuario): PCorreo;
@@ -1063,4 +1074,82 @@ begin
       WriteLn('Error al generar reporte de contactos: ', E.Message);
   end;
 end;
+procedure TEDDMailSystem.GenerarReporteComunidades(RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Comunidad: PComunidad;
+  UsuarioCom: PUsuarioComunidad;
+  Process: TProcess;
+  EmailLimpio: String;
+begin
+  try
+    ForceDirectories(RutaCarpeta);
+
+    AssignFile(Archivo, RutaCarpeta + '/comunidades.dot');
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Lista de Listas - Comunidades";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=box];');
+
+    if FComunidades = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin comunidades", style=filled, fillcolor=lightgray];');
+    end
+    else
+    begin
+      Comunidad := FComunidades;
+      while Comunidad <> nil do
+      begin
+        WriteLn(Archivo, Format('    com%d [label="Comunidad: %s", style=filled, fillcolor=lightblue];',
+          [Comunidad^.Id, Comunidad^.Nombre]));
+
+        UsuarioCom := Comunidad^.UsuariosList;
+        while UsuarioCom <> nil do
+        begin
+          EmailLimpio := StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll]);
+          EmailLimpio := StringReplace(EmailLimpio, '-', '_', [rfReplaceAll]);
+          EmailLimpio := StringReplace(EmailLimpio, '.', '_', [rfReplaceAll]);
+
+          WriteLn(Archivo, Format('    user_%s [label="%s", style=filled, fillcolor=lightyellow];',
+            [EmailLimpio, UsuarioCom^.Email]));
+          WriteLn(Archivo, Format('    com%d -> user_%s;',
+            [Comunidad^.Id, EmailLimpio]));
+          UsuarioCom := UsuarioCom^.Siguiente;
+        end;
+
+        Comunidad := Comunidad^.Siguiente;
+      end;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(RutaCarpeta + '/comunidades.dot');
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(RutaCarpeta + '/comunidades.png');
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+        WriteLn('Reporte de comunidades generado: ', RutaCarpeta, '/comunidades.png');
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte de comunidades: ', E.Message);
+  end;
+end;
+
+end.
 end.

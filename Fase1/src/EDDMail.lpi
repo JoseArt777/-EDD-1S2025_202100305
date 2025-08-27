@@ -39,6 +39,11 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
       </Unit>
+      <Unit>
+        <Filename Value="correomanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CorreoManager"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

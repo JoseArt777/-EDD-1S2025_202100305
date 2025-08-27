@@ -10,25 +10,26 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, SysUtils,
-  EstructurasDatos, InterfazGTK
-  { you can add units after this };
-
-{$R *.res}
+  Forms,
+  SysUtils,
+  EstructurasDatos,
+    CorreoManager,    // <- AGREGAR
+  InterfazGTK;
 
 var
   Aplicacion: TInterfazEDDMail;
 
 begin
-  RequireDerivedFormResource:=True;
-  Application.Scaled:=True;
+  // Configurar aplicación
+  RequireDerivedFormResource := True;
+  Application.Scaled := True;
   Application.Initialize;
 
   WriteLn('=================================');
   WriteLn('    EDDMail - Sistema de Correo');
   WriteLn('    Estructuras de Datos - USAC');
   WriteLn('=================================');
-  WriteLn('Iniciando aplicación...');
+  WriteLn('Iniciando aplicación con Lazarus...');
   WriteLn('');
   WriteLn('Credenciales por defecto:');
   WriteLn('Email: root@edd.com');
@@ -36,22 +37,31 @@ begin
   WriteLn('');
 
   try
+    // Crear directorio de reportes
     if not DirectoryExists('Root-Reportes') then
       CreateDir('Root-Reportes');
 
     Aplicacion := TInterfazEDDMail.Create;
     try
       WriteLn('Sistema inicializado correctamente.');
+      WriteLn('Mostrando interfaz gráfica...');
+      WriteLn('');
+
+      // Ejecutar aplicación
       Aplicacion.Ejecutar;
+
     finally
       Aplicacion.Free;
     end;
   except
     on E: Exception do
     begin
-      WriteLn('Error: ', E.Message);
+      WriteLn('Error al ejecutar la aplicación: ', E.Message);
+      WriteLn('Presione Enter para continuar...');
       ReadLn;
       Halt(1);
     end;
   end;
+
+  WriteLn('Aplicación terminada correctamente.');
 end.

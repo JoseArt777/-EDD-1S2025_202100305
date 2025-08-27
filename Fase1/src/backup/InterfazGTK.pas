@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  FileUtil, EstructurasDatos;
+  FileUtil, EstructurasDatos, CorreoManager;
 
 type
   TInterfazEDDMail = class
@@ -17,6 +17,8 @@ type
     FUsuarioActivo: Boolean;
     FEditEmail: TEdit;
     FEditPassword: TEdit;
+    FCorreoManager: TCorreoManager;
+
 
       FContactoActual: PContacto;
   FPrimerContacto: PContacto;
@@ -33,14 +35,42 @@ type
     FEditNombreComunidad: TEdit;
     FEditEmailUsuario: TEdit;
     FMemoComunidades: TMemo;
-
+    // --- Bandeja de entrada ---
+  FFormBandeja: TForm;
+  FListBandeja: TListBox;
+  FMemoMensaje: TMemo;
+  FLabelNoLeidosInbox: TLabel;
+    // --- Papelera ---
+    FFormPapelera: TForm;
+    FListPapelera: TListBox;
+    FMemoPapelera: TMemo;
+    FEditBuscarPapelera: TEdit;
     procedure CrearFormLogin;
     procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
     procedure CrearInterfazUsuario;
     procedure MostrarMensaje(Titulo, Mensaje: String);
-    
+    procedure Papelera_OnCerrarClick(Sender: TObject);
+
+
+    procedure OnBandejaClick(Sender: TObject);
+procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure Inbox_RellenarLista;           // llena la lista desde la estructura
+procedure Inbox_OnSeleccion(Sender: TObject);
+procedure Inbox_OnOrdenarClick(Sender: TObject);
+procedure Inbox_OnEliminarClick(Sender: TObject);
+procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
+    procedure Inbox_OnCerrarClick(Sender: TObject);  // <-- AGREGA ESTA LÍNEA
+
+    procedure OnPapeleraClick(Sender: TObject);
+    procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Papelera_RellenarLista;
+    procedure Papelera_OnSeleccion(Sender: TObject);
+    procedure Papelera_OnBuscarClick(Sender: TObject);
+    procedure Papelera_OnEliminarDefClick(Sender: TObject);
     // Event handlers
+    procedure OnEnviarCorreoClick(Sender: TObject);
+
     procedure OnLoginClick(Sender: TObject);
     procedure OnCrearCuentaClick(Sender: TObject);
     procedure OnCargaMasivaClick(Sender: TObject);
@@ -84,6 +114,8 @@ constructor TInterfazEDDMail.Create;
 begin
   inherited Create;
   FSistema := TEDDMailSystem.Create;
+    FCorreoManager := TCorreoManager.Create;  // <- AGREGAR
+
   FUsuarioActivo := False;
   FFormLogin := nil;
   FFormPrincipal := nil;
@@ -92,11 +124,18 @@ end;
 destructor TInterfazEDDMail.Destroy;
 begin
   FSistema.Free;
+    FCorreoManager.Free;  // <- AGREGAR
+
   if Assigned(FFormLogin) then
     FFormLogin.Free;
   if Assigned(FFormPrincipal) then
     FFormPrincipal.Free;
   inherited Destroy;
+end;
+procedure TInterfazEDDMail.Inbox_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBandeja) then
+    FFormBandeja.Close;
 end;
 
 procedure TInterfazEDDMail.Ejecutar;
@@ -174,7 +213,7 @@ begin
     Height := 35;
     Hint := 'Ver correos recibidos';
     ShowHint := True;
-    // OnClick := @OnBandejaClick; // Implementar después
+    OnClick := @OnBandejaClick; // Implementar después
   end;
 
   BtnEnviar := TButton.Create(Panel);
@@ -187,8 +226,9 @@ begin
     Width := 180;
     Height := 35;
     Hint := 'Enviar un nuevo correo';
+
     ShowHint := True;
-    // OnClick := @OnEnviarCorreoClick; // Implementar después
+    OnClick := @OnEnviarCorreoClick;
   end;
   Inc(YPos, 50);
 
@@ -204,7 +244,7 @@ begin
     Height := 35;
     Hint := 'Ver correos eliminados';
     ShowHint := True;
-    // OnClick := @OnPapeleraClick; // Implementar después
+    OnClick := @OnPapeleraClick; // Implementar después
   end;
 
   BtnProgramar := TButton.Create(Panel);
@@ -1699,4 +1739,597 @@ begin
   if FLabelTelefonoContacto <> nil then
     FLabelTelefonoContacto.Caption := 'Teléfono: ' + FContactoActual^.Telefono;
 end;
+procedure TInterfazEDDMail.OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormContactos := nil;
+  FLabelContadorContactos := nil;
+  FLabelNombreContacto := nil;
+  FLabelUsuarioContacto := nil;
+  FLabelEmailContacto := nil;
+  FLabelTelefonoContacto := nil;
+end;
+procedure TInterfazEDDMail.OnEnviarCorreoClick(Sender: TObject);
+var
+  FormEnviar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormEnviar := TForm.Create(nil);
+  try
+    with FormEnviar do
+    begin
+      Caption := 'Enviar correo';
+      Width := 600;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+
+    Panel := TPanel.Create(FormEnviar);
+    with Panel do
+    begin
+      Parent := FormEnviar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+    end;
+
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel; Caption := 'Para:'; Left := 12; Top := 12; Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel; Left := 12; Top := 30; Width := 560;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel; Caption := 'Asunto:'; Left := 12; Top := 60; Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel; Left := 12; Top := 78; Width := 560;
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel; Left := 12; Top := 110; Width := 560; Height := 260; ScrollBars := ssVertical;
+    end;
+
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel; Caption := 'Enviar'; Left := 380; Top := 380; Width := 90; Height := 30;
+      ModalResult := mrOk; Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel; Caption := 'Cancelar'; Left := 480; Top := 380; Width := 90; Height := 30;
+      ModalResult := mrCancel; Cancel := True;
+    end;
+
+    if FormEnviar.ShowModal = mrOk then
+    begin
+      if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Debe ingresar al menos destinatario y asunto');
+        Exit;
+      end;
+
+      // 🔹 AQUÍ ES DONDE YA “SE ENVÍA DE VERDAD”
+      if FCorreoManager.EnviarCorreo(
+            FSistema,           // sistema para buscar usuarios y actualizar matriz
+            Usuario^.Email,     // remitente (el usuario logueado)
+            Trim(EditPara.Text),
+            Trim(EditAsunto.Text),
+            MemoCuerpo.Lines.Text) then
+      begin
+        MostrarMensaje('Éxito', 'Correo enviado correctamente a: ' + Trim(EditPara.Text));
+      end
+      else
+      begin
+        MostrarMensaje('Error',
+          'No se pudo enviar el correo.' + LineEnding +
+          'Verifique que el destinatario exista y que esté en su lista de contactos.');
+      end;
+    end;
+
+  finally
+    FormEnviar.Free;
+  end;
+end;
+procedure TInterfazEDDMail.OnBandejaClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnOrdenar, BtnMarcarLeido, BtnEliminar, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  // si ya existe, solo mostrar
+  if Assigned(FFormBandeja) then
+  begin
+    FFormBandeja.Show;
+    FFormBandeja.BringToFront;
+    Exit;
+  end;
+
+  FFormBandeja := TForm.Create(nil);
+  with FFormBandeja do
+  begin
+    Caption := 'Bandeja de Entrada';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormBandejaClose;
+  end;
+
+  Panel := TPanel.Create(FFormBandeja);
+  with Panel do
+  begin
+    Parent := FFormBandeja;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Bandeja de Entrada';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  FLabelNoLeidosInbox := TLabel.Create(Panel);
+  with FLabelNoLeidosInbox do
+  begin
+    Parent := Panel;
+    Caption := 'No leídos: 0';
+    Left := 200;
+    Top := 14;
+    Font.Color := clGray;
+  end;
+
+  // Lista de correos
+  FListBandeja := TListBox.Create(Panel);
+  with FListBandeja do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 40;
+    Width := 660;
+    Height := 240;
+    OnClick := @Inbox_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo mensaje
+  FMemoMensaje := TMemo.Create(Panel);
+  with FMemoMensaje do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 290;
+    Width := 660;
+    Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnOrdenar := TButton.Create(Panel);
+  with BtnOrdenar do
+  begin
+    Parent := Panel;
+    Caption := 'Ordenar A-Z (Asunto)';
+    Left := 10; Top := 420; Width := 150; Height := 30;
+    OnClick := @Inbox_OnOrdenarClick;
+  end;
+
+  BtnMarcarLeido := TButton.Create(Panel);
+  with BtnMarcarLeido do
+  begin
+    Parent := Panel;
+    Caption := 'Marcar como leído';
+    Left := 170; Top := 420; Width := 150; Height := 30;
+    OnClick := @Inbox_OnMarcarLeidoClick;
+  end;
+
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar a Papelera';
+    Left := 330; Top := 420; Width := 150; Height := 30;
+    OnClick := @Inbox_OnEliminarClick;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 520; Top := 420; Width := 150; Height := 30;
+          OnClick := @Inbox_OnCerrarClick;   // ✅ Correcto: cierra la BANDEJA
+
+
+      Cancel := True; // permite cerrar con ESC
+
+  end;
+
+  // Cargar datos
+  Inbox_RellenarLista;
+
+  FFormBandeja.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormBandeja := nil;
+  FListBandeja := nil;
+  FMemoMensaje := nil;
+  FLabelNoLeidosInbox := nil;
+end;
+
+// Llena la lista desde la estructura de datos
+procedure TInterfazEDDMail.Inbox_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display, EstadoTxt: String;
+begin
+  if (FListBandeja = nil) or (FSistema = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListBandeja.Items.BeginUpdate;
+  try
+    FListBandeja.Items.Clear;
+
+    Correo := FCorreoManager.GetBandejaEntrada(Usuario); // también puedes usar FSistema.GetBandejaEntrada(Usuario)
+    while Correo <> nil do
+    begin
+      if Correo^.Estado = 'NL' then EstadoTxt := '[NL]' else EstadoTxt := '[L ]';
+      // Mostramos: [Estado] Asunto — Remitente (Fecha)
+      Display := Format('%s %s — %s (%s)', [EstadoTxt, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+
+      // Guardamos el Id en Objects usando cast (PtrInt <-> TObject)
+      FListBandeja.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListBandeja.Items.EndUpdate;
+  end;
+
+  // Actualizar contador de no leídos
+  if Assigned(FLabelNoLeidosInbox) then
+    FLabelNoLeidosInbox.Caption := 'No leídos: ' + IntToStr(FCorreoManager.ContarCorreosNoLeidos(Usuario));
+
+  // Limpiar mensaje mostrado
+  if Assigned(FMemoMensaje) then
+    FMemoMensaje.Clear;
+end;
+
+// Al seleccionar un correo: mostrar cuerpo y marcar leído si estaba NL
+procedure TInterfazEDDMail.Inbox_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBandeja = nil) or (FMemoMensaje = nil) then Exit;
+  if FListBandeja.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  // Buscar el correo seleccionado para mostrar el mensaje
+  Correo := FCorreoManager.GetBandejaEntrada(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+  begin
+    FMemoMensaje.Lines.Text := Correo^.Mensaje;
+
+    // Si está NL, marcar como leído
+    if Correo^.Estado = 'NL' then
+    begin
+      if FCorreoManager.MarcarCorreoLeido(Usuario, IdSel) then
+        Inbox_RellenarLista;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Inbox_OnOrdenarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  if FCorreoManager.OrdenarBandejaPorAsunto(Usuario) then
+    Inbox_RellenarLista;
+end;
+
+procedure TInterfazEDDMail.Inbox_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FCorreoManager.EliminarCorreoDeBandeja(Usuario, IdSel) then
+  begin
+    MostrarMensaje('Éxito', 'Correo movido a Papelera.');
+    Inbox_RellenarLista;
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar el correo.');
+end;
+
+procedure TInterfazEDDMail.Inbox_OnMarcarLeidoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FCorreoManager.MarcarCorreoLeido(Usuario, IdSel) then
+    Inbox_RellenarLista
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como leído.');
+end;
+procedure TInterfazEDDMail.OnPapeleraClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnBuscar, BtnEliminarDef, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if Assigned(FFormPapelera) then
+  begin
+    FFormPapelera.Show;
+    FFormPapelera.BringToFront;
+    Exit;
+  end;
+
+  FFormPapelera := TForm.Create(nil);
+  with FFormPapelera do
+  begin
+    Caption := 'Papelera (Pila LIFO)';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormPapeleraClose;
+  end;
+
+  Panel := TPanel.Create(FFormPapelera);
+  with Panel do
+  begin
+    Parent := FFormPapelera;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Papelera (último en entrar, primero en salir)';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Buscar
+  FEditBuscarPapelera := TEdit.Create(Panel);
+  with FEditBuscarPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 40; Width := 400;
+    Hint := 'Ingrese palabra clave para buscar en asunto';
+    ShowHint := True;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar';
+    Left := 420; Top := 38; Width := 80; Height := 26;
+    OnClick := @Papelera_OnBuscarClick;
+  end;
+
+  // Lista de correos eliminados
+  FListPapelera := TListBox.Create(Panel);
+  with FListPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 70; Width := 660; Height := 200;
+    OnClick := @Papelera_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo cuerpo
+  FMemoPapelera := TMemo.Create(Panel);
+  with FMemoPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 280; Width := 660; Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEliminarDef := TButton.Create(Panel);
+  with BtnEliminarDef do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar Definitivamente';
+    Left := 10; Top := 410; Width := 200; Height := 30;
+    OnClick := @Papelera_OnEliminarDefClick;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 550; Top := 410; Width := 120; Height := 30;
+          OnClick := @Papelera_OnCerrarClick;  // ✅ Correcto: cierra la PAPELERA
+
+
+
+  end;
+
+  // Llenar lista
+  Papelera_RellenarLista;
+
+  FFormPapelera.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormPapelera := nil;
+  FListPapelera := nil;
+  FMemoPapelera := nil;
+  FEditBuscarPapelera := nil;
+end;
+
+procedure TInterfazEDDMail.Papelera_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display: String;
+begin
+  if (FListPapelera = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListPapelera.Items.BeginUpdate;
+  try
+    FListPapelera.Items.Clear;
+    Correo := FCorreoManager.GetPapelera(Usuario);
+    while Correo <> nil do
+    begin
+      Display := Format('[ID %d] %s — %s (%s)',
+        [Correo^.Id, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+      FListPapelera.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListPapelera.Items.EndUpdate;
+  end;
+
+  if Assigned(FMemoPapelera) then
+    FMemoPapelera.Clear;
+end;
+
+procedure TInterfazEDDMail.Papelera_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListPapelera = nil) or (FMemoPapelera = nil) then Exit;
+  if FListPapelera.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListPapelera.Items.Objects[FListPapelera.ItemIndex]));
+
+  Correo := FCorreoManager.BuscarEnPapelera(Usuario, ''); // recorre todos
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+    FMemoPapelera.Lines.Text := Correo^.Mensaje;
+end;
+
+procedure TInterfazEDDMail.Papelera_OnBuscarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Palabra: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  Palabra := Trim(FEditBuscarPapelera.Text);
+  if Palabra = '' then
+  begin
+    MostrarMensaje('Aviso', 'Ingrese una palabra clave');
+    Exit;
+  end;
+
+  Correo := FCorreoManager.BuscarEnPapelera(Usuario, Palabra);
+  if Correo <> nil then
+  begin
+    MostrarMensaje('Éxito', 'Correo encontrado: ' + Correo^.Asunto);
+    FMemoPapelera.Lines.Text := Correo^.Mensaje;
+  end
+  else
+    MostrarMensaje('Aviso', 'No se encontró ningún correo con "'+Palabra+'"');
+end;
+
+procedure TInterfazEDDMail.Papelera_OnEliminarDefClick(Sender: TObject);
+begin
+  if (FListPapelera = nil) or (FListPapelera.ItemIndex < 0) then Exit;
+
+  // por simplicidad: solo eliminamos del UI, ya que en tu CorreoManager
+  // aún no hay un método EliminarCorreoDePapelera definitivo
+  FListPapelera.Items.Delete(FListPapelera.ItemIndex);
+  FMemoPapelera.Clear;
+  MostrarMensaje('Éxito', 'Correo eliminado definitivamente de la papelera (simulado)');
+end;
+procedure TInterfazEDDMail.Papelera_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormPapelera) then
+    FFormPapelera.Close;
+end;
+
 end.
