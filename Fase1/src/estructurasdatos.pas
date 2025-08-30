@@ -27,7 +27,7 @@ type
     Telefono: String;
     Password: String;
     Siguiente: PUsuario;
-    ListaContactos: PContacto;  // Lista circular de contactos del usuario
+    ListaContactos: PContacto;    // Lista circular de contactos del usuario
     BandejaEntrada: PCorreo;      // Lista doblemente enlazada
     Papelera: PCorreo;            // Pila LIFO
     CorreosProgramados: PCorreo;  // Cola FIFO
@@ -108,14 +108,11 @@ type
     FMatrizColumnas: PMatrizDispersaColumna;
     FUsuarioActual: PUsuario;
 
-    // Funciones auxiliares para usuarios
-
-
 
     // Funciones auxiliares para correos
     function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
 
-      procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto); // <- AGREGAR
+      procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto);
 
 
     // Funciones auxiliares para matriz dispersa
@@ -194,7 +191,7 @@ begin
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
 
-  // Crear usuario root por defecto (Id fijo = 0 para no chocar con JSON que generalmente empieza en 1)
+  // Crear usuario root por defecto (Id fijo = 0)
   RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123', 0);
 end;
 
@@ -314,7 +311,7 @@ begin
     Cur := Cur^.Siguiente;
   end;
 
-  // Asignar Id usando IdFijo o MaxId+1
+
   if IdFijo >= 0 then
     NuevoUsuario^.Id := IdFijo
   else
@@ -468,8 +465,8 @@ begin
           UsuarioObj.Strings['usuario'],
           UsuarioObj.Strings['email'],
           UsuarioObj.Strings['telefono'],
-          PasswordUsuario,  // <- Password del JSON o genérico
-          IdJson            // <- Id del JSON (o -1)
+          PasswordUsuario,  // Password del JSON o genérico
+          IdJson            // Id del JSON (o -1)
         ) then
           WriteLn('Usuario cargado: ', UsuarioObj.Strings['email'])
         else
@@ -536,7 +533,7 @@ var
   S: String;
   estadoTxt, progTxt: String;
 begin
-    S := '';  // ← agrega esta línea
+    S := '';
 
   if not FileExists(RutaArchivo) then
   begin
@@ -625,7 +622,7 @@ begin
   if IdFijo >= 0 then
     Result^.Id := IdFijo
   else
-    Result^.Id := Random(9999) + 1; // si quieres, aquí puedes cambiar a max+1
+    Result^.Id := Random(9999) + 1;
 
   Result^.Remitente    := Remitente;
   Result^.Destinatario := Destinatario;
@@ -666,7 +663,7 @@ begin
   // INSERTAR en bandeja del destinatario (lista doble)
   Inbox_InsertTail(UsuarioDestino^.BandejaEntrada, NuevoCorreo);
 
-  // Actualizar matriz de relaciones (remitente → destinatario)
+  // Actualizar matriz de relaciones (remitente destinatario)
   ActualizarMatrizRelaciones(FUsuarioActual^.Email, Destinatario);
 end;
 
@@ -749,13 +746,13 @@ begin
       // Encontrado, eliminar
       if Actual = PrimerContacto then
       begin
-        // Es el primer elemento
+
         Usuario^.ListaContactos := Actual^.Siguiente;
         Anterior^.Siguiente := Usuario^.ListaContactos;
       end
       else
       begin
-        // No es el primer elemento
+
         Anterior^.Siguiente := Actual^.Siguiente;
       end;
 
@@ -788,7 +785,7 @@ begin
   begin
     if (P^.Columna = ColHdr^.Columna) then
     begin
-      Inc(P^.Cantidad); // ¡ya existía!: sumar 1
+      Inc(P^.Cantidad); // sumar 1 si ya existe
       Exit;
     end;
     P := P^.Derecha;

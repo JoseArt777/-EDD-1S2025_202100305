@@ -52,7 +52,7 @@ type
     procedure GenerarReportePapelera(Usuario: PUsuario; RutaCarpeta: String);
     procedure GenerarReporteCorreosProgramados(Usuario: PUsuario; RutaCarpeta: String);
     function EliminarCorreoDePapelera(Usuario: PUsuario; Id: Integer): Boolean;
-   function VaciarPapelera(Usuario: PUsuario): Integer; // opcional
+   function VaciarPapelera(Usuario: PUsuario): Integer;
   end;
 
 implementation
@@ -78,7 +78,7 @@ begin
   Result^.Id := Random(9999) + 1000; // ID único
   Result^.Remitente := Remitente;
   Result^.Destinatario := Destinatario;
-  Result^.Estado := 'NL'; // No Leído por defecto
+  Result^.Estado := 'NL';
   Result^.Programado := Programado;
   Result^.Asunto := Asunto;
   Result^.Fecha := Fecha;
@@ -111,7 +111,7 @@ begin
   if Usuario = nil then
     Exit;
 
-  // Liberar bandeja de entrada
+  // Libera bandeja de entrada
   CorreoActual := Usuario^.BandejaEntrada;
   while CorreoActual <> nil do
   begin
@@ -120,7 +120,7 @@ begin
     Dispose(CorreoTemp);
   end;
 
-  // Liberar papelera
+  // Libera papelera
   CorreoActual := Usuario^.Papelera;
   while CorreoActual <> nil do
   begin
@@ -183,7 +183,7 @@ begin
     Exit;
   end;
 
-  // VALIDACIÓN CRÍTICA: Verificar que sea contacto (según enunciado)
+  // VALIDACIÓN CRÍTICA: Verificar que sea contacto
   if Sistema.BuscarContacto(UsuarioRemitente, Destinatario) = nil then
   begin
     WriteLn('Error: Solo puede enviar correos a usuarios en su lista de contactos');
@@ -204,7 +204,7 @@ begin
   // Agregar a bandeja del destinatario
   if AgregarABandejaEntrada(UsuarioDestino, NuevoCorreo) then
   begin
-    // Actualizar matriz de relaciones (si está implementada)
+    // Actualizar matriz de relaciones
     try
       Sistema.ActualizarMatrizRelaciones(RemitenteEmail, Destinatario);
     except
@@ -281,7 +281,7 @@ begin
   Correo := BuscarCorreoEnBandeja(Usuario, CorreoId);
   if Correo <> nil then
   begin
-    Correo^.Estado := 'L'; // Leído
+    Correo^.Estado := 'L';
     WriteLn('Correo marcado como leído: ', CorreoId);
     Result := True;
   end;

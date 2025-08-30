@@ -59,19 +59,19 @@ type
     procedure Papelera_OnCerrarClick(Sender: TObject);
 
     // Agregar estos procedimientos:
-  procedure OnGenerarReportesClick(Sender: TObject);
-  procedure OnReporteCorreosRecibidosClick(Sender: TObject);
-  procedure OnReportePapeleraClick(Sender: TObject);
-  procedure OnReporteCorreosProgramadosClick(Sender: TObject);
+    procedure OnGenerarReportesClick(Sender: TObject);
+    procedure OnReporteCorreosRecibidosClick(Sender: TObject);
+    procedure OnReportePapeleraClick(Sender: TObject);
+    procedure OnReporteCorreosProgramadosClick(Sender: TObject);
 
     procedure OnBandejaClick(Sender: TObject);
-procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
-procedure Inbox_RellenarLista;           // llena la lista desde la estructura
-procedure Inbox_OnSeleccion(Sender: TObject);
-procedure Inbox_OnOrdenarClick(Sender: TObject);
-procedure Inbox_OnEliminarClick(Sender: TObject);
-procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
-    procedure Inbox_OnCerrarClick(Sender: TObject);  // <-- AGREGA ESTA LÍNEA
+    procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Inbox_RellenarLista;           // llena la lista desde la estructura
+    procedure Inbox_OnSeleccion(Sender: TObject);
+    procedure Inbox_OnOrdenarClick(Sender: TObject);
+    procedure Inbox_OnEliminarClick(Sender: TObject);
+    procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
+    procedure Inbox_OnCerrarClick(Sender: TObject);
 
     procedure OnPapeleraClick(Sender: TObject);
     procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -90,33 +90,33 @@ procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction); // Evento de cierre
+    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure ActualizarVistaContacto; // Método auxiliar
     // Nuevos event handlers para comunidades
     procedure OnGestionarComunidadesClick(Sender: TObject);
     procedure OnReporteComunidadesClick(Sender: TObject);
-    procedure OnActualizarPerfilClick(Sender: TObject);  // <- Agregar esto
+    procedure OnActualizarPerfilClick(Sender: TObject);
     procedure OnCrearComunidadClick(Sender: TObject);
     procedure OnAsignarUsuarioClick(Sender: TObject);
     procedure OnListarComunidadesClick(Sender: TObject);
 
      // Event handlers para contactos
-  procedure OnAgregarContactoClick(Sender: TObject);
-  procedure OnVerContactosClick(Sender: TObject);
-  procedure OnContactoAnteriorClick(Sender: TObject);
-  procedure OnContactoSiguienteClick(Sender: TObject);
-  procedure OnGenerarReporteContactosClick(Sender: TObject);
+    procedure OnAgregarContactoClick(Sender: TObject);
+    procedure OnVerContactosClick(Sender: TObject);
+    procedure OnContactoAnteriorClick(Sender: TObject);
+    procedure OnContactoSiguienteClick(Sender: TObject);
+    procedure OnGenerarReporteContactosClick(Sender: TObject);
 
-  procedure OnProgramarCorreoClick(Sender: TObject);
+    procedure OnProgramarCorreoClick(Sender: TObject);
 
-    // Agregar estos procedimientos en la sección private también
-  procedure OnCorreosProgramadosClick(Sender: TObject);
-  procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
-  procedure CorreosProgramados_RellenarLista;
-  procedure CorreosProgramados_OnSeleccion(Sender: TObject);
-  procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
-  procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
-  procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
+
+    procedure OnCorreosProgramadosClick(Sender: TObject);
+    procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure CorreosProgramados_RellenarLista;
+    procedure CorreosProgramados_OnSeleccion(Sender: TObject);
+    procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
+    procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
+    procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
 
 
   public
@@ -884,13 +884,14 @@ end;
 
 procedure TInterfazEDDMail.OnCargaMasivaClick(Sender: TObject);
 var
-  OpenDialog: TOpenDialog;
+  OpenDialogUsuarios, OpenDialogCorreos: TOpenDialog;
 begin
-  OpenDialog := TOpenDialog.Create(nil);
+  // 1) Cargar USUARIOS
+  OpenDialogUsuarios := TOpenDialog.Create(nil);
   try
-    with OpenDialog do
+    with OpenDialogUsuarios do
     begin
-      Title := 'Seleccionar archivo JSON';
+      Title := 'Seleccionar JSON de USUARIOS';
       Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
       DefaultExt := 'json';
       if Execute then
@@ -900,12 +901,40 @@ begin
           MostrarMensaje('Éxito', 'Usuarios cargados desde: ' + ExtractFileName(FileName));
         except
           on E: Exception do
-            MostrarMensaje('Error', 'Error al cargar JSON: ' + E.Message);
+          begin
+            MostrarMensaje('Error', 'Error al cargar usuarios: ' + E.Message);
+            Exit;
+          end;
+        end;
+      end
+      else
+        Exit; // cancelado
+    end;
+  finally
+    OpenDialogUsuarios.Free;
+  end;
+
+  // 2) Cargar CORREOS
+  OpenDialogCorreos := TOpenDialog.Create(nil);
+  try
+    with OpenDialogCorreos do
+    begin
+      Title := 'Seleccionar JSON de CORREOS';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+      if Execute then
+      begin
+        try
+          FSistema.CargarCorreosDesdeJSON(FileName);
+          MostrarMensaje('Éxito', 'Correos cargados desde: ' + ExtractFileName(FileName));
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar correos: ' + E.Message);
         end;
       end;
     end;
   finally
-    OpenDialog.Free;
+    OpenDialogCorreos.Free;
   end;
 end;
 

@@ -59,19 +59,19 @@ type
     procedure Papelera_OnCerrarClick(Sender: TObject);
 
     // Agregar estos procedimientos:
-  procedure OnGenerarReportesClick(Sender: TObject);
-  procedure OnReporteCorreosRecibidosClick(Sender: TObject);
-  procedure OnReportePapeleraClick(Sender: TObject);
-  procedure OnReporteCorreosProgramadosClick(Sender: TObject);
+    procedure OnGenerarReportesClick(Sender: TObject);
+    procedure OnReporteCorreosRecibidosClick(Sender: TObject);
+    procedure OnReportePapeleraClick(Sender: TObject);
+    procedure OnReporteCorreosProgramadosClick(Sender: TObject);
 
     procedure OnBandejaClick(Sender: TObject);
-procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
-procedure Inbox_RellenarLista;           // llena la lista desde la estructura
-procedure Inbox_OnSeleccion(Sender: TObject);
-procedure Inbox_OnOrdenarClick(Sender: TObject);
-procedure Inbox_OnEliminarClick(Sender: TObject);
-procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
-    procedure Inbox_OnCerrarClick(Sender: TObject);  // <-- AGREGA ESTA LÍNEA
+    procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Inbox_RellenarLista;           // llena la lista desde la estructura
+    procedure Inbox_OnSeleccion(Sender: TObject);
+    procedure Inbox_OnOrdenarClick(Sender: TObject);
+    procedure Inbox_OnEliminarClick(Sender: TObject);
+    procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
+    procedure Inbox_OnCerrarClick(Sender: TObject);
 
     procedure OnPapeleraClick(Sender: TObject);
     procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -90,33 +90,33 @@ procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction); // Evento de cierre
+    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure ActualizarVistaContacto; // Método auxiliar
     // Nuevos event handlers para comunidades
     procedure OnGestionarComunidadesClick(Sender: TObject);
     procedure OnReporteComunidadesClick(Sender: TObject);
-    procedure OnActualizarPerfilClick(Sender: TObject);  // <- Agregar esto
+    procedure OnActualizarPerfilClick(Sender: TObject);
     procedure OnCrearComunidadClick(Sender: TObject);
     procedure OnAsignarUsuarioClick(Sender: TObject);
     procedure OnListarComunidadesClick(Sender: TObject);
 
      // Event handlers para contactos
-  procedure OnAgregarContactoClick(Sender: TObject);
-  procedure OnVerContactosClick(Sender: TObject);
-  procedure OnContactoAnteriorClick(Sender: TObject);
-  procedure OnContactoSiguienteClick(Sender: TObject);
-  procedure OnGenerarReporteContactosClick(Sender: TObject);
+    procedure OnAgregarContactoClick(Sender: TObject);
+    procedure OnVerContactosClick(Sender: TObject);
+    procedure OnContactoAnteriorClick(Sender: TObject);
+    procedure OnContactoSiguienteClick(Sender: TObject);
+    procedure OnGenerarReporteContactosClick(Sender: TObject);
 
-  procedure OnProgramarCorreoClick(Sender: TObject);
+    procedure OnProgramarCorreoClick(Sender: TObject);
 
-    // Agregar estos procedimientos en la sección private también
-  procedure OnCorreosProgramadosClick(Sender: TObject);
-  procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
-  procedure CorreosProgramados_RellenarLista;
-  procedure CorreosProgramados_OnSeleccion(Sender: TObject);
-  procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
-  procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
-  procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
+
+    procedure OnCorreosProgramadosClick(Sender: TObject);
+    procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure CorreosProgramados_RellenarLista;
+    procedure CorreosProgramados_OnSeleccion(Sender: TObject);
+    procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
+    procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
+    procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
 
 
   public
@@ -134,7 +134,7 @@ constructor TInterfazEDDMail.Create;
 begin
   inherited Create;
   FSistema := TEDDMailSystem.Create;
-    FCorreoManager := TCorreoManager.Create;  // <- AGREGAR
+    FCorreoManager := TCorreoManager.Create;
 
   FUsuarioActivo := False;
   FFormLogin := nil;
@@ -144,7 +144,7 @@ end;
 destructor TInterfazEDDMail.Destroy;
 begin
   FSistema.Free;
-    FCorreoManager.Free;  // <- AGREGAR
+    FCorreoManager.Free;
 
   if Assigned(FFormLogin) then
     FFormLogin.Free;
@@ -233,7 +233,7 @@ begin
     Height := 35;
     Hint := 'Ver correos recibidos';
     ShowHint := True;
-    OnClick := @OnBandejaClick; // Implementar después
+    OnClick := @OnBandejaClick;
   end;
 
   BtnEnviar := TButton.Create(Panel);
@@ -264,7 +264,7 @@ begin
     Height := 35;
     Hint := 'Ver correos eliminados';
     ShowHint := True;
-    OnClick := @OnPapeleraClick; // Implementar después
+    OnClick := @OnPapeleraClick;
   end;
 
   BtnProgramar := TButton.Create(Panel);
@@ -278,7 +278,7 @@ begin
     Height := 35;
     Hint := 'Programar envío automático';
     ShowHint := True;
-    OnClick := @OnProgramarCorreoClick; // Implementar después
+    OnClick := @OnProgramarCorreoClick;
   end;
   Inc(YPos, 50);
 
@@ -294,7 +294,7 @@ begin
     Height := 35;
     Hint := 'Ver y enviar correos programados';
     ShowHint := True;
-     OnClick := @OnCorreosProgramadosClick; // Implementar después
+     OnClick := @OnCorreosProgramadosClick;
   end;
 
   BtnAgregarContacto := TButton.Create(Panel);
@@ -308,7 +308,7 @@ begin
     Height := 35;
     Hint := 'Agregar nuevo contacto';
     ShowHint := True;
-    OnClick := @OnAgregarContactoClick; // YA IMPLEMENTADO
+    OnClick := @OnAgregarContactoClick;
     Font.Style := [fsBold];
     Color := clLime;
   end;
@@ -326,7 +326,7 @@ begin
     Height := 35;
     Hint := 'Ver y navegar entre contactos';
     ShowHint := True;
-    OnClick := @OnVerContactosClick; // YA IMPLEMENTADO
+    OnClick := @OnVerContactosClick;
     Font.Style := [fsBold];
     Color := clSkyBlue;
   end;
@@ -342,23 +342,23 @@ begin
     Height := 35;
     Hint := 'Modificar información personal';
     ShowHint := True;
-    OnClick := @OnActualizarPerfilClick; // YA IMPLEMENTADO
+    OnClick := @OnActualizarPerfilClick;
   end;
   Inc(YPos, 50);
 
-  // FILA 5: Generar Reportes (centrado)
+  // FILA 5: Generar Reportes
   BtnReportes := TButton.Create(Panel);
   with BtnReportes do
   begin
     Parent := Panel;
     Caption := 'Generar Reportes';
-    Left := 120; // Centrado
+    Left := 120;
     Top := YPos;
     Width := 200;
     Height := 35;
     Hint := 'Generar reportes personales (Correos, Papelera, Programados, Contactos)';
     ShowHint := True;
-    OnClick := @OnGenerarReportesClick; // Implementar después
+    OnClick := @OnGenerarReportesClick;
     Font.Style := [fsBold];
     Color := clYellow;
   end;
@@ -370,7 +370,7 @@ begin
   begin
     Parent := Panel;
     Caption := 'Cerrar Sesión';
-    Left := 120; // Centrado
+    Left := 120;
     Top := YPos;
     Width := 180;
     Height := 35;
@@ -393,9 +393,9 @@ begin
     Height := 350;
     Position := poScreenCenter;
     BorderStyle := bsDialog;
-    OnClose := @Self.OnFormClose;   // <- uso Self
+    OnClose := @Self.OnFormClose;
     KeyPreview := True;
-    OnKeyPress := @Self.OnKeyPress; // <- uso Self
+    OnKeyPress := @Self.OnKeyPress;
   end;
 
   Panel := TPanel.Create(FFormLogin);
@@ -475,7 +475,7 @@ begin
     Height := 35;
     TabOrder := 2;
     Default := True;
-    OnClick := @Self.OnLoginClick;   // <- uso Self
+    OnClick := @Self.OnLoginClick;
     Font.Style := [fsBold];
   end;
 
@@ -489,7 +489,7 @@ begin
     Width := 120;
     Height := 35;
     TabOrder := 3;
-    OnClick := @Self.OnCrearCuentaClick; // <- uso Self
+    OnClick := @Self.OnCrearCuentaClick;
   end;
 
   FFormLogin.Show;

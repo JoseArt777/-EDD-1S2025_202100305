@@ -52,7 +52,7 @@ type
     procedure GenerarReportePapelera(Usuario: PUsuario; RutaCarpeta: String);
     procedure GenerarReporteCorreosProgramados(Usuario: PUsuario; RutaCarpeta: String);
     function EliminarCorreoDePapelera(Usuario: PUsuario; Id: Integer): Boolean;
-f   function VaciarPapelera(Usuario: PUsuario): Integer; // opcional
+   function VaciarPapelera(Usuario: PUsuario): Integer; // opcional
   end;
 
 implementation

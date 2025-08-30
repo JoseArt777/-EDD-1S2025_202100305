@@ -10,7 +10,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="49"/>
         <CursorPos X="5" Y="67"/>
-        <UsageCount Value="50"/>
+        <UsageCount Value="55"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -19,7 +19,7 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="50"/>
+        <UsageCount Value="55"/>
       </Unit>
       <Unit>
         <Filename Value="correomanager.pas"/>
@@ -28,16 +28,15 @@
         <EditorIndex Value="1"/>
         <TopLine Value="869"/>
         <CursorPos X="44" Y="878"/>
-        <UsageCount Value="36"/>
+        <UsageCount Value="41"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="923"/>
-        <CursorPos X="41" Y="932"/>
-        <UsageCount Value="22"/>
+        <CursorPos X="31" Y="927"/>
+        <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -51,13 +50,14 @@
         <Filename Value="estructurasdatos.pas"/>
         <HasResources Value="True"/>
         <UnitName Value="EstructurasDatos"/>
-        <TopLine Value="1480"/>
-        <CursorPos X="5" Y="1498"/>
-        <UsageCount Value="22"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="43"/>
+        <CursorPos X="34" Y="48"/>
+        <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="24">
+    <JumpHistory HistoryIndex="25">
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="10" Column="52"/>
@@ -157,6 +157,10 @@
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="3056" Column="38" TopLine="3049"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="1495" Column="73" TopLine="1481"/>
       </Position>
     </JumpHistory>
     <RunParams>

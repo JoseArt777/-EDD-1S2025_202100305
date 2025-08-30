@@ -13,7 +13,7 @@ uses
   Forms,
   SysUtils,
   EstructurasDatos,
-    CorreoManager,    // <- AGREGAR
+  CorreoManager,    // <- AGREGAR
   InterfazGTK;
 
 var

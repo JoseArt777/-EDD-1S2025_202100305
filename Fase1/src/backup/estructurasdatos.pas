@@ -27,7 +27,7 @@ type
     Telefono: String;
     Password: String;
     Siguiente: PUsuario;
-    ListaContactos: PContacto;  // Lista circular de contactos del usuario
+    ListaContactos: PContacto;    // Lista circular de contactos del usuario
     BandejaEntrada: PCorreo;      // Lista doblemente enlazada
     Papelera: PCorreo;            // Pila LIFO
     CorreosProgramados: PCorreo;  // Cola FIFO
@@ -108,14 +108,11 @@ type
     FMatrizColumnas: PMatrizDispersaColumna;
     FUsuarioActual: PUsuario;
 
-    // Funciones auxiliares para usuarios
-
-
 
     // Funciones auxiliares para correos
     function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
 
-      procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto); // <- AGREGAR
+      procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto);
 
 
     // Funciones auxiliares para matriz dispersa
@@ -124,7 +121,7 @@ type
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
     function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
     procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
-   public
+   -public
     constructor Create;
     destructor Destroy; override;
 
@@ -194,7 +191,7 @@ begin
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
 
-  // Crear usuario root por defecto (Id fijo = 0 para no chocar con JSON que generalmente empieza en 1)
+  // Crear usuario root por defecto (Id fijo = 0)
   RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123', 0);
 end;
 
@@ -314,7 +311,7 @@ begin
     Cur := Cur^.Siguiente;
   end;
 
-  // Asignar Id usando IdFijo o MaxId+1
+
   if IdFijo >= 0 then
     NuevoUsuario^.Id := IdFijo
   else
