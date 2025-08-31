@@ -1,6 +1,28 @@
 digraph G {
-    label="Matriz Dispersa - Relaciones de Correos";
-    fontsize=16;
-    node [shape=box];
-    matriz [label="Matriz Dispersa\n(Sin relaciones aún)", style=filled, fillcolor=lightyellow];
+  rankdir=LR;
+  node [shape=box, style=filled, fillcolor=lightyellow];
+  label="Relaciones Remitente → Destinatario (Matriz Dispersa)"; fontsize=16;
+  subgraph cluster_remitentes { label="Remitentes"; color=lightgray;
+  r_1 [label="soporte@edd.com", fillcolor=lightblue];
+  r_2 [label="ventas@edd.com", fillcolor=lightblue];
+  r_3 [label="noticias@edd.com", fillcolor=lightblue];
+  r_4 [label="eventos@edd.com", fillcolor=lightblue];
+  r_5 [label="gkroah-hartman@linuxfoundation.org", fillcolor=lightblue];
+  r_6 [label="lgarcia@edd.com", fillcolor=lightblue];
+  r_7 [label="mitzep@edd.com", fillcolor=lightblue];
+  }
+  subgraph cluster_destinatarios { label="Destinatarios"; color=lightgray;
+  d_1 [label="lgarcia@edd.com", fillcolor=lightgreen];
+  d_2 [label="mitzep@edd.com", fillcolor=lightgreen];
+  d_3 [label="gkroah-hartman@edd.com", fillcolor=lightgreen];
+  }
+  r_1 -> d_1 [label="1"];
+  r_1 -> d_2 [label="1"];
+  r_1 -> d_3 [label="1"];
+  r_2 -> d_1 [label="1"];
+  r_3 -> d_2 [label="1"];
+  r_4 -> d_2 [label="1"];
+  r_5 -> d_3 [label="1"];
+  r_6 -> d_2 [label="1"];
+  r_7 -> d_1 [label="2"];
 }

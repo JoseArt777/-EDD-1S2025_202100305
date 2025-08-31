@@ -121,7 +121,7 @@ type
     function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
     function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
     procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
-   -public
+   public
     constructor Create;
     destructor Destroy; override;
 

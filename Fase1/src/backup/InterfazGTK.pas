@@ -134,7 +134,7 @@ constructor TInterfazEDDMail.Create;
 begin
   inherited Create;
   FSistema := TEDDMailSystem.Create;
-    FCorreoManager := TCorreoManager.Create;  // <- AGREGAR
+    FCorreoManager := TCorreoManager.Create;
 
   FUsuarioActivo := False;
   FFormLogin := nil;
@@ -144,7 +144,7 @@ end;
 destructor TInterfazEDDMail.Destroy;
 begin
   FSistema.Free;
-    FCorreoManager.Free;  // <- AGREGAR
+    FCorreoManager.Free;
 
   if Assigned(FFormLogin) then
     FFormLogin.Free;
@@ -181,7 +181,8 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 20;
-    Color := clForm;
+    Color := clTeal;
+
   end;
 
   Usuario := FSistema.GetUsuarioActual;
@@ -190,10 +191,10 @@ begin
   with LabelSaludo do
   begin
     Parent := Panel;
-    Caption := 'Hola: ' + Usuario^.Nombre;
+    Caption := 'Hola: ' + Usuario^.Nombre+ ' 👋 ';
     Font.Size := 16;
     Font.Style := [fsBold];
-    Font.Color := clNavy;
+    Font.Color := clInfoBk;
     Left := 20;
     Top := 20;
     AutoSize := True;
@@ -216,7 +217,7 @@ begin
     Caption := 'Email: ' + Usuario^.Email + ' | Teléfono: ' + Usuario^.Telefono;
     Left := 20;
     Top := 70;
-    Font.Color := clGray;
+    Font.Color := clWhite;
   end;
 
   YPos := 110;
@@ -226,27 +227,28 @@ begin
   with BtnBandeja do
   begin
     Parent := Panel;
-    Caption := 'Bandeja de Entrada';
+    Caption := '✉️ Bandeja de Entrada';
     Left := 20;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Ver correos recibidos';
     ShowHint := True;
-    OnClick := @OnBandejaClick; // Implementar después
+    OnClick := @OnBandejaClick;
+    Color:= clTeal;
   end;
 
   BtnEnviar := TButton.Create(Panel);
   with BtnEnviar do
   begin
     Parent := Panel;
-    Caption := 'Enviar Correo';
+    Caption := '📩 Enviar Correo';
     Left := 220;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Enviar un nuevo correo';
-
+    Color:= clTeal;
     ShowHint := True;
     OnClick := @OnEnviarCorreoClick;
   end;
@@ -257,28 +259,30 @@ begin
   with BtnPapelera do
   begin
     Parent := Panel;
-    Caption := 'Papelera';
+    Caption := '🗑️ Papelera';
     Left := 20;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Ver correos eliminados';
     ShowHint := True;
-    OnClick := @OnPapeleraClick; // Implementar después
+    OnClick := @OnPapeleraClick;
+    Color:=clTeal;
   end;
 
   BtnProgramar := TButton.Create(Panel);
   with BtnProgramar do
   begin
     Parent := Panel;
-    Caption := 'Programar Correo';
+    Caption := '📒 Programar Correo';
     Left := 220;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Programar envío automático';
     ShowHint := True;
-    OnClick := @OnProgramarCorreoClick; // Implementar después
+    OnClick := @OnProgramarCorreoClick;
+    Color:= clTeal;
   end;
   Inc(YPos, 50);
 
@@ -287,30 +291,31 @@ begin
   with BtnCorreosProgramados do
   begin
     Parent := Panel;
-    Caption := 'Correos Programados';
+    Caption := '📅 Correos Programados';
     Left := 20;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Ver y enviar correos programados';
     ShowHint := True;
-     OnClick := @OnCorreosProgramadosClick; // Implementar después
+     OnClick := @OnCorreosProgramadosClick;
+     Color:= clTeal;
   end;
 
   BtnAgregarContacto := TButton.Create(Panel);
   with BtnAgregarContacto do
   begin
     Parent := Panel;
-    Caption := 'Agregar Contacto';
+    Caption := '📇 Agregar Contacto';
     Left := 220;
     Top := YPos;
     Width := 180;
     Height := 35;
-    Hint := 'Agregar nuevo contacto';
+    Hint := 'Agregar nuevo contacto📇';
     ShowHint := True;
-    OnClick := @OnAgregarContactoClick; // YA IMPLEMENTADO
+    OnClick := @OnAgregarContactoClick;
     Font.Style := [fsBold];
-    Color := clLime;
+    Color := clTeal;
   end;
   Inc(YPos, 50);
 
@@ -319,48 +324,49 @@ begin
   with BtnContactos do
   begin
     Parent := Panel;
-    Caption := 'Contactos';
+    Caption := '📇 Contactos';
     Left := 20;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Ver y navegar entre contactos';
     ShowHint := True;
-    OnClick := @OnVerContactosClick; // YA IMPLEMENTADO
+    OnClick := @OnVerContactosClick;
     Font.Style := [fsBold];
-    Color := clSkyBlue;
+    Color := clTeal;
   end;
 
   BtnPerfil := TButton.Create(Panel);
   with BtnPerfil do
   begin
     Parent := Panel;
-    Caption := 'Actualizar Perfil';
+    Caption := '👤 Actualizar Perfil';
     Left := 220;
     Top := YPos;
     Width := 180;
     Height := 35;
     Hint := 'Modificar información personal';
     ShowHint := True;
-    OnClick := @OnActualizarPerfilClick; // YA IMPLEMENTADO
+    OnClick := @OnActualizarPerfilClick;
+    Color:=clTeal;
   end;
   Inc(YPos, 50);
 
-  // FILA 5: Generar Reportes (centrado)
+  // FILA 5: Generar Reportes
   BtnReportes := TButton.Create(Panel);
   with BtnReportes do
   begin
     Parent := Panel;
-    Caption := 'Generar Reportes';
-    Left := 120; // Centrado
+    Caption := '📊 Generar Reportes';
+    Left := 120;
     Top := YPos;
     Width := 200;
     Height := 35;
     Hint := 'Generar reportes personales (Correos, Papelera, Programados, Contactos)';
     ShowHint := True;
-    OnClick := @OnGenerarReportesClick; // Implementar después
+    OnClick := @OnGenerarReportesClick;
     Font.Style := [fsBold];
-    Color := clYellow;
+    Color := clTeal;
   end;
   Inc(YPos, 80);
 
@@ -369,8 +375,8 @@ begin
   with BtnCerrarSesion do
   begin
     Parent := Panel;
-    Caption := 'Cerrar Sesión';
-    Left := 120; // Centrado
+    Caption := '❌ Cerrar Sesión';
+    Left := 120;
     Top := YPos;
     Width := 180;
     Height := 35;
@@ -388,14 +394,16 @@ begin
   FFormLogin := TForm.Create(nil);
   with FFormLogin do
   begin
-    Caption := 'EDDMail - Iniciar Sesión';
-    Width := 450;
+    Caption := ' EDDMail - Iniciar Sesión';
+    Width := 430;
     Height := 350;
     Position := poScreenCenter;
     BorderStyle := bsDialog;
-    OnClose := @Self.OnFormClose;   // <- uso Self
+
+
+    OnClose := @Self.OnFormClose;
     KeyPreview := True;
-    OnKeyPress := @Self.OnKeyPress; // <- uso Self
+    OnKeyPress := @Self.OnKeyPress;
   end;
 
   Panel := TPanel.Create(FFormLogin);
@@ -405,17 +413,17 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 20;
-    Color := clForm;
+    Color := clTeal                           ;
   end;
 
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'EDDMail - Sistema de Correos';
+    Caption := '🔐 EDDMail - Sistema de Correos';
     Font.Size := 16;
     Font.Style := [fsBold];
-    Font.Color := clNavy;
+    Font.Color := clWhite;
     Left := 80;
     Top := 30;
     AutoSize := True;
@@ -475,7 +483,8 @@ begin
     Height := 35;
     TabOrder := 2;
     Default := True;
-    OnClick := @Self.OnLoginClick;   // <- uso Self
+
+    OnClick := @Self.OnLoginClick;
     Font.Style := [fsBold];
   end;
 
@@ -489,7 +498,8 @@ begin
     Width := 120;
     Height := 35;
     TabOrder := 3;
-    OnClick := @Self.OnCrearCuentaClick; // <- uso Self
+    OnClick := @Self.OnCrearCuentaClick;
+
   end;
 
   FFormLogin.Show;
@@ -504,8 +514,8 @@ begin
   with FFormPrincipal do
   begin
     Caption := 'EDDMail - Sistema de Correos';
-    Width := 800;
-    Height := 600;
+    Width := 450;
+    Height := 520;
     Position := poScreenCenter;
     OnClose := @OnFormClose;
   end;
@@ -533,7 +543,9 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 20;
-    Color := clForm;
+    Color := clTeal              ;
+
+
   end;
 
   LabelTitulo := TLabel.Create(Panel);
@@ -553,7 +565,7 @@ begin
   with LabelInfo do
   begin
     Parent := Panel;
-    Caption := 'Bienvenido Administrador. Seleccione una opción:';
+    Caption := 'Bienvenido Administrador 🧑💼 . Seleccione una opción:';
     Left := 20;
     Top := 50;
     Font.Color := clGray;
@@ -703,6 +715,7 @@ begin
       Align := alClient;
       BevelOuter := bvNone;
       BorderWidth := 15;
+      Color:=clMoneyGreen ;
     end;
     
     YPos := 20;
@@ -1030,6 +1043,7 @@ begin
       Height := 500;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:=clMoneyGreen;
     end;
 
     PanelComunidades := TPanel.Create(FormComunidades);
@@ -1039,6 +1053,7 @@ begin
       Align := alClient;
       BevelOuter := bvNone;
       BorderWidth := 15;
+      Color:=clMoneyGreen;
     end;
 
     YPos := 20;
@@ -1241,6 +1256,7 @@ begin
       Height := 350;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:=clMoneyGreen ;
     end;
 
     PanelPerfil := TPanel.Create(FormPerfil);
@@ -1421,6 +1437,7 @@ begin
       Height := 250;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:= clMoneyGreen ;
     end;
 
     PanelContacto := TPanel.Create(FormAgregarContacto);
@@ -1441,6 +1458,7 @@ begin
       Font.Style := [fsBold];
       Left := 20;
       Top := 20;
+      Color:=clTeal;
     end;
 
     LabelEmail := TLabel.Create(PanelContacto);
@@ -1548,6 +1566,7 @@ begin
     Position := poOwnerFormCenter;
     BorderStyle := bsSizeable;
     OnClose := @OnFormContactosClose;  // Agregar evento de cierre
+    Color:=clMoneyGreen;
   end;
 
   PanelContactos := TPanel.Create(FFormContactos);
@@ -1563,7 +1582,7 @@ begin
   with LabelTitulo do
   begin
     Parent := PanelContactos;
-    Caption := 'Lista de Contactos';
+    Caption := 'Lista de Contactos 📇';
     Font.Size := 14;
     Font.Style := [fsBold];
     Left := 20;
@@ -1820,6 +1839,7 @@ begin
       Height := 450;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:=clMoneyGreen ;
     end;
 
     Panel := TPanel.Create(FormEnviar);
@@ -1829,6 +1849,7 @@ begin
       Align := alClient;
       BevelOuter := bvNone;
       BorderWidth := 12;
+      Color:=clMoneyGreen  ;
     end;
 
     LabelPara := TLabel.Create(Panel);
@@ -1846,19 +1867,23 @@ begin
     LabelAsunto := TLabel.Create(Panel);
     with LabelAsunto do
     begin
-      Parent := Panel; Caption := 'Asunto:'; Left := 12; Top := 60; Font.Style := [fsBold];
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12; Top := 60;
+      Font.Style := [fsBold];
+
     end;
 
     EditAsunto := TEdit.Create(Panel);
     with EditAsunto do
     begin
-      Parent := Panel; Left := 12; Top := 78; Width := 560;
+      Parent := Panel; Left := 12; Top := 78; Width := 560; ;Height:=120;
     end;
 
     MemoCuerpo := TMemo.Create(Panel);
     with MemoCuerpo do
     begin
-      Parent := Panel; Left := 12; Top := 110; Width := 560; Height := 260; ScrollBars := ssVertical;
+      Parent := Panel; Left := 12; Top := 115; Width := 560; Height := 250; ScrollBars := ssVertical;
     end;
 
     BtnEnviar := TButton.Create(Panel);
@@ -1930,6 +1955,7 @@ begin
     Position := poOwnerFormCenter;
     BorderStyle := bsSizeable;
     OnClose := @OnFormBandejaClose;
+    Color:=clMoneyGreen ;
   end;
 
   Panel := TPanel.Create(FFormBandeja);
@@ -1945,7 +1971,7 @@ begin
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'Bandeja de Entrada';
+    Caption := 'Bandeja de Entrada✉️ ';
     Font.Size := 14;
     Font.Style := [fsBold];
     Left := 10;
@@ -2190,6 +2216,7 @@ begin
     Position := poOwnerFormCenter;
     BorderStyle := bsSizeable;
     OnClose := @OnFormPapeleraClose;
+    Color:=clMoneyGreen;
   end;
 
   Panel := TPanel.Create(FFormPapelera);
@@ -2199,17 +2226,19 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 10;
+    Color:=clMoneyGreen;
   end;
 
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'Papelera (último en entrar, primero en salir)';
+    Caption := 'Papelera (último en entrar, primero en salir) 🗑️';
     Font.Size := 14;
     Font.Style := [fsBold];
     Left := 10;
     Top := 10;
+    Color:=clMoneyGreen ;
   end;
 
   // Buscar
@@ -2236,7 +2265,7 @@ begin
   with FListPapelera do
   begin
     Parent := Panel;
-    Left := 10; Top := 70; Width := 660; Height := 200;
+    Left := 10; Top := 100; Width := 660; Height := 150;
     OnClick := @Papelera_OnSeleccion;
     ItemHeight := 16;
   end;
@@ -2246,7 +2275,7 @@ begin
   with FMemoPapelera do
   begin
     Parent := Panel;
-    Left := 10; Top := 280; Width := 660; Height := 120;
+    Left := 10; Top := 270; Width := 660; Height := 120;
     ReadOnly := True;
     ScrollBars := ssVertical;
   end;
@@ -2417,6 +2446,7 @@ begin
       Height := 500;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:=clMoneyGreen ;
     end;
 
     Panel := TPanel.Create(FormProgramar);
@@ -2426,6 +2456,7 @@ begin
       Align := alClient;
       BevelOuter := bvNone;
       BorderWidth := 12;
+      Color:=clMoneyGreen ;
     end;
 
     // Para
@@ -2456,7 +2487,7 @@ begin
       Parent := Panel;
       Caption := 'Asunto:';
       Left := 12;
-      Top := 60;
+      Top := 65;
       Font.Style := [fsBold];
     end;
 
@@ -2465,7 +2496,7 @@ begin
     begin
       Parent := Panel;
       Left := 12;
-      Top := 78;
+      Top := 80;
       Width := 560;
       TabOrder := 1;
     end;
@@ -2477,7 +2508,7 @@ begin
       Parent := Panel;
       Caption := 'Fecha y hora de envío (dd/mm/yy hh:nn):';
       Left := 12;
-      Top := 108;
+      Top := 120;
       Font.Style := [fsBold];
     end;
 
@@ -2486,7 +2517,7 @@ begin
     begin
       Parent := Panel;
       Left := 12;
-      Top := 126;
+      Top := 140;
       Width := 560;
       TabOrder := 2;
       Hint := 'Formato: 25/08/25 14:30';
@@ -2501,7 +2532,7 @@ begin
     begin
       Parent := Panel;
       Left := 12;
-      Top := 160;
+      Top := 180;
       Width := 560;
       Height := 240;
       ScrollBars := ssVertical;
@@ -2515,7 +2546,7 @@ begin
       Parent := Panel;
       Caption := 'Programar';
       Left := 380;
-      Top := 410;
+      Top := 420;
       Width := 90;
       Height := 30;
       ModalResult := mrOk;
@@ -2528,7 +2559,7 @@ begin
       Parent := Panel;
       Caption := 'Cancelar';
       Left := 480;
-      Top := 410;
+      Top := 420;
       Width := 90;
       Height := 30;
       ModalResult := mrCancel;
@@ -2604,6 +2635,7 @@ begin
     Position := poOwnerFormCenter;
     BorderStyle := bsSizeable;
     OnClose := @OnFormCorreosProgramadosClose;
+    Color:=clMoneyGreen;
   end;
 
   Panel := TPanel.Create(FFormCorreosProgramados);
@@ -2613,13 +2645,14 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 10;
+    Color:=clMoneyGreen;
   end;
 
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'Correos Programados para Envío';
+    Caption := 'Correos Programados para Envío ';
     Font.Size := 14;
     Font.Style := [fsBold];
     Left := 10;
@@ -2676,7 +2709,7 @@ begin
     Hint := 'Envía todos los correos cuya fecha ya llegó';
     ShowHint := True;
     Font.Style := [fsBold];
-    Color := clLime;
+    Color := clTeal;
   end;
 
   BtnEliminar := TButton.Create(Panel);
@@ -2892,11 +2925,12 @@ begin
   try
     with FormReportes do
     begin
-      Caption := 'Generar Reportes';
+      Caption := '📊Generar Reportes';
       Width := 500;
       Height := 450;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
+      Color:=clMoneyGreen;
     end;
 
     Panel := TPanel.Create(FormReportes);
@@ -2906,6 +2940,7 @@ begin
       Align := alClient;
       BevelOuter := bvNone;
       BorderWidth := 15;
+      Color:=clMoneyGreen;
     end;
 
     YPos := 20;
@@ -2914,7 +2949,7 @@ begin
     with LabelTitulo do
     begin
       Parent := Panel;
-      Caption := 'Generar Reportes Personales';
+      Caption := 'Generar Reportes Personales 📊';
       Font.Size := 14;
       Font.Style := [fsBold];
       Left := 20;

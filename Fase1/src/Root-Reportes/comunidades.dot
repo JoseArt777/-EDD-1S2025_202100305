@@ -2,5 +2,21 @@ digraph G {
     label="Lista de Listas - Comunidades";
     fontsize=16;
     node [shape=box];
-    empty [label="Sin comunidades", style=filled, fillcolor=lightgray];
+    com1 [label="Comunidad: Ejemplo", style=filled, fillcolor=lightblue];
+    user_lgarcia_edd_com [label="lgarcia@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_lgarcia_edd_com;
+    user_mitzep_edd_com [label="mitzep@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_mitzep_edd_com;
+    user_gkroah_hartman_edd_com [label="gkroah-hartman@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_gkroah_hartman_edd_com;
+    com1 [label="Comunidad: Otra", style=filled, fillcolor=lightblue];
+    user_gkroah_hartman_edd_com [label="gkroah-hartman@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_gkroah_hartman_edd_com;
+    user_mitzep_edd_com [label="mitzep@edd.com", style=filled, fillcolor=lightyellow];
+    com1 -> user_mitzep_edd_com;
+    com2 [label="Comunidad: Ejemplo2", style=filled, fillcolor=lightblue];
+    user_gkroah_hartman_edd_com [label="gkroah-hartman@edd.com", style=filled, fillcolor=lightyellow];
+    com2 -> user_gkroah_hartman_edd_com;
+    user_mitzep_edd_com [label="mitzep@edd.com", style=filled, fillcolor=lightyellow];
+    com2 -> user_mitzep_edd_com;
 }

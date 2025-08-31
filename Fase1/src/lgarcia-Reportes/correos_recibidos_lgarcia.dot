@@ -3,8 +3,5 @@ digraph G {
     fontsize=16;
     rankdir=LR;
     node [shape=record, style=filled];
-    correo_101 [label="ID: 101|Estado: NL|De: soporte@edd.com|Asunto: Bienvenido Luis|Fecha: 2025-08-20", fillcolor=lightblue];
-    correo_101 -> correo_102;
-    correo_102 -> correo_101;
     correo_102 [label="ID: 102|Estado: L|De: ventas@edd.com|Asunto: Promociones del mes|Fecha: 2025-08-18", fillcolor=lightblue];
 }
