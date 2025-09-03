@@ -8,8 +8,6 @@ digraph G {
   r_3 [label="noticias@edd.com", fillcolor=lightblue];
   r_4 [label="eventos@edd.com", fillcolor=lightblue];
   r_5 [label="gkroah-hartman@linuxfoundation.org", fillcolor=lightblue];
-  r_6 [label="lgarcia@edd.com", fillcolor=lightblue];
-  r_7 [label="mitzep@edd.com", fillcolor=lightblue];
   }
   subgraph cluster_destinatarios { label="Destinatarios"; color=lightgray;
   d_1 [label="lgarcia@edd.com", fillcolor=lightgreen];
@@ -23,6 +21,4 @@ digraph G {
   r_3 -> d_2 [label="1"];
   r_4 -> d_2 [label="1"];
   r_5 -> d_3 [label="1"];
-  r_6 -> d_2 [label="1"];
-  r_7 -> d_1 [label="2"];
 }

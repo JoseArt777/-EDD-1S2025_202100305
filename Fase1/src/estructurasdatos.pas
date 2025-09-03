@@ -1417,13 +1417,12 @@ procedure TEDDMailSystem.GenerarReporteComunidades(RutaCarpeta: String);
 var
   Archivo: TextFile;
   Comunidad: PComunidad;
-  UsuarioCom: PUsuarioComunidad;
+  UsuarioCom, UltimoUsuario: PUsuarioComunidad;
   Process: TProcess;
   EmailLimpio: String;
 begin
   try
     ForceDirectories(RutaCarpeta);
-
     AssignFile(Archivo, RutaCarpeta + '/comunidades.dot');
     Rewrite(Archivo);
 
@@ -1432,29 +1431,76 @@ begin
     WriteLn(Archivo, '    fontsize=16;');
     WriteLn(Archivo, '    node [shape=box];');
 
+
     if FComunidades = nil then
     begin
       WriteLn(Archivo, '    empty [label="Sin comunidades", style=filled, fillcolor=lightgray];');
     end
     else
     begin
+      // 1. Crear nodos de comunidades
       Comunidad := FComunidades;
       while Comunidad <> nil do
       begin
-        WriteLn(Archivo, Format('    com%d [label="Comunidad: %s", style=filled, fillcolor=lightblue];',
+        WriteLn(Archivo, Format('    com%d [label="Comunidad\n%s", style=filled, fillcolor=lightblue];',
           [Comunidad^.Id, Comunidad^.Nombre]));
+        Comunidad := Comunidad^.Siguiente;
+      end;
 
+
+      WriteLn(Archivo, '    { rank=same; '); // Fuerza comunidades al mismo nivel
+      Comunidad := FComunidades;
+      while Comunidad <> nil do
+      begin
+        Write(Archivo, Format('com%d; ', [Comunidad^.Id]));
+        Comunidad := Comunidad^.Siguiente;
+      end;
+      WriteLn(Archivo, ' }');
+
+
+      Comunidad := FComunidades;
+      while (Comunidad <> nil) and (Comunidad^.Siguiente <> nil) do
+      begin
+        WriteLn(Archivo, Format('    com%d -> com%d [color=black, constraint=false];',
+          [Comunidad^.Id, Comunidad^.Siguiente^.Id]));
+        Comunidad := Comunidad^.Siguiente;
+      end;
+
+      // 3. Crear usuarios y conectarlos verticalmente ABAJO de cada comunidad
+      Comunidad := FComunidades;
+      while Comunidad <> nil do
+      begin
         UsuarioCom := Comunidad^.UsuariosList;
+        UltimoUsuario := nil;
+
         while UsuarioCom <> nil do
         begin
           EmailLimpio := StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll]);
           EmailLimpio := StringReplace(EmailLimpio, '-', '_', [rfReplaceAll]);
           EmailLimpio := StringReplace(EmailLimpio, '.', '_', [rfReplaceAll]);
 
-          WriteLn(Archivo, Format('    user_%s [label="%s", style=filled, fillcolor=lightyellow];',
-            [EmailLimpio, UsuarioCom^.Email]));
-          WriteLn(Archivo, Format('    com%d -> user_%s;',
-            [Comunidad^.Id, EmailLimpio]));
+          WriteLn(Archivo, Format('    user_%d_%s [label="%s", style=filled, fillcolor=lightyellow];',
+            [Comunidad^.Id, EmailLimpio, UsuarioCom^.Email]));
+
+          // Conectar comunidad al PRIMER usuario
+          if UltimoUsuario = nil then
+          begin
+            WriteLn(Archivo, Format('    com%d -> user_%d_%s [color=blue];',
+              [Comunidad^.Id, Comunidad^.Id, EmailLimpio]));
+          end
+          else
+          begin
+
+            EmailLimpio := StringReplace(UltimoUsuario^.Email, '@', '_', [rfReplaceAll]);
+            EmailLimpio := StringReplace(EmailLimpio, '-', '_', [rfReplaceAll]);
+            EmailLimpio := StringReplace(EmailLimpio, '.', '_', [rfReplaceAll]);
+
+            WriteLn(Archivo, Format('    user_%d_%s -> user_%d_%s [color=blue];',
+              [Comunidad^.Id, EmailLimpio, Comunidad^.Id,
+               StringReplace(StringReplace(StringReplace(UsuarioCom^.Email, '@', '_', [rfReplaceAll]), '-', '_', [rfReplaceAll]), '.', '_', [rfReplaceAll])]));
+          end;
+
+          UltimoUsuario := UsuarioCom;
           UsuarioCom := UsuarioCom^.Siguiente;
         end;
 
@@ -1465,6 +1511,7 @@ begin
     WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
+    // Generar PNG...
     try
       Process := TProcess.Create(nil);
       try
