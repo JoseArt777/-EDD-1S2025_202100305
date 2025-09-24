@@ -1,7 +1,0 @@
-digraph G {
-    label="Lista Circular de Contactos - Marcos Itzep";
-    fontsize=16;
-    rankdir=LR;
-    node [shape=record, style=filled, fillcolor=lightblue];
-    empty [label="Sin contactos", style=filled, fillcolor=lightgray];
-}

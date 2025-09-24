@@ -1,7 +1,0 @@
-digraph G {
-    label="Cola (FIFO) - Correos Programados - Luis Garcia";
-    fontsize=16;
-    rankdir=LR;
-    node [shape=record, style=filled];
-    empty [label="No hay correos programados", fillcolor=lightgray];
-}

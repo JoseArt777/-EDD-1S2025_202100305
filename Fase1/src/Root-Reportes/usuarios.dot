@@ -1,7 +1,0 @@
-digraph G {
-    rankdir=LR;
-    node [shape=record, style=filled, fillcolor=lightblue];
-    label="Lista Simple de Usuarios";
-    fontsize=16;
-    user0 [label="ID: 0|Nombre: Root Admin|Usuario: root|Email: root@edd.com|Telefono: 00000000"];
-}
