@@ -5,7 +5,7 @@ unit EstructurasDatos;
 interface
 
 uses
-  Classes, SysUtils, Math;
+  Classes, SysUtils, Math, process;
 
 type
   // Tipos de punteros
@@ -169,7 +169,7 @@ type
       function InsertarAVL(nodo: PNodoAVL; correo: PCorreo): PNodoAVL;
 
       // Funciones para métodos de Fase 2
-      function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+
       function BuscarCorreoEnAVL(nodo: PNodoAVL; CorreoId: Integer): PCorreo;
 
       procedure GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
@@ -263,12 +263,16 @@ type
       function ObtenerMensajesComunidad(nombreComunidad: String): String;
         procedure GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
 
+            function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+
+
+              function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
 
     end;
 implementation
 
 uses
-  fpjson, jsonparser, process;
+  fpjson, jsonparser;
 
 constructor TEDDMailSystem.Create;
 begin
@@ -2332,5 +2336,4 @@ begin
     GenerarNodosAVL(Archivo, nodo^.Derecho);
   end;
 end;
-
-end.
+ end.

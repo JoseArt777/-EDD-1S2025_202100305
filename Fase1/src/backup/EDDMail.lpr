@@ -14,7 +14,7 @@ uses
   SysUtils,
   EstructurasDatos,
   CorreoManager,
-  InterfazGTK;
+  InterfazGTK, unit2;
 
 var
   Aplicacion: TInterfazEDDMail;
