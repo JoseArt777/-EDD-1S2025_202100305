@@ -236,15 +236,6 @@ type
     procedure GenerarReporteCorreosProgramados(Usuario: PUsuario; RutaCarpeta: String);
     procedure GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
     procedure GenerarReporteComunidades(RutaCarpeta: String);
-
-    //FASE 2
-
-    // Nuevas funciones públicas
-  function GuardarBorrador(Usuario: PUsuario; Destinatario, Asunto, Mensaje: String): Boolean;
-  function ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
-  function MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-  function CrearComunidadBST(nombreComunidad: String): Boolean;
-  function PublicarMensajeAComunidad(nombreComunidad, correoUsuario, mensaje: String): Boolean;
   end;
 
 implementation
