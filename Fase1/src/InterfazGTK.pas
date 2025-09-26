@@ -4744,5 +4744,229 @@ begin
       end;
     end;
   end;
+  // Función para rellenar lista de favoritos
+procedure TInterfazEDDMail.Favoritos_RellenarLista;
+var
+  Usuario: PUsuario;
+  // Implementación simplificada - en una implementación completa
+  // necesitarías recorrer el árbol B
+begin
+  if FListFavoritos = nil then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListFavoritos.Items.Clear;
+  // TODO: Implementar recorrido del árbol B de favoritos
+
+  if Assigned(FLabelTotalFavoritos) then
+    FLabelTotalFavoritos.Caption := Format('Total: %d', [FListFavoritos.Items.Count]);
+end;
+// Completar la implementación de Borradores_OnSeleccion
+procedure TInterfazEDDMail.Borradores_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBorradores = nil) or (FMemoBorrador = nil) then Exit;
+  if FListBorradores.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+
+  // Buscar el correo en el árbol AVL de borradores
+  Correo := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, CorreoId);
+  if Correo <> nil then
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('Para: ' + Correo^.Destinatario);
+    FMemoBorrador.Lines.Add('Asunto: ' + Correo^.Asunto);
+    FMemoBorrador.Lines.Add('Fecha creación: ' + Correo^.Fecha);
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('Mensaje:');
+    FMemoBorrador.Lines.Add(Correo^.Mensaje);
+  end;
+end;
+
+// Mejorar la implementación de Borradores_OnEditarClick
+procedure TInterfazEDDMail.Borradores_OnEditarClick(Sender: TObject);
+var
+  FormEditar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnGuardar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Error', 'Seleccione un borrador para editar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  Correo := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, CorreoId);
+
+  if Correo = nil then
+  begin
+    MostrarMensaje('Error', 'Borrador no encontrado');
+    Exit;
+  end;
+
+  FormEditar := TForm.Create(nil);
+  try
+    with FormEditar do
+    begin
+      Caption := 'Editar Borrador';
+      Width := 600;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormEditar);
+    with Panel do
+    begin
+      Parent := FormEditar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+      Color := clMoneyGreen;
+    end;
+
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12; Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 30;
+      Width := 560;
+      Text := Correo^.Destinatario;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12; Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 78;
+      Width := 560;
+      Text := Correo^.Asunto;
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 115;
+      Width := 560; Height := 250;
+      ScrollBars := ssVertical;
+      Lines.Text := Correo^.Mensaje;
+    end;
+
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := 'Enviar Ahora';
+      Left := 280; Top := 380;
+      Width := 90; Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnGuardar := TButton.Create(Panel);
+    with BtnGuardar do
+    begin
+      Parent := Panel;
+      Caption := 'Actualizar Borrador';
+      Left := 380; Top := 380;
+      Width := 120; Height := 30;
+      ModalResult := mrYes;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 510; Top := 380;
+      Width := 70; Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    case FormEditar.ShowModal of
+      mrOk: begin // Enviar correo
+        if FCorreoManager.EnviarCorreo(
+              FSistema,
+              Usuario^.Email,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Correo enviado y borrador eliminado');
+          // TODO: Eliminar del árbol AVL
+          Borradores_RellenarLista;
+        end;
+      end;
+
+      mrYes: begin // Actualizar borrador
+        // TODO: Actualizar el correo en el árbol AVL
+        Correo^.Destinatario := Trim(EditPara.Text);
+        Correo^.Asunto := Trim(EditAsunto.Text);
+        Correo^.Mensaje := MemoCuerpo.Lines.Text;
+        MostrarMensaje('Éxito', 'Borrador actualizado');
+        Borradores_RellenarLista;
+      end;
+    end;
+
+  finally
+    FormEditar.Free;
+  end;
+end;
+// Implementación del event handler
+procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FSistema.MarcarComoFavorito(Usuario, IdSel) then
+    MostrarMensaje('Éxito', 'Correo marcado como favorito ⭐')
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como favorito');
+end;
 end;
 end.

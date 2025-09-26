@@ -5,7 +5,7 @@ unit EstructurasDatos;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, Math;
 
 type
   // Tipos de punteros
@@ -182,6 +182,9 @@ type
   function CrearNodoB: PNodoB;
   function InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
   function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+
+  // En la sección private de TEDDMailSystem
+function BuscarCorreoEnBandeja(Usuario: PUsuario; CorreoId: Integer): PCorreo;
 
   // Recorridos del Árbol AVL
 procedure RecorridoInOrdenAVL(nodo: PNodoAVL; lista: TStringList);
@@ -2231,6 +2234,108 @@ begin
 
   finally
     FormEditar.Free;
+  end;
+end;
+// Implementación del event handler
+procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FSistema.MarcarComoFavorito(Usuario, IdSel) then
+    MostrarMensaje('Éxito', 'Correo marcado como favorito ⭐')
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como favorito');
+end;
+
+// Agregar función para generar reportes de nuevas estructuras
+procedure TEDDMailSystem.GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+begin
+  if Usuario = nil then Exit;
+
+  try
+    ForceDirectories(RutaCarpeta);
+    NombreArchivo := RutaCarpeta + '/borradores_' +
+                   StringReplace(Usuario^.Usuario, ' ', '_', [rfReplaceAll]) + '.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Árbol AVL - Borradores - ' + Usuario^.Nombre + '";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightyellow];');
+
+    if Usuario^.ArbolBorradores = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin borradores", fillcolor=lightgray];');
+    end
+    else
+    begin
+      GenerarNodosAVL(Archivo, Usuario^.ArbolBorradores);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar imagen
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(NombreArchivo);
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+        WriteLn('Reporte de borradores generado: ', ChangeFileExt(NombreArchivo, '.png'));
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte de borradores: ', E.Message);
+  end;
+end;
+
+// Función auxiliar para generar nodos del árbol AVL en Graphviz
+procedure TEDDMailSystem.GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
+begin
+  if nodo = nil then Exit;
+
+  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d|Altura: %d|%s|%s"];',
+    [nodo^.Correo^.Id, nodo^.Correo^.Id, nodo^.Altura,
+     nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario]));
+
+  if nodo^.Izquierdo <> nil then
+  begin
+    WriteLn(Archivo, Format('    nodo_%d -> nodo_%d [label="L"];',
+      [nodo^.Correo^.Id, nodo^.Izquierdo^.Correo^.Id]));
+    GenerarNodosAVL(Archivo, nodo^.Izquierdo);
+  end;
+
+  if nodo^.Derecho <> nil then
+  begin
+    WriteLn(Archivo, Format('    nodo_%d -> nodo_%d [label="R"];',
+      [nodo^.Correo^.Id, nodo^.Derecho^.Correo^.Id]));
+    GenerarNodosAVL(Archivo, nodo^.Derecho);
   end;
 end;
 end.
