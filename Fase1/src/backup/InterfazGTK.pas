@@ -6,11 +6,14 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  FileUtil, EstructurasDatos, CorreoManager;
+  FileUtil, EstructurasDatos, CorreoManager, Math;
 
 type
   TInterfazEDDMail = class
   private
+    // ======================================
+    // TODAS LAS VARIABLES (COMPLETAS)
+    // ======================================
     FSistema: TEDDMailSystem;
     FFormLogin: TForm;
     FFormPrincipal: TForm;
@@ -19,27 +22,29 @@ type
     FEditPassword: TEdit;
     FCorreoManager: TCorreoManager;
 
+    FContactoActual: PContacto;
+    FPrimerContacto: PContacto;
+    FIndiceContactoActual: Integer;
+    FTotalContactos: Integer;
 
-      FContactoActual: PContacto;
-      FPrimerContacto: PContacto;
-      FIndiceContactoActual: Integer;
-      FTotalContactos: Integer;
-
-      FFormContactos: TForm;
+    FFormContactos: TForm;
     FLabelContadorContactos: TLabel;
     FLabelNombreContacto: TLabel;
     FLabelUsuarioContacto: TLabel;
     FLabelEmailContacto: TLabel;
     FLabelTelefonoContacto: TLabel;
+
     // Controles para comunidades
     FEditNombreComunidad: TEdit;
     FEditEmailUsuario: TEdit;
     FMemoComunidades: TMemo;
+
     // --- Bandeja de entrada ---
-  FFormBandeja: TForm;
-  FListBandeja: TListBox;
-  FMemoMensaje: TMemo;
-  FLabelNoLeidosInbox: TLabel;
+    FFormBandeja: TForm;
+    FListBandeja: TListBox;
+    FMemoMensaje: TMemo;
+    FLabelNoLeidosInbox: TLabel;
+
     // --- Papelera ---
     FFormPapelera: TForm;
     FListPapelera: TListBox;
@@ -51,37 +56,32 @@ type
     FListCorreosProgramados: TListBox;
     FMemoCorreoProgramado: TMemo;
     FLabelTotalProgramados: TLabel;
+
+    // --- Favoritos (Fase 2) ---
+    FFormFavoritos: TForm;
+    FListFavoritos: TListBox;
+    FMemoFavorito: TMemo;
+    FLabelTotalFavoritos: TLabel;
+
+    // --- Borradores (Fase 2) ---
+    FFormBorradores: TForm;
+    FListBorradores: TListBox;
+    FMemoBorrador: TMemo;
+    FComboRecorrido: TComboBox;
+
+    // ======================================
+    // TODOS LOS MÉTODOS (COMPLETOS)
+    // ======================================
+
+    // Métodos básicos de la aplicación
     procedure CrearFormLogin;
     procedure CrearFormPrincipal;
     procedure CrearInterfazRoot;
     procedure CrearInterfazUsuario;
     procedure MostrarMensaje(Titulo, Mensaje: String);
-    procedure Papelera_OnCerrarClick(Sender: TObject);
 
-    // Agregar estos procedimientos:
-    procedure OnGenerarReportesClick(Sender: TObject);
-    procedure OnReporteCorreosRecibidosClick(Sender: TObject);
-    procedure OnReportePapeleraClick(Sender: TObject);
-    procedure OnReporteCorreosProgramadosClick(Sender: TObject);
-
-    procedure OnBandejaClick(Sender: TObject);
-    procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
-    procedure Inbox_RellenarLista;           // llena la lista desde la estructura
-    procedure Inbox_OnSeleccion(Sender: TObject);
-    procedure Inbox_OnOrdenarClick(Sender: TObject);
-    procedure Inbox_OnEliminarClick(Sender: TObject);
-    procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
-    procedure Inbox_OnCerrarClick(Sender: TObject);
-
-    procedure OnPapeleraClick(Sender: TObject);
-    procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
-    procedure Papelera_RellenarLista;
-    procedure Papelera_OnSeleccion(Sender: TObject);
-    procedure Papelera_OnBuscarClick(Sender: TObject);
-    procedure Papelera_OnEliminarDefClick(Sender: TObject);
-    // Event handlers
+    // Event handlers básicos
     procedure OnEnviarCorreoClick(Sender: TObject);
-
     procedure OnLoginClick(Sender: TObject);
     procedure OnCrearCuentaClick(Sender: TObject);
     procedure OnCargaMasivaClick(Sender: TObject);
@@ -90,26 +90,37 @@ type
     procedure OnCerrarSesionClick(Sender: TObject);
     procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure OnKeyPress(Sender: TObject; var Key: Char);
-    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
-    procedure ActualizarVistaContacto; // Método auxiliar
-    // Nuevos event handlers para comunidades
-    procedure OnGestionarComunidadesClick(Sender: TObject);
-    procedure OnReporteComunidadesClick(Sender: TObject);
-    procedure OnActualizarPerfilClick(Sender: TObject);
-    procedure OnCrearComunidadClick(Sender: TObject);
-    procedure OnAsignarUsuarioClick(Sender: TObject);
-    procedure OnListarComunidadesClick(Sender: TObject);
 
-     // Event handlers para contactos
-    procedure OnAgregarContactoClick(Sender: TObject);
-    procedure OnVerContactosClick(Sender: TObject);
-    procedure OnContactoAnteriorClick(Sender: TObject);
-    procedure OnContactoSiguienteClick(Sender: TObject);
-    procedure OnGenerarReporteContactosClick(Sender: TObject);
+    // Reportes generales
+    procedure OnGenerarReportesClick(Sender: TObject);
+    procedure OnReporteCorreosRecibidosClick(Sender: TObject);
+    procedure OnReportePapeleraClick(Sender: TObject);
+    procedure OnReporteCorreosProgramadosClick(Sender: TObject);
+    procedure OnReporteFavoritosClick(Sender: TObject);
+    procedure OnReporteBorradoresClick(Sender: TObject);
 
+    // Bandeja de entrada
+    procedure OnBandejaClick(Sender: TObject);
+    procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Inbox_RellenarLista;
+    procedure Inbox_OnSeleccion(Sender: TObject);
+    procedure Inbox_OnOrdenarClick(Sender: TObject);
+    procedure Inbox_OnEliminarClick(Sender: TObject);
+    procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
+    procedure Inbox_OnMarcarFavoritoClick(Sender: TObject);
+    procedure Inbox_OnCerrarClick(Sender: TObject);
+
+    // Papelera
+    procedure OnPapeleraClick(Sender: TObject);
+    procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Papelera_RellenarLista;
+    procedure Papelera_OnSeleccion(Sender: TObject);
+    procedure Papelera_OnBuscarClick(Sender: TObject);
+    procedure Papelera_OnEliminarDefClick(Sender: TObject);
+    procedure Papelera_OnCerrarClick(Sender: TObject);
+
+    // Correos programados
     procedure OnProgramarCorreoClick(Sender: TObject);
-
-
     procedure OnCorreosProgramadosClick(Sender: TObject);
     procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure CorreosProgramados_RellenarLista;
@@ -118,59 +129,61 @@ type
     procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
     procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
 
+    // Contactos
+    procedure OnAgregarContactoClick(Sender: TObject);
+    procedure OnVerContactosClick(Sender: TObject);
+    procedure OnContactoAnteriorClick(Sender: TObject);
+    procedure OnContactoSiguienteClick(Sender: TObject);
+    procedure OnGenerarReporteContactosClick(Sender: TObject);
+    procedure OnEliminarContactoClick(Sender: TObject);
+    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure ActualizarVistaContacto;
 
-    //Fase 2
+    // Comunidades (Fase 1)
+    procedure OnGestionarComunidadesClick(Sender: TObject);
+    procedure OnReporteComunidadesClick(Sender: TObject);
+    procedure OnActualizarPerfilClick(Sender: TObject);
+    procedure OnCrearComunidadClick(Sender: TObject);
+    procedure OnAsignarUsuarioClick(Sender: TObject);
+    procedure OnListarComunidadesClick(Sender: TObject);
 
-    // Agregar estos event handlers en la sección private de TInterfazEDDMail
+    // Comunidades BST (Fase 2)
+    procedure OnCrearComunidadBSTClick(Sender: TObject);
+    procedure OnVerMensajesComunidadClick(Sender: TObject);
+    procedure OnPublicarComunidadClick(Sender: TObject);
 
-// Event handlers para nuevas funcionalidades
-procedure OnVerFavoritosClick(Sender: TObject);
-procedure OnVerBorradoresClick(Sender: TObject);
-procedure OnPublicarComunidadClick(Sender: TObject);
-procedure OnEliminarContactoClick(Sender: TObject);
+    // Favoritos (Fase 2)
+    procedure OnVerFavoritosClick(Sender: TObject);
+    procedure OnFormFavoritosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Favoritos_OnSeleccion(Sender: TObject);
+    procedure Favoritos_OnEliminarClick(Sender: TObject);
+    procedure Favoritos_OnCerrarClick(Sender: TObject);
+    procedure Favoritos_RellenarLista;
 
-// Event handlers para ventana de favoritos
-procedure OnFormFavoritosClose(Sender: TObject; var CloseAction: TCloseAction);
-procedure Favoritos_OnSeleccion(Sender: TObject);
-procedure Favoritos_OnEliminarClick(Sender: TObject);
+    // Borradores (Fase 2)
+    procedure OnVerBorradoresClick(Sender: TObject);
+    procedure OnFormBorradoresClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Borradores_OnSeleccion(Sender: TObject);
+    procedure Borradores_OnEditarClick(Sender: TObject);
+    procedure Borradores_OnEliminarClick(Sender: TObject);
+    procedure Borradores_OnRecorridoChange(Sender: TObject);
+    procedure Borradores_OnCerrarClick(Sender: TObject);
+    procedure Borradores_RellenarLista;
 
-// Event handlers para ventana de borradores
-procedure OnFormBorradoresClose(Sender: TObject; var CloseAction: TCloseAction);
-procedure Borradores_OnSeleccion(Sender: TObject);
-procedure Borradores_OnEditarClick(Sender: TObject);
-procedure Borradores_OnEliminarClick(Sender: TObject);
-procedure Borradores_OnRecorridoChange(Sender: TObject);
+    // Función auxiliar para reportes BST
+    procedure GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
 
-// Variables para nuevas ventanas
-FFormFavoritos: TForm;
-FListFavoritos: TListBox;
-FMemoFavorito: TMemo;
-FLabelTotalFavoritos: TLabel;
 
-FFormBorradores: TForm;
-FListBorradores: TListBox;
-FMemoBorrador: TMemo;
-FComboRecorrido: TComboBox;
 
-    procedure Inbox_OnMarcarFavoritoClick(Sender: TObject);
-    // Agregar estos event handlers en la sección private:
-procedure OnCrearComunidadBSTClick(Sender: TObject);
-procedure OnVerMensajesComunidadClick(Sender: TObject);
 
-// Event handlers para reportes Fase 2
-procedure OnReporteFavoritosClick(Sender: TObject);
-procedure OnReporteBorradoresClick(Sender: TObject);
-
-// Event handlers para funcionalidades ROOT Fase 2
-procedure OnCrearComunidadBSTClick(Sender: TObject);
-procedure OnVerMensajesComunidadClick(Sender: TObject);
-
-// Función auxiliar para generar reportes BST
-procedure GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Ejecutar;
+
+    function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+      function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+
   end;
 
 implementation
@@ -220,6 +233,10 @@ var
   BtnBandeja, BtnEnviar, BtnPapelera, BtnProgramar,
   BtnCorreosProgramados, BtnAgregarContacto, BtnContactos,
   BtnPerfil, BtnReportes, BtnCerrarSesion: TButton;
+
+  // AGREGAR ESTAS VARIABLES LOCALES FALTANTES:
+  BtnFavoritos, BtnBorradores, BtnPublicarComunidad, BtnEliminarContacto: TButton;
+
   YPos: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
@@ -649,6 +666,11 @@ var
   LabelTitulo, LabelInfo: TLabel;
   BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
   BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
+
+  //Fase 2
+  var
+  BtnCrearComunidadBST, BtnVerMensajesComunidad: TButton;
+
   YPos: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
@@ -1483,42 +1505,7 @@ begin
   end;
 end;
 
-// Función para mostrar mensajes de una comunidad específica (ROOT)
-function TEDDMailSystem.ObtenerMensajesComunidad(nombreComunidad: String): String;
-var
-  Comunidad: PNodoBST;
-  Mensaje: PMensajeComunidad;
-begin
-  Result := '';
-  Comunidad := BuscarComunidadBST(FArbolComunidades, nombreComunidad);
 
-  if Comunidad = nil then
-  begin
-    Result := 'Comunidad no encontrada: ' + nombreComunidad;
-    Exit;
-  end;
-
-  Result := 'Comunidad: ' + Comunidad^.NombreComunidad + LineEnding;
-  Result := Result + 'Fecha de creación: ' + Comunidad^.FechaCreacion + LineEnding;
-  Result := Result + 'Total de mensajes: ' + IntToStr(Comunidad^.NumeroMensajes) + LineEnding;
-  Result := Result + '----------------------------------------' + LineEnding + LineEnding;
-
-  Mensaje := Comunidad^.ListaMensajes;
-  if Mensaje = nil then
-  begin
-    Result := Result + 'No hay mensajes publicados en esta comunidad.';
-    Exit;
-  end;
-
-  while Mensaje <> nil do
-  begin
-    Result := Result + 'De: ' + Mensaje^.Correo + LineEnding;
-    Result := Result + 'Fecha: ' + Mensaje^.FechaPublicacion + LineEnding;
-    Result := Result + 'Mensaje: ' + Mensaje^.Mensaje + LineEnding;
-    Result := Result + '------------------------' + LineEnding;
-    Mensaje := Mensaje^.Siguiente;
-  end;
-end;
 procedure TInterfazEDDMail.OnActualizarPerfilClick(Sender: TObject);
 var
   FormPerfil: TForm;
@@ -2310,6 +2297,8 @@ var
   Panel: TPanel;
   LabelTitulo: TLabel;
   BtnOrdenar, BtnMarcarLeido, BtnEliminar, BtnCerrar: TButton;
+    BtnMarcarFavorito: TButton;  // ← AGREGAR ESTA LÍNEA
+
 begin
   if FSistema.GetUsuarioActual = nil then Exit;
 
@@ -3500,6 +3489,34 @@ begin
       MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
   end;
 end;
+
+procedure TInterfazEDDMail.Favoritos_RellenarLista;
+var
+  Usuario: PUsuario;
+begin
+  if FListFavoritos = nil then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListFavoritos.Clear;
+  if Assigned(FLabelTotalFavoritos) then
+    FLabelTotalFavoritos.Caption := 'Total: 0';
+end;
+
+
+procedure TInterfazEDDMail.Favoritos_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormFavoritos) then
+    FFormFavoritos.Close;
+end;
+
+procedure TInterfazEDDMail.Borradores_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBorradores) then
+    FFormBorradores.Close;
+end;
+
 // Implementar los event handlers para cada reporte
 procedure TInterfazEDDMail.OnReporteCorreosRecibidosClick(Sender: TObject);
 var
@@ -3677,7 +3694,8 @@ begin
     Top := 410;
     Width := 150;
     Height := 30;
-    OnClick := @OnFormFavoritosClose;
+    OnClick := @Favoritos_OnCerrarClick;
+
   end;
 
   // Cargar favoritos
@@ -3878,8 +3896,7 @@ begin
     Top := 445;
     Width := 150;
     Height := 30;
-    OnClick := @OnFormBorradoresClose;
-  end;
+    OnClick := @Borradores_OnCerrarClick;  end;
 
   // Cargar borradores
   Borradores_RellenarLista;
@@ -4789,5 +4806,185 @@ begin
     FMemoBorrador.Lines.Add(Correo^.Mensaje);
   end;
 end;
+
+// Mejorar la implementación de Borradores_OnEditarClick
+procedure TInterfazEDDMail.Borradores_OnEditarClick(Sender: TObject);
+var
+  FormEditar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnGuardar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Error', 'Seleccione un borrador para editar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  Correo := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, CorreoId);
+
+  if Correo = nil then
+  begin
+    MostrarMensaje('Error', 'Borrador no encontrado');
+    Exit;
+  end;
+
+  FormEditar := TForm.Create(nil);
+  try
+    with FormEditar do
+    begin
+      Caption := 'Editar Borrador';
+      Width := 600;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormEditar);
+    with Panel do
+    begin
+      Parent := FormEditar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+      Color := clMoneyGreen;
+    end;
+
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12; Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 30;
+      Width := 560;
+      Text := Correo^.Destinatario;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12; Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 78;
+      Width := 560;
+      Text := Correo^.Asunto;
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 115;
+      Width := 560; Height := 250;
+      ScrollBars := ssVertical;
+      Lines.Text := Correo^.Mensaje;
+    end;
+
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := 'Enviar Ahora';
+      Left := 280; Top := 380;
+      Width := 90; Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnGuardar := TButton.Create(Panel);
+    with BtnGuardar do
+    begin
+      Parent := Panel;
+      Caption := 'Actualizar Borrador';
+      Left := 380; Top := 380;
+      Width := 120; Height := 30;
+      ModalResult := mrYes;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 510; Top := 380;
+      Width := 70; Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    case FormEditar.ShowModal of
+      mrOk: begin // Enviar correo
+        if FCorreoManager.EnviarCorreo(
+              FSistema,
+              Usuario^.Email,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Correo enviado y borrador eliminado');
+          // TODO: Eliminar del árbol AVL
+          Borradores_RellenarLista;
+        end;
+      end;
+
+      mrYes: begin // Actualizar borrador
+        // TODO: Actualizar el correo en el árbol AVL
+        Correo^.Destinatario := Trim(EditPara.Text);
+        Correo^.Asunto := Trim(EditAsunto.Text);
+        Correo^.Mensaje := MemoCuerpo.Lines.Text;
+        MostrarMensaje('Éxito', 'Borrador actualizado');
+        Borradores_RellenarLista;
+      end;
+    end;
+
+  finally
+    FormEditar.Free;
+  end;
+end;
+// Implementación del event handler
+procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FSistema.MarcarComoFavorito(Usuario, IdSel) then
+    MostrarMensaje('Éxito', 'Correo marcado como favorito ⭐')
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como favorito');
+end;
+
 end;
 end.

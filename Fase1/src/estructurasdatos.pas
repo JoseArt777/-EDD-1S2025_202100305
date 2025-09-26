@@ -141,123 +141,131 @@ type
   end;
 
   // Clase principal para manejar todas las estructuras
-  TEDDMailSystem = class
-  private
-    // Listas principales
-    FUsuarios: PUsuario;
-    FComunidades: PComunidad;
-    FMatrizFilas: PMatrizDispersaFila;
-    FMatrizColumnas: PMatrizDispersaColumna;
-    FUsuarioActual: PUsuario;
-    FArbolComunidades: PNodoBST;    // Árbol BST para comunidades
+    TEDDMailSystem = class
+    private
+      // Listas principales
+      FUsuarios: PUsuario;
+      FComunidades: PComunidad;
+      FMatrizFilas: PMatrizDispersaFila;
+      FMatrizColumnas: PMatrizDispersaColumna;
+      FUsuarioActual: PUsuario;
+      FArbolComunidades: PNodoBST;    // Árbol BST para comunidades
 
-
-
-    // Funciones auxiliares para correos
-    function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
-
+      // Funciones auxiliares para correos
+      function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
       procedure AgregarContactoALista(var PrimerContacto: PContacto; NuevoContacto: PContacto);
 
+      // Funciones auxiliares para matriz dispersa
+      function BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
+      function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
+      function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
+      procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
 
-    // Funciones auxiliares para matriz dispersa
+      // FASE 2 - Funciones para AVL
+      function RotarDerecha(y: PNodoAVL): PNodoAVL;
+      function RotarIzquierda(x: PNodoAVL): PNodoAVL;
+      function ObtenerAltura(nodo: PNodoAVL): Integer;
+      function ObtenerBalance(nodo: PNodoAVL): Integer;
+      function InsertarAVL(nodo: PNodoAVL; correo: PCorreo): PNodoAVL;
 
-    function BuscarFilaMatriz(Email: String): PMatrizDispersaFila;
-    function BuscarColumnaMatriz(Email: String): PMatrizDispersaColumna;
-    function BuscarUsuarioPorId(IdBuscado: Integer): PUsuario;
-    procedure Inbox_InsertTail(var Head: PCorreo; NewNode: PCorreo);
+      // Funciones para métodos de Fase 2
+      function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+      function BuscarCorreoEnAVL(nodo: PNodoAVL; CorreoId: Integer): PCorreo;
 
-    // FASE 2
-    // Funciones para AVL
-  function RotarDerecha(y: PNodoAVL): PNodoAVL;
-  function RotarIzquierda(x: PNodoAVL): PNodoAVL;
-  function ObtenerAltura(nodo: PNodoAVL): Integer;
-  function ObtenerBalance(nodo: PNodoAVL): Integer;
-  function InsertarAVL(nodo: PNodoAVL; correo: PCorreo): PNodoAVL;
+      procedure GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
 
-  // Funciones para BST
-  function InsertarBST(nodo: PNodoBST; nombreComunidad: String): PNodoBST;
-  function BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
+      // Funciones para BST
+      function InsertarBST(nodo: PNodoBST; nombreComunidad: String): PNodoBST;
+      function BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
 
-  // Funciones para Árbol B
-  function CrearNodoB: PNodoB;
-  function InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
-  function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+      // Funciones para Árbol B
+      function CrearNodoB: PNodoB;
+      function InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
 
-  // En la sección private de TEDDMailSystem
-function BuscarCorreoEnBandeja(Usuario: PUsuario; CorreoId: Integer): PCorreo;
 
-  // Recorridos del Árbol AVL
-procedure RecorridoInOrdenAVL(nodo: PNodoAVL; lista: TStringList);
-procedure RecorridoPreOrdenAVL(nodo: PNodoAVL; lista: TStringList);
-procedure RecorridoPostOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+      // Funciones auxiliares adicionales
+      function BuscarCorreoEnBandeja(Usuario: PUsuario; CorreoId: Integer): PCorreo;
 
-// Agregar esta declaración en la sección private de TInterfazEDDMail
-procedure Inbox_OnMarcarFavoritoClick(Sender: TObject);
-   public
-    constructor Create;
-    destructor Destroy; override;
+      // Recorridos del Árbol AVL
+      procedure RecorridoInOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+      procedure RecorridoPreOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+      procedure RecorridoPostOrdenAVL(nodo: PNodoAVL; lista: TStringList);
 
-    // Funciones de usuario
-    function RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer = -1): Boolean;
-    function IniciarSesion(Email, Password: String): Boolean;
-    procedure CerrarSesion;
-    function GetUsuarioActual: PUsuario;
-    function ListarComunidades: String;
+      // MÉTODOS AUXILIARES FALTANTES PARA FASE 2:
+      procedure GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
+        procedure GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
 
-    // Funciones para carga masiva (ROOT)
-    procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
-    procedure CargarCorreosDesdeJSON(const RutaArchivo: String);
 
-    procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
-    // Funciones de correo
-    procedure EnviarCorreo(Destinatario, Asunto, Mensaje: String);
-    procedure ProgramarCorreo(Destinatario, Asunto, Mensaje, FechaEnvio: String);
-    procedure EliminarCorreo(Usuario: PUsuario; CorreoId: Integer);
-    procedure MarcarCorreoLeido(Usuario: PUsuario; CorreoId: Integer);
-    function GetBandejaEntrada(Usuario: PUsuario): PCorreo;
-    function GetPapelera(Usuario: PUsuario): PCorreo; // Pila
-    function GetCorreosProgramados(Usuario: PUsuario): PCorreo; // Cola
-    procedure ProcesarCorreosProgramados;
+
+    public
+      constructor Create;
+      destructor Destroy; override;
+
+      // Funciones de usuario
+      function RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer = -1): Boolean;
+      function IniciarSesion(Email, Password: String): Boolean;
+      procedure CerrarSesion;
+      function GetUsuarioActual: PUsuario;
+      function ListarComunidades: String;
+
+      // Funciones para carga masiva (ROOT)
+      procedure CargarUsuariosDesdeJSON(RutaArchivo: String);
+      procedure CargarCorreosDesdeJSON(const RutaArchivo: String);
+
+      // Funciones de correo
+      procedure ActualizarMatrizRelaciones(Remitente, Destinatario: String);
+      procedure EnviarCorreo(Destinatario, Asunto, Mensaje: String);
+      procedure ProgramarCorreo(Destinatario, Asunto, Mensaje, FechaEnvio: String);
+      procedure EliminarCorreo(Usuario: PUsuario; CorreoId: Integer);
+      procedure MarcarCorreoLeido(Usuario: PUsuario; CorreoId: Integer);
+      function GetBandejaEntrada(Usuario: PUsuario): PCorreo;
+      function GetPapelera(Usuario: PUsuario): PCorreo; // Pila
+      function GetCorreosProgramados(Usuario: PUsuario): PCorreo; // Cola
+      procedure ProcesarCorreosProgramados;
+
+      // Funciones de usuarios y contactos
       function EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
-      //usuarios
-    function BuscarUsuario(Email: String): PUsuario;
-    function ValidarCredenciales(Email, Password: String): PUsuario;
-    // Funciones de contactos
-    function AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
-    function GetContactos(Usuario: PUsuario): PContacto;
-    // Funciones auxiliares para contactos
-     function BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
-     function CrearContacto(Email: String): PContacto;
+      function BuscarUsuario(Email: String): PUsuario;
+      function ValidarCredenciales(Email, Password: String): PUsuario;
+      function AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
+      function GetContactos(Usuario: PUsuario): PContacto;
+      function BuscarContacto(Usuario: PUsuario; Email: String): PContacto;
+      function CrearContacto(Email: String): PContacto;
+      function ContarContactos(PrimerContacto: PContacto): Integer;
 
-     function ContarContactos(PrimerContacto: PContacto): Integer;
+      // Funciones de comunidades (Fase 1)
+      function CrearComunidad(Nombre: String): Boolean;
+      function AgregarUsuarioAComunidad(NombreComunidad, EmailUsuario: String): Boolean;
+      function GetComunidades: PComunidad;
 
-    // Funciones de comunidades
-    function CrearComunidad(Nombre: String): Boolean;
-    function AgregarUsuarioAComunidad(NombreComunidad, EmailUsuario: String): Boolean;
-    function GetComunidades: PComunidad;
+      // Funciones de actualización de perfil
+      procedure ActualizarPerfil(Usuario: PUsuario; NuevoNombre, NuevoUsuario, NuevoTelefono: String);
 
-    // Funciones de actualización de perfil
-    procedure ActualizarPerfil(Usuario: PUsuario; NuevoNombre, NuevoUsuario, NuevoTelefono: String);
+      // Funciones de reportes (Fase 1)
+      procedure GenerarReporteUsuarios(RutaCarpeta: String);
+      procedure GenerarReporteRelaciones(RutaCarpeta: String);
+      procedure GenerarReporteCorreosRecibidos(Usuario: PUsuario; RutaCarpeta: String);
+      procedure GenerarReportePapelera(Usuario: PUsuario; RutaCarpeta: String);
+      procedure GenerarReporteCorreosProgramados(Usuario: PUsuario; RutaCarpeta: String);
+      procedure GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
+      procedure GenerarReporteComunidades(RutaCarpeta: String);
 
-    // Funciones de reportes
-    procedure GenerarReporteUsuarios(RutaCarpeta: String);
-    procedure GenerarReporteRelaciones(RutaCarpeta: String);
-    procedure GenerarReporteCorreosRecibidos(Usuario: PUsuario; RutaCarpeta: String);
-    procedure GenerarReportePapelera(Usuario: PUsuario; RutaCarpeta: String);
-    procedure GenerarReporteCorreosProgramados(Usuario: PUsuario; RutaCarpeta: String);
-    procedure GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
-    procedure GenerarReporteComunidades(RutaCarpeta: String);
+      // FASE 2 - Nuevas funciones públicas
+      function GuardarBorrador(Usuario: PUsuario; Destinatario, Asunto, Mensaje: String): Boolean;
+      function ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
+      function MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+      function CrearComunidadBST(nombreComunidad: String): Boolean;
+      function PublicarMensajeAComunidad(nombreComunidad, correoUsuario, mensaje: String): Boolean;
 
-    //FASE 2
+      // MÉTODOS PÚBLICOS FALTANTES PARA FASE 2:
+      procedure GenerarReporteComunidadesBST(RutaCarpeta: String);
+      procedure GenerarReporteFavoritos(Usuario: PUsuario; RutaCarpeta: String);
+      function ObtenerMensajesComunidad(nombreComunidad: String): String;
+        procedure GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
 
-    // Nuevas funciones públicas
-  function GuardarBorrador(Usuario: PUsuario; Destinatario, Asunto, Mensaje: String): Boolean;
-  function ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
-  function MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-  function CrearComunidadBST(nombreComunidad: String): Boolean;
-  function PublicarMensajeAComunidad(nombreComunidad, correoUsuario, mensaje: String): Boolean;
-  end;
+            function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
 
+    end;
 implementation
 
 uses
@@ -300,6 +308,45 @@ begin
   end;
 
   inherited Destroy;
+end;
+function TEDDMailSystem.BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
+begin
+  Result := nil;
+  if nodo = nil then Exit;
+
+  if nombre = nodo^.NombreComunidad then
+    Result := nodo
+  else if nombre < nodo^.NombreComunidad then
+    Result := BuscarComunidadBST(nodo^.Izquierdo, nombre)
+  else
+    Result := BuscarComunidadBST(nodo^.Derecho, nombre);
+end;
+
+function TEDDMailSystem.BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+var
+  i: Integer;
+begin
+  Result := nil;
+  if nodo = nil then Exit;
+
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if nodo^.Claves[i] = id then
+    begin
+      Result := nodo^.Correos[i];
+      Exit;
+    end;
+  end;
+end;
+
+function TEDDMailSystem.EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+begin
+  Result := False;
+  if Usuario = nil then Exit;
+
+  // TODO: Implementar eliminación del árbol B
+  WriteLn('Eliminar favorito ID: ', CorreoId);
+  Result := True;
 end;
 
 function TEDDMailSystem.BuscarUsuario(Email: String): PUsuario;
@@ -1319,6 +1366,218 @@ begin
   WriteLn('Generando reporte de correos programados para: ', Usuario^.Email);
 end;
 
+procedure TEDDMailSystem.GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
+var
+  NombreLimpio: String;
+begin
+  if nodo = nil then Exit;
+
+  // Limpiar el nombre para usarlo como ID en Graphviz
+  NombreLimpio := StringReplace(nodo^.NombreComunidad, ' ', '_', [rfReplaceAll]);
+  NombreLimpio := StringReplace(NombreLimpio, '-', '_', [rfReplaceAll]);
+  NombreLimpio := StringReplace(NombreLimpio, '.', '_', [rfReplaceAll]);
+
+  // Generar el nodo actual
+  WriteLn(Archivo, Format('    com_%s [label="Comunidad: %s|Creada: %s|Mensajes: %d"];',
+    [NombreLimpio, nodo^.NombreComunidad, nodo^.FechaCreacion, nodo^.NumeroMensajes]));
+
+  // Generar conexión y nodo izquierdo
+  if nodo^.Izquierdo <> nil then
+  begin
+    WriteLn(Archivo, Format('    com_%s -> com_%s [label="<"];',
+      [NombreLimpio, StringReplace(StringReplace(StringReplace(
+        nodo^.Izquierdo^.NombreComunidad, ' ', '_', [rfReplaceAll]),
+        '-', '_', [rfReplaceAll]), '.', '_', [rfReplaceAll])]));
+    GenerarNodosBST(Archivo, nodo^.Izquierdo);
+  end;
+
+  // Generar conexión y nodo derecho
+  if nodo^.Derecho <> nil then
+  begin
+    WriteLn(Archivo, Format('    com_%s -> com_%s [label=">"];',
+      [NombreLimpio, StringReplace(StringReplace(StringReplace(
+        nodo^.Derecho^.NombreComunidad, ' ', '_', [rfReplaceAll]),
+        '-', '_', [rfReplaceAll]), '.', '_', [rfReplaceAll])]));
+    GenerarNodosBST(Archivo, nodo^.Derecho);
+  end;
+end;
+
+// 1. Implementación de GenerarNodosB
+procedure TEDDMailSystem.GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
+var
+  i: Integer;
+  NodoId: String;
+begin
+  if nodo = nil then Exit;
+
+  NodoId := 'nodoB_' + IntToStr(nivel);
+
+  // Generar el nodo con sus claves
+  Write(Archivo, Format('    %s [label="', [NodoId]));
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if i > 0 then Write(Archivo, '|');
+    Write(Archivo, IntToStr(nodo^.Claves[i]));
+  end;
+  WriteLn(Archivo, '"];');
+
+  // TODO: Agregar conexiones con hijos cuando se implemente completamente
+end;
+
+// 2. Implementación de GenerarReporteComunidadesBST
+procedure TEDDMailSystem.GenerarReporteComunidadesBST(RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+begin
+  try
+    ForceDirectories(RutaCarpeta);
+    NombreArchivo := RutaCarpeta + '/comunidades_bst.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Árbol BST - Comunidades";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightgreen];');
+
+    if FArbolComunidades = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin comunidades", fillcolor=lightgray];');
+    end
+    else
+    begin
+      GenerarNodosBST(Archivo, FArbolComunidades);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar imagen PNG
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(NombreArchivo);
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+        WriteLn('Reporte BST generado: ', ChangeFileExt(NombreArchivo, '.png'));
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte BST: ', E.Message);
+  end;
+end;
+
+// 3. Implementación de GenerarReporteFavoritos
+procedure TEDDMailSystem.GenerarReporteFavoritos(Usuario: PUsuario; RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+begin
+  if Usuario = nil then Exit;
+
+  try
+    ForceDirectories(RutaCarpeta);
+    NombreArchivo := RutaCarpeta + '/favoritos_' +
+                   StringReplace(Usuario^.Usuario, ' ', '_', [rfReplaceAll]) + '.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Árbol B - Favoritos - ' + Usuario^.Nombre + '";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightyellow];');
+
+    if Usuario^.ArbolFavoritos = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin favoritos", fillcolor=lightgray];');
+    end
+    else
+    begin
+      GenerarNodosB(Archivo, Usuario^.ArbolFavoritos, 0);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar imagen PNG
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(NombreArchivo);
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+        WriteLn('Reporte favoritos generado: ', ChangeFileExt(NombreArchivo, '.png'));
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte favoritos: ', E.Message);
+  end;
+end;
+
+// 4. Implementación de ObtenerMensajesComunidad
+function TEDDMailSystem.ObtenerMensajesComunidad(nombreComunidad: String): String;
+var
+  Comunidad: PNodoBST;
+  Mensaje: PMensajeComunidad;
+begin
+  Result := '';
+  Comunidad := BuscarComunidadBST(FArbolComunidades, nombreComunidad);
+
+  if Comunidad = nil then
+  begin
+    Result := 'Comunidad no encontrada: ' + nombreComunidad;
+    Exit;
+  end;
+
+  Result := 'Comunidad: ' + Comunidad^.NombreComunidad + LineEnding;
+  Result := Result + 'Fecha de creación: ' + Comunidad^.FechaCreacion + LineEnding;
+  Result := Result + 'Total de mensajes: ' + IntToStr(Comunidad^.NumeroMensajes) + LineEnding;
+  Result := Result + '----------------------------------------' + LineEnding + LineEnding;
+
+  Mensaje := Comunidad^.ListaMensajes;
+  if Mensaje = nil then
+  begin
+    Result := Result + 'No hay mensajes publicados en esta comunidad.';
+    Exit;
+  end;
+
+  while Mensaje <> nil do
+  begin
+    Result := Result + 'De: ' + Mensaje^.Correo + LineEnding;
+    Result := Result + 'Fecha: ' + Mensaje^.FechaPublicacion + LineEnding;
+    Result := Result + 'Mensaje: ' + Mensaje^.Mensaje + LineEnding;
+    Result := Result + '----------------------------------------' + LineEnding;
+    Mensaje := Mensaje^.Siguiente;
+  end;
+end;
+
  function TEDDMailSystem.CrearContacto(Email: String): PContacto;
 var
   UsuarioExistente: PUsuario;
@@ -1787,19 +2046,7 @@ begin
   Result := nodo;
 end;
 
-function TEDDMailSystem.BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
-begin
-  if (nodo = nil) or (nodo^.NombreComunidad = nombre) then
-  begin
-    Result := nodo;
-    Exit;
-  end;
 
-  if nombre < nodo^.NombreComunidad then
-    Result := BuscarComunidadBST(nodo^.Izquierdo, nombre)
-  else
-    Result := BuscarComunidadBST(nodo^.Derecho, nombre);
-end;
 
 function TEDDMailSystem.CrearComunidadBST(nombreComunidad: String): Boolean;
 begin
@@ -1860,28 +2107,6 @@ begin
     Result^.Hijos[i] := nil;
 end;
 
-function TEDDMailSystem.BuscarB(nodo: PNodoB; id: Integer): PCorreo;
-var
-  i: Integer;
-begin
-  Result := nil;
-  if nodo = nil then Exit;
-
-  i := 0;
-  while (i < nodo^.NumClaves) and (id > nodo^.Claves[i]) do
-    Inc(i);
-
-  if (i < nodo^.NumClaves) and (id = nodo^.Claves[i]) then
-  begin
-    Result := nodo^.Correos[i];
-    Exit;
-  end;
-
-  if nodo^.EsHoja then
-    Exit;
-
-  Result := BuscarB(nodo^.Hijos[i], id);
-end;
 
 function TEDDMailSystem.MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
 var
@@ -2003,16 +2228,7 @@ begin
   end;
 end;
 
-// Función para eliminar favorito (básica)
-function TEDDMailSystem.EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-begin
-  Result := False;
-  if Usuario = nil then Exit;
 
-  // TODO: Implementar eliminación del árbol B
-  WriteLn('Eliminar favorito ID: ', CorreoId);
-  Result := True;
-end;
 
 
 // Agregar función auxiliar para buscar en AVL
@@ -2117,5 +2333,5 @@ begin
     GenerarNodosAVL(Archivo, nodo^.Derecho);
   end;
 end;
-end.
+
 end.
