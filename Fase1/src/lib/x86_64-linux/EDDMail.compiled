@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Compiler Value="/usr/bin/fpc" Date="1704440408"/>
+  <Params Value=" -MObjFPC -Scghi -Cg -O1 -gw3 -gl -l -vewnhibq &quot;-Fi/home/alex/Escritorio/Fase 2 /-EDD-1S2025_202100305/Fase1/src/lib/x86_64-linux&quot; -Fu/home/alex/.lazarus/lib/units/x86_64-linux/gtk2 -Fu/home/alex/.lazarus/lib/LCLBase/units/x86_64-linux -Fu/home/alex/.lazarus/lib/freetypelaz/lib/x86_64-linux -Fu/usr/lib/lazarus/3.0/components/lazutils/lib/x86_64-linux -Fu/usr/lib/lazarus/3.0/packager/units/x86_64-linux &quot;-Fu/home/alex/Escritorio/Fase 2 /-EDD-1S2025_202100305/Fase1/src/&quot; &quot;-FU/home/alex/Escritorio/Fase 2 /-EDD-1S2025_202100305/Fase1/src/lib/x86_64-linux/&quot; &quot;-FE/home/alex/Escritorio/Fase 2 /-EDD-1S2025_202100305/Fase1/src/&quot; &quot;-o/home/alex/Escritorio/Fase 2 /-EDD-1S2025_202100305/Fase1/src/EDDMail&quot; -dLCL -dLCLgtk2 EDDMail.lpr"/>
+  <Complete Value="False"/>
+</CONFIG>

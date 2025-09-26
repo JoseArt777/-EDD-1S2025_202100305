@@ -182,6 +182,14 @@ type
   function CrearNodoB: PNodoB;
   function InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
   function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+
+  // Recorridos del Árbol AVL
+procedure RecorridoInOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+procedure RecorridoPreOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+procedure RecorridoPostOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+
+// Agregar esta declaración en la sección private de TInterfazEDDMail
+procedure Inbox_OnMarcarFavoritoClick(Sender: TObject);
    public
     constructor Create;
     destructor Destroy; override;
@@ -260,6 +268,8 @@ begin
   FMatrizFilas := nil;
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
+    FArbolComunidades := nil;  // ← NUEVO: Inicializar árbol de comunidades
+
 
   // Crear usuario root por defecto (Id fijo = 0)
   RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123', 0);
@@ -350,6 +360,7 @@ begin
     Result := Usuario;
 end;
 
+// Modificar el RegistrarUsuario para inicializar nuevas estructuras
 function TEDDMailSystem.RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer): Boolean;
 var
   NuevoUsuario, Cur: PUsuario;
@@ -381,7 +392,6 @@ begin
     Cur := Cur^.Siguiente;
   end;
 
-
   if IdFijo >= 0 then
     NuevoUsuario^.Id := IdFijo
   else
@@ -394,10 +404,16 @@ begin
   NuevoUsuario^.Telefono := Telefono;
   NuevoUsuario^.Password := Password;
   NuevoUsuario^.Siguiente := nil;
-  NuevoUsuario^.ListaContactos := nil; // Inicializar lista de contactos vacía
+
+  // INICIALIZAR ESTRUCTURAS EXISTENTES
+  NuevoUsuario^.ListaContactos := nil;
   NuevoUsuario^.BandejaEntrada := nil;
   NuevoUsuario^.Papelera := nil;
   NuevoUsuario^.CorreosProgramados := nil;
+
+  // ← NUEVO: INICIALIZAR NUEVAS ESTRUCTURAS FASE 2
+  NuevoUsuario^.ArbolBorradores := nil;
+  NuevoUsuario^.ArbolFavoritos := nil;
 
   // Agregar a la lista (al final)
   if FUsuarios = nil then
@@ -1607,5 +1623,717 @@ begin
   end;
 end;
 
+//Fase 2
+// Agregar estas implementaciones en EstructurasDatos.pas
+
+// =============== FUNCIONES PARA ÁRBOL AVL (BORRADORES) ===============
+function TEDDMailSystem.ObtenerAltura(nodo: PNodoAVL): Integer;
+begin
+  if nodo = nil then
+    Result := 0
+  else
+    Result := nodo^.Altura;
+end;
+
+function TEDDMailSystem.ObtenerBalance(nodo: PNodoAVL): Integer;
+begin
+  if nodo = nil then
+    Result := 0
+  else
+    Result := ObtenerAltura(nodo^.Izquierdo) - ObtenerAltura(nodo^.Derecho);
+end;
+
+function TEDDMailSystem.RotarDerecha(y: PNodoAVL): PNodoAVL;
+var
+  x: PNodoAVL;
+begin
+  x := y^.Izquierdo;
+  y^.Izquierdo := x^.Derecho;
+  x^.Derecho := y;
+
+  // Actualizar alturas
+  y^.Altura := Max(ObtenerAltura(y^.Izquierdo), ObtenerAltura(y^.Derecho)) + 1;
+  x^.Altura := Max(ObtenerAltura(x^.Izquierdo), ObtenerAltura(x^.Derecho)) + 1;
+
+  Result := x;
+end;
+
+function TEDDMailSystem.RotarIzquierda(x: PNodoAVL): PNodoAVL;
+var
+  y: PNodoAVL;
+begin
+  y := x^.Derecho;
+  x^.Derecho := y^.Izquierdo;
+  y^.Izquierdo := x;
+
+  // Actualizar alturas
+  x^.Altura := Max(ObtenerAltura(x^.Izquierdo), ObtenerAltura(x^.Derecho)) + 1;
+  y^.Altura := Max(ObtenerAltura(y^.Izquierdo), ObtenerAltura(y^.Derecho)) + 1;
+
+  Result := y;
+end;
+
+function TEDDMailSystem.InsertarAVL(nodo: PNodoAVL; correo: PCorreo): PNodoAVL;
+var
+  balance: Integer;
+begin
+  // 1. Inserción normal BST
+  if nodo = nil then
+  begin
+    New(Result);
+    Result^.Correo := correo;
+    Result^.Altura := 1;
+    Result^.Izquierdo := nil;
+    Result^.Derecho := nil;
+    Exit;
+  end;
+
+  if correo^.Id < nodo^.Correo^.Id then
+    nodo^.Izquierdo := InsertarAVL(nodo^.Izquierdo, correo)
+  else if correo^.Id > nodo^.Correo^.Id then
+    nodo^.Derecho := InsertarAVL(nodo^.Derecho, correo)
+  else
+  begin
+    Result := nodo; // Igual, no insertar
+    Exit;
+  end;
+
+  // 2. Actualizar altura
+  nodo^.Altura := 1 + Max(ObtenerAltura(nodo^.Izquierdo), ObtenerAltura(nodo^.Derecho));
+
+  // 3. Obtener balance
+  balance := ObtenerBalance(nodo);
+
+  // 4. Casos de rotación
+  // Izquierda Izquierda
+  if (balance > 1) and (correo^.Id < nodo^.Izquierdo^.Correo^.Id) then
+  begin
+    Result := RotarDerecha(nodo);
+    Exit;
+  end;
+
+  // Derecha Derecha
+  if (balance < -1) and (correo^.Id > nodo^.Derecho^.Correo^.Id) then
+  begin
+    Result := RotarIzquierda(nodo);
+    Exit;
+  end;
+
+  // Izquierda Derecha
+  if (balance > 1) and (correo^.Id > nodo^.Izquierdo^.Correo^.Id) then
+  begin
+    nodo^.Izquierdo := RotarIzquierda(nodo^.Izquierdo);
+    Result := RotarDerecha(nodo);
+    Exit;
+  end;
+
+  // Derecha Izquierda
+  if (balance < -1) and (correo^.Id < nodo^.Derecho^.Correo^.Id) then
+  begin
+    nodo^.Derecho := RotarDerecha(nodo^.Derecho);
+    Result := RotarIzquierda(nodo);
+    Exit;
+  end;
+
+  Result := nodo;
+end;
+
+function TEDDMailSystem.GuardarBorrador(Usuario: PUsuario; Destinatario, Asunto, Mensaje: String): Boolean;
+var
+  NuevoCorreo: PCorreo;
+begin
+  Result := False;
+  if Usuario = nil then Exit;
+
+  NuevoCorreo := CrearCorreo(
+    Usuario^.Email,
+    Destinatario,
+    Asunto,
+    Mensaje,
+    FormatDateTime('dd/mm/yy hh:nn', Now),
+    False
+  );
+
+  Usuario^.ArbolBorradores := InsertarAVL(Usuario^.ArbolBorradores, NuevoCorreo);
+  WriteLn('Borrador guardado para usuario: ', Usuario^.Email);
+  Result := True;
+end;
+
+// =============== FUNCIONES PARA BST (COMUNIDADES) ===============
+function TEDDMailSystem.InsertarBST(nodo: PNodoBST; nombreComunidad: String): PNodoBST;
+begin
+  if nodo = nil then
+  begin
+    New(Result);
+    Result^.NombreComunidad := nombreComunidad;
+    Result^.FechaCreacion := FormatDateTime('dd/mm/yyyy', Now);
+    Result^.NumeroMensajes := 0;
+    Result^.ListaMensajes := nil;
+    Result^.Izquierdo := nil;
+    Result^.Derecho := nil;
+    Exit;
+  end;
+
+  if nombreComunidad < nodo^.NombreComunidad then
+    nodo^.Izquierdo := InsertarBST(nodo^.Izquierdo, nombreComunidad)
+  else if nombreComunidad > nodo^.NombreComunidad then
+    nodo^.Derecho := InsertarBST(nodo^.Derecho, nombreComunidad)
+  else
+    Result := nodo; // Ya existe
+
+  Result := nodo;
+end;
+
+function TEDDMailSystem.BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
+begin
+  if (nodo = nil) or (nodo^.NombreComunidad = nombre) then
+  begin
+    Result := nodo;
+    Exit;
+  end;
+
+  if nombre < nodo^.NombreComunidad then
+    Result := BuscarComunidadBST(nodo^.Izquierdo, nombre)
+  else
+    Result := BuscarComunidadBST(nodo^.Derecho, nombre);
+end;
+
+function TEDDMailSystem.CrearComunidadBST(nombreComunidad: String): Boolean;
+begin
+  Result := False;
+  if BuscarComunidadBST(FArbolComunidades, nombreComunidad) <> nil then
+  begin
+    WriteLn('Error: La comunidad ya existe');
+    Exit;
+  end;
+
+  FArbolComunidades := InsertarBST(FArbolComunidades, nombreComunidad);
+  WriteLn('Comunidad creada: ', nombreComunidad);
+  Result := True;
+end;
+
+function TEDDMailSystem.PublicarMensajeAComunidad(nombreComunidad, correoUsuario, mensaje: String): Boolean;
+var
+  Comunidad: PNodoBST;
+  NuevoMensaje: PMensajeComunidad;
+begin
+  Result := False;
+  Comunidad := BuscarComunidadBST(FArbolComunidades, nombreComunidad);
+  if Comunidad = nil then
+  begin
+    WriteLn('Error: La comunidad no existe');
+    Exit;
+  end;
+
+  New(NuevoMensaje);
+  NuevoMensaje^.Correo := correoUsuario;
+  NuevoMensaje^.Mensaje := mensaje;
+  NuevoMensaje^.FechaPublicacion := FormatDateTime('dd/mm/yyyy hh:nn', Now);
+  NuevoMensaje^.Siguiente := Comunidad^.ListaMensajes;
+
+  Comunidad^.ListaMensajes := NuevoMensaje;
+  Inc(Comunidad^.NumeroMensajes);
+
+  WriteLn('Mensaje publicado en comunidad: ', nombreComunidad);
+  Result := True;
+end;
+
+// =============== FUNCIONES PARA ÁRBOL B (FAVORITOS) ===============
+function TEDDMailSystem.CrearNodoB: PNodoB;
+var
+  i: Integer;
+begin
+  New(Result);
+  Result^.NumClaves := 0;
+  Result^.EsHoja := True;
+
+  for i := 0 to 3 do
+  begin
+    Result^.Claves[i] := 0;
+    Result^.Correos[i] := nil;
+  end;
+
+  for i := 0 to 4 do
+    Result^.Hijos[i] := nil;
+end;
+
+function TEDDMailSystem.BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+var
+  i: Integer;
+begin
+  Result := nil;
+  if nodo = nil then Exit;
+
+  i := 0;
+  while (i < nodo^.NumClaves) and (id > nodo^.Claves[i]) do
+    Inc(i);
+
+  if (i < nodo^.NumClaves) and (id = nodo^.Claves[i]) then
+  begin
+    Result := nodo^.Correos[i];
+    Exit;
+  end;
+
+  if nodo^.EsHoja then
+    Exit;
+
+  Result := BuscarB(nodo^.Hijos[i], id);
+end;
+
+function TEDDMailSystem.MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+var
+  Correo: PCorreo;
+begin
+  Result := False;
+  if Usuario = nil then Exit;
+
+  // Buscar el correo en la bandeja de entrada
+  Correo := BuscarCorreoEnBandeja(Usuario, CorreoId);
+  if Correo = nil then
+  begin
+    WriteLn('Error: Correo no encontrado');
+    Exit;
+  end;
+
+  // Agregar al árbol B de favoritos (implementación básica)
+  Usuario^.ArbolFavoritos := InsertarB(Usuario^.ArbolFavoritos, Correo);
+  WriteLn('Correo marcado como favorito: ID ', CorreoId);
+  Result := True;
+end;
+
+// Función auxiliar para buscar correo en bandeja
+function TEDDMailSystem.BuscarCorreoEnBandeja(Usuario: PUsuario; CorreoId: Integer): PCorreo;
+var
+  Correo: PCorreo;
+begin
+  Result := nil;
+  if Usuario = nil then Exit;
+
+  Correo := Usuario^.BandejaEntrada;
+  while Correo <> nil do
+  begin
+    if Correo^.Id = CorreoId then
+    begin
+      Result := Correo;
+      Exit;
+    end;
+    Correo := Correo^.Siguiente;
+  end;
+end;
+
+// Función básica para obtener borradores (simplificada)
+function TEDDMailSystem.ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
+begin
+  Result := TStringList.Create;
+  if Usuario = nil then Exit;
+
+  // Implementar recorridos del árbol AVL
+  case tipoRecorrido of
+    'InOrden': RecorridoInOrdenAVL(Usuario^.ArbolBorradores, Result);
+    'PreOrden': RecorridoPreOrdenAVL(Usuario^.ArbolBorradores, Result);
+    'PostOrden': RecorridoPostOrdenAVL(Usuario^.ArbolBorradores, Result);
+  end;
+end;
+// Implementación de los recorridos
+procedure TEDDMailSystem.RecorridoInOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+var
+  Display: String;
+begin
+  if nodo = nil then Exit;
+
+  RecorridoInOrdenAVL(nodo^.Izquierdo, lista);
+
+  Display := Format('[ID: %d] %s → %s | %s',
+    [nodo^.Correo^.Id, nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario, nodo^.Correo^.Fecha]);
+  lista.AddObject(Display, TObject(PtrInt(nodo^.Correo^.Id)));
+
+  RecorridoInOrdenAVL(nodo^.Derecho, lista);
+end;
+
+procedure TEDDMailSystem.RecorridoPreOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+var
+  Display: String;
+begin
+  if nodo = nil then Exit;
+
+  Display := Format('[ID: %d] %s → %s | %s',
+    [nodo^.Correo^.Id, nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario, nodo^.Correo^.Fecha]);
+  lista.AddObject(Display, TObject(PtrInt(nodo^.Correo^.Id)));
+
+  RecorridoPreOrdenAVL(nodo^.Izquierdo, lista);
+  RecorridoPreOrdenAVL(nodo^.Derecho, lista);
+end;
+
+procedure TEDDMailSystem.RecorridoPostOrdenAVL(nodo: PNodoAVL; lista: TStringList);
+var
+  Display: String;
+begin
+  if nodo = nil then Exit;
+
+  RecorridoPostOrdenAVL(nodo^.Izquierdo, lista);
+  RecorridoPostOrdenAVL(nodo^.Derecho, lista);
+
+  Display := Format('[ID: %d] %s → %s | %s',
+    [nodo^.Correo^.Id, nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario, nodo^.Correo^.Fecha]);
+  lista.AddObject(Display, TObject(PtrInt(nodo^.Correo^.Id)));
+end;
+
+// Función para rellenar lista de favoritos
+procedure TInterfazEDDMail.Favoritos_RellenarLista;
+var
+  Usuario: PUsuario;
+  // Implementación simplificada - en una implementación completa
+  // necesitarías recorrer el árbol B
+begin
+  if FListFavoritos = nil then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListFavoritos.Items.Clear;
+  // TODO: Implementar recorrido del árbol B de favoritos
+
+  if Assigned(FLabelTotalFavoritos) then
+    FLabelTotalFavoritos.Caption := Format('Total: %d', [FListFavoritos.Items.Count]);
+end;
+
+// Función básica para insertar en árbol B (simplificada)
+function TEDDMailSystem.InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
+begin
+  // Implementación básica - crear nodo si no existe
+  if raiz = nil then
+  begin
+    Result := CrearNodoB;
+    Result^.Claves[0] := correo^.Id;
+    Result^.Correos[0] := correo;
+    Result^.NumClaves := 1;
+  end
+  else
+  begin
+    // Para una implementación completa del árbol B, aquí iría
+    // la lógica de inserción con splits de nodos
+    Result := raiz;
+    WriteLn('Insertar en árbol B: ID ', correo^.Id);
+  end;
+end;
+
+// Función para eliminar favorito (básica)
+function TEDDMailSystem.EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+begin
+  Result := False;
+  if Usuario = nil then Exit;
+
+  // TODO: Implementar eliminación del árbol B
+  WriteLn('Eliminar favorito ID: ', CorreoId);
+  Result := True;
+end;
+// Completar la implementación de Borradores_OnSeleccion
+procedure TInterfazEDDMail.Borradores_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBorradores = nil) or (FMemoBorrador = nil) then Exit;
+  if FListBorradores.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+
+  // Buscar el correo en el árbol AVL de borradores
+  Correo := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, CorreoId);
+  if Correo <> nil then
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('Para: ' + Correo^.Destinatario);
+    FMemoBorrador.Lines.Add('Asunto: ' + Correo^.Asunto);
+    FMemoBorrador.Lines.Add('Fecha creación: ' + Correo^.Fecha);
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('Mensaje:');
+    FMemoBorrador.Lines.Add(Correo^.Mensaje);
+  end;
+end;
+
+// Agregar función auxiliar para buscar en AVL
+function TEDDMailSystem.BuscarCorreoEnAVL(nodo: PNodoAVL; CorreoId: Integer): PCorreo;
+begin
+  Result := nil;
+  if nodo = nil then Exit;
+
+  if CorreoId = nodo^.Correo^.Id then
+  begin
+    Result := nodo^.Correo;
+    Exit;
+  end;
+
+  if CorreoId < nodo^.Correo^.Id then
+    Result := BuscarCorreoEnAVL(nodo^.Izquierdo, CorreoId)
+  else
+    Result := BuscarCorreoEnAVL(nodo^.Derecho, CorreoId);
+end;
+
+// Mejorar la implementación de Borradores_OnEditarClick
+procedure TInterfazEDDMail.Borradores_OnEditarClick(Sender: TObject);
+var
+  FormEditar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnGuardar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Error', 'Seleccione un borrador para editar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  Correo := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, CorreoId);
+
+  if Correo = nil then
+  begin
+    MostrarMensaje('Error', 'Borrador no encontrado');
+    Exit;
+  end;
+
+  FormEditar := TForm.Create(nil);
+  try
+    with FormEditar do
+    begin
+      Caption := 'Editar Borrador';
+      Width := 600;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormEditar);
+    with Panel do
+    begin
+      Parent := FormEditar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+      Color := clMoneyGreen;
+    end;
+
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12; Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 30;
+      Width := 560;
+      Text := Correo^.Destinatario;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12; Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 78;
+      Width := 560;
+      Text := Correo^.Asunto;
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12; Top := 115;
+      Width := 560; Height := 250;
+      ScrollBars := ssVertical;
+      Lines.Text := Correo^.Mensaje;
+    end;
+
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := 'Enviar Ahora';
+      Left := 280; Top := 380;
+      Width := 90; Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnGuardar := TButton.Create(Panel);
+    with BtnGuardar do
+    begin
+      Parent := Panel;
+      Caption := 'Actualizar Borrador';
+      Left := 380; Top := 380;
+      Width := 120; Height := 30;
+      ModalResult := mrYes;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 510; Top := 380;
+      Width := 70; Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    case FormEditar.ShowModal of
+      mrOk: begin // Enviar correo
+        if FCorreoManager.EnviarCorreo(
+              FSistema,
+              Usuario^.Email,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Correo enviado y borrador eliminado');
+          // TODO: Eliminar del árbol AVL
+          Borradores_RellenarLista;
+        end;
+      end;
+
+      mrYes: begin // Actualizar borrador
+        // TODO: Actualizar el correo en el árbol AVL
+        Correo^.Destinatario := Trim(EditPara.Text);
+        Correo^.Asunto := Trim(EditAsunto.Text);
+        Correo^.Mensaje := MemoCuerpo.Lines.Text;
+        MostrarMensaje('Éxito', 'Borrador actualizado');
+        Borradores_RellenarLista;
+      end;
+    end;
+
+  finally
+    FormEditar.Free;
+  end;
+end;
+// Implementación del event handler
+procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FSistema.MarcarComoFavorito(Usuario, IdSel) then
+    MostrarMensaje('Éxito', 'Correo marcado como favorito ⭐')
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como favorito');
+end;
+
+// Agregar función para generar reportes de nuevas estructuras
+procedure TEDDMailSystem.GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+begin
+  if Usuario = nil then Exit;
+
+  try
+    ForceDirectories(RutaCarpeta);
+    NombreArchivo := RutaCarpeta + '/borradores_' +
+                   StringReplace(Usuario^.Usuario, ' ', '_', [rfReplaceAll]) + '.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph G {');
+    WriteLn(Archivo, '    label="Árbol AVL - Borradores - ' + Usuario^.Nombre + '";');
+    WriteLn(Archivo, '    fontsize=16;');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightyellow];');
+
+    if Usuario^.ArbolBorradores = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin borradores", fillcolor=lightgray];');
+    end
+    else
+    begin
+      GenerarNodosAVL(Archivo, Usuario^.ArbolBorradores);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar imagen
+    try
+      Process := TProcess.Create(nil);
+      try
+        Process.Executable := 'dot';
+        Process.Parameters.Add('-Tpng');
+        Process.Parameters.Add(NombreArchivo);
+        Process.Parameters.Add('-o');
+        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
+        Process.Options := Process.Options + [poWaitOnExit];
+        Process.Execute;
+        WriteLn('Reporte de borradores generado: ', ChangeFileExt(NombreArchivo, '.png'));
+      finally
+        Process.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('Error al generar imagen: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte de borradores: ', E.Message);
+  end;
+end;
+
+// Función auxiliar para generar nodos del árbol AVL en Graphviz
+procedure TEDDMailSystem.GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
+begin
+  if nodo = nil then Exit;
+
+  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d|Altura: %d|%s|%s"];',
+    [nodo^.Correo^.Id, nodo^.Correo^.Id, nodo^.Altura,
+     nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario]));
+
+  if nodo^.Izquierdo <> nil then
+  begin
+    WriteLn(Archivo, Format('    nodo_%d -> nodo_%d [label="L"];',
+      [nodo^.Correo^.Id, nodo^.Izquierdo^.Correo^.Id]));
+    GenerarNodosAVL(Archivo, nodo^.Izquierdo);
+  end;
+
+  if nodo^.Derecho <> nil then
+  begin
+    WriteLn(Archivo, Format('    nodo_%d -> nodo_%d [label="R"];',
+      [nodo^.Correo^.Id, nodo^.Derecho^.Correo^.Id]));
+    GenerarNodosAVL(Archivo, nodo^.Derecho);
+  end;
+end;
 end.
 end.

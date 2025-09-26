@@ -4359,7 +4359,6 @@ begin
   end;
 end;
 
-// Completar la implementación de OnVerMensajesComunidadClick
 procedure TInterfazEDDMail.OnVerMensajesComunidadClick(Sender: TObject);
 var
   FormVerMensajes: TForm;
@@ -4432,17 +4431,6 @@ begin
       Top := 78;
       Width := 120;
       Height := 26;
-      OnClick := procedure(ASender: TObject)
-      begin
-        if Trim(EditComunidad.Text) = '' then
-        begin
-          MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
-          Exit;
-        end;
-
-        Mensajes := FSistema.ObtenerMensajesComunidad(Trim(EditComunidad.Text));
-        MemoMensajes.Lines.Text := Mensajes;
-      end;
     end;
 
     MemoMensajes := TMemo.Create(Panel);
@@ -4455,7 +4443,6 @@ begin
       Height := 280;
       ReadOnly := True;
       ScrollBars := ssVertical;
-      Lines.Add('Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
     end;
 
     BtnCerrar := TButton.Create(Panel);
@@ -4475,98 +4462,6 @@ begin
   finally
     FormVerMensajes.Free;
   end;
-end;
-
-// Función auxiliar para liberar memoria del árbol AVL
-procedure TEDDMailSystem.LiberarArbolAVL(var nodo: PNodoAVL);
-begin
-  if nodo = nil then Exit;
-
-  LiberarArbolAVL(nodo^.Izquierdo);
-  LiberarArbolAVL(nodo^.Derecho);
-
-  // Liberar el correo asociado
-  if nodo^.Correo <> nil then
-    Dispose(nodo^.Correo);
-
-  Dispose(nodo);
-  nodo := nil;
-end;
-
-// Función auxiliar para liberar memoria del árbol BST
-procedure TEDDMailSystem.LiberarArbolBST(var nodo: PNodoBST);
-var
-  Mensaje, TempMensaje: PMensajeComunidad;
-begin
-  if nodo = nil then Exit;
-
-  LiberarArbolBST(nodo^.Izquierdo);
-  LiberarArbolBST(nodo^.Derecho);
-
-  // Liberar lista de mensajes
-  Mensaje := nodo^.ListaMensajes;
-  while Mensaje <> nil do
-  begin
-    TempMensaje := Mensaje;
-    Mensaje := Mensaje^.Siguiente;
-    Dispose(TempMensaje);
-  end;
-
-  Dispose(nodo);
-  nodo := nil;
-end;
-
-// Función auxiliar para liberar memoria del árbol B
-procedure TEDDMailSystem.LiberarArbolB(var nodo: PNodoB);
-var
-  i: Integer;
-begin
-  if nodo = nil then Exit;
-
-  if not nodo^.EsHoja then
-  begin
-    for i := 0 to nodo^.NumClaves do
-    begin
-      if nodo^.Hijos[i] <> nil then
-        LiberarArbolB(nodo^.Hijos[i]);
-    end;
-  end;
-
-  Dispose(nodo);
-  nodo := nil;
-end;
-
-// Actualizar el destructor para liberar las nuevas estructuras
-destructor TEDDMailSystem.Destroy;
-var
-  TempUsuario: PUsuario;
-  TempComunidad: PComunidad;
-begin
-  // Liberar memoria de usuarios y sus estructuras
-  while FUsuarios <> nil do
-  begin
-    TempUsuario := FUsuarios;
-    FUsuarios := FUsuarios^.Siguiente;
-
-    // Liberar nuevas estructuras del usuario
-    LiberarArbolAVL(TempUsuario^.ArbolBorradores);
-    LiberarArbolB(TempUsuario^.ArbolFavoritos);
-
-    Dispose(TempUsuario);
-  end;
-
-  // Liberar árbol BST de comunidades (Fase 2)
-  LiberarArbolBST(FArbolComunidades);
-
-  // Liberar memoria de comunidades (Fase 1)
-  while FComunidades <> nil do
-  begin
-    TempComunidad := FComunidades;
-    FComunidades := FComunidades^.Siguiente;
-    Dispose(TempComunidad);
-  end;
-
-  inherited Destroy;
 end;
 // Implementación del generador de reportes de comunidades BST (ROOT)
 procedure TEDDMailSystem.GenerarReporteComunidadesBST(RutaCarpeta: String);
