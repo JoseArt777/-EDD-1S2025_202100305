@@ -3,13 +3,7 @@ digraph G {
     fontsize=16;
     node [shape=record, style=filled, fillcolor=lightblue];
     rankdir=TB;
-    Tareas [label="Tareas\nFecha creacion: 27-09-2025\nMensajes publicados: 0"];
-    Series [label="Series\nFecha creacion: 27-09-2025\nMensajes publicados: 0"];
-    Proyectos [label="Proyectos\nFecha creacion: 27-09-2025\nMensajes publicados: 0"];
-    Reddit [label="Reddit\nFecha creacion: 27-09-2025\nMensajes publicados: 0"];
-    Proyectos -> Reddit;
-    Series -> Proyectos;
-    Ventas [label="Ventas\nFecha creacion: 27-09-2025\nMensajes publicados: 0"];
-    Tareas -> Series;
-    Tareas -> Ventas;
+    Comunidad_del_negrito [label="Comunidad del negrito\nFecha creacion: 27-09-2025\nMensajes publicados: 1"];
+    casposo_barbon [label="casposo barbon\nFecha creacion: 27-09-2025\nMensajes publicados: 1"];
+    Comunidad_del_negrito -> casposo_barbon;
 }

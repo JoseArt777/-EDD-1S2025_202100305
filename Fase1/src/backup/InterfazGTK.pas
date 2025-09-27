@@ -4467,7 +4467,7 @@ begin
       ScrollBars := ssVertical;
       Font.Name := 'Consolas';        // ← Fuente monospace
       Font.Size := 10;                // ← Tamaño de fuente
-      Color := clInfoBk;              // ← Color de fondo
+      Color := clSkyBlue;              // ← Color de fondo
       BorderStyle := bsSingle;        // ← Borde
       Lines.Add('🔍 Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
     end;

@@ -1,6 +1,10 @@
 digraph G {
     label="Árbol B - Favoritos - Luis Garcia";
     fontsize=16;
-    node [shape=record, style=filled, fillcolor=lightyellow];
-    nodoB_0 [label="101"];
-"];
+    node [shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_548 [label=<Nodo B (Nivel 0)<BR/>Claves: 101, 102<BR/>Hoja: True<BR/>NumClaves: 2>, shape=box, style=filled, fillcolor=lightgreen];
+    dato_101 [label=<ID: 101<BR/>Remitente: soporte@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: Bienvenido Luis<BR/>Mensaje: Hola Luis, tu cuenta ha sido creada exitosamente.>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_548 -> dato_101 [style=dashed, color=blue];
+    dato_102 [label=<ID: 102<BR/>Remitente: ventas@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: Promociones del mes<BR/>Mensaje: Estimado Luis, revisa nuestras promociones de agosto.>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_548 -> dato_102 [style=dashed, color=blue];
+}

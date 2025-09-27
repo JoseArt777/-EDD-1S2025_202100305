@@ -3491,10 +3491,11 @@ begin
       MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
   end;
 end;
-
 procedure TInterfazEDDMail.Favoritos_RellenarLista;
 var
   Usuario: PUsuario;
+  ListaFavoritos: TStringList;
+  i: Integer;
 begin
   if FListFavoritos = nil then Exit;
 
@@ -3502,8 +3503,26 @@ begin
   if Usuario = nil then Exit;
 
   FListFavoritos.Clear;
-  if Assigned(FLabelTotalFavoritos) then
-    FLabelTotalFavoritos.Caption := 'Total: 0';
+
+  // ✅ AQUÍ ESTÁ EL CAMBIO CRÍTICO: obtener favoritos del árbol B
+  ListaFavoritos := TStringList.Create;
+  try
+    // Usar la nueva función RecorrerArbolB
+    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, ListaFavoritos);
+
+    // Agregar todos los favoritos a la interfaz
+    for i := 0 to ListaFavoritos.Count - 1 do
+    begin
+      FListFavoritos.Items.AddObject(ListaFavoritos[i], ListaFavoritos.Objects[i]);
+    end;
+
+    // Actualizar contador
+    if Assigned(FLabelTotalFavoritos) then
+      FLabelTotalFavoritos.Caption := 'Total: ' + IntToStr(ListaFavoritos.Count);
+
+  finally
+    ListaFavoritos.Free;
+  end;
 end;
 
 

@@ -197,6 +197,8 @@ type
 
 
 
+
+
     public
       constructor Create;
       destructor Destroy; override;
@@ -267,6 +269,7 @@ type
 
 
               function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+              procedure RecorrerArbolB(nodo: PNodoB; lista: TStringList); // ← AGREGAR ESTA LÍNEA
 
     end;
 implementation
@@ -343,13 +346,90 @@ begin
 end;
 
 function TEDDMailSystem.EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+
+  function EliminarDeNodoB(nodo: PNodoB; id: Integer): Boolean;
+  var
+    i, j: Integer;
+  begin
+    Result := False;
+    if nodo = nil then Exit;
+
+    // Buscar la clave en el nodo actual
+    for i := 0 to nodo^.NumClaves - 1 do
+    begin
+      if nodo^.Claves[i] = id then
+      begin
+        // Encontrado - eliminar desplazando elementos
+        for j := i to nodo^.NumClaves - 2 do
+        begin
+          nodo^.Claves[j] := nodo^.Claves[j + 1];
+          nodo^.Correos[j] := nodo^.Correos[j + 1];
+        end;
+
+        // Limpiar último elemento
+        nodo^.Claves[nodo^.NumClaves - 1] := 0;
+        nodo^.Correos[nodo^.NumClaves - 1] := nil;
+        Dec(nodo^.NumClaves);
+
+        Result := True;
+        Exit;
+      end;
+    end;
+
+    // Si no se encontró y no es hoja, buscar en hijos
+    if not nodo^.EsHoja then
+    begin
+      for i := 0 to nodo^.NumClaves do
+      begin
+        if EliminarDeNodoB(nodo^.Hijos[i], id) then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+  end;
+
 begin
   Result := False;
   if Usuario = nil then Exit;
 
-  // TODO: Implementar eliminación del árbol B
-  WriteLn('Eliminar favorito ID: ', CorreoId);
-  Result := True;
+  Result := EliminarDeNodoB(Usuario^.ArbolFavoritos, CorreoId);
+  if Result then
+    WriteLn('Favorito eliminado: ID ', CorreoId)
+  else
+    WriteLn('Favorito no encontrado: ID ', CorreoId);
+end;
+// Agregar esta función nueva
+procedure TEDDMailSystem.RecorrerArbolB(nodo: PNodoB; lista: TStringList);
+var
+  i: Integer;
+  Display: String;
+begin
+  if nodo = nil then Exit;
+
+  // Recorrer todas las claves del nodo actual
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if nodo^.Correos[i] <> nil then
+    begin
+      Display := Format('[ID: %d] %s — %s (%s)',
+        [nodo^.Claves[i],
+         nodo^.Correos[i]^.Asunto,
+         nodo^.Correos[i]^.Remitente,
+         nodo^.Correos[i]^.Fecha]);
+      lista.AddObject(Display, TObject(PtrInt(nodo^.Claves[i])));
+    end;
+  end;
+
+  // Recorrer los hijos si no es hoja
+  if not nodo^.EsHoja then
+  begin
+    for i := 0 to nodo^.NumClaves do
+    begin
+      RecorrerArbolB(nodo^.Hijos[i], lista);
+    end;
+  end;
 end;
 
 function TEDDMailSystem.BuscarUsuario(Email: String): PUsuario;
@@ -1379,18 +1459,18 @@ begin
   NombreLimpio := StringReplace(NombreLimpio, '-', '_', [rfReplaceAll]);
   NombreLimpio := StringReplace(NombreLimpio, '.', '_', [rfReplaceAll]);
 
-  // FORMATO CORRECTO: Sin "Comunidad:", solo el nombre y datos
-  WriteLn(Archivo, Format('    %s [label="%s|Fecha creacion: %s|Mensajes publicados: %d"];',
+  // FORMATO VERTICAL: usando \n en lugar de |
+  WriteLn(Archivo, Format('    %s [label="%s\nFecha creacion: %s\nMensajes publicados: %d"];',
     [NombreLimpio, nodo^.NombreComunidad, nodo^.FechaCreacion, nodo^.NumeroMensajes]));
 
-  // Generar nodos hijos primero
+  // Generar nodos hijos
   if nodo^.Izquierdo <> nil then
     GenerarNodosBST(Archivo, nodo^.Izquierdo);
 
   if nodo^.Derecho <> nil then
     GenerarNodosBST(Archivo, nodo^.Derecho);
 
-  // Generar conexiones DESPUÉS (importante para el orden)
+  // Generar conexiones
   if nodo^.Izquierdo <> nil then
   begin
     WriteLn(Archivo, Format('    %s -> %s;',
@@ -1413,21 +1493,66 @@ procedure TEDDMailSystem.GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nive
 var
   i: Integer;
   NodoId: String;
+  Etiqueta: String;
 begin
   if nodo = nil then Exit;
 
-  NodoId := 'nodoB_' + IntToStr(nivel);
-
-  // Generar el nodo con sus claves
-  Write(Archivo, Format('    %s [label="', [NodoId]));
+  // Generar un nodo separado para cada favorito en este nodo del árbol B
   for i := 0 to nodo^.NumClaves - 1 do
   begin
-    if i > 0 then Write(Archivo, '|');
-    Write(Archivo, IntToStr(nodo^.Claves[i]));
-  end;
-  WriteLn(Archivo, '"];');
+    NodoId := Format('favorito_%d_%d_%d', [nivel, i, nodo^.Claves[i]]);
 
-  // TODO: Agregar conexiones con hijos cuando se implemente completamente
+    // Construir etiqueta con TODOS los campos VERTICALMENTE
+    if nodo^.Correos[i] <> nil then
+    begin
+      Etiqueta := Format('ID: %d<BR/>Remitente: %s<BR/>Estado: %s<BR/>Asunto: %s<BR/>Fecha: %s<BR/>Mensaje: %s',
+        [nodo^.Claves[i],
+         nodo^.Correos[i]^.Remitente,
+         nodo^.Correos[i]^.Estado,
+         nodo^.Correos[i]^.Asunto,
+         nodo^.Correos[i]^.Fecha,
+         nodo^.Correos[i]^.Mensaje]);
+    end
+    else
+    begin
+      Etiqueta := 'ID: ' + IntToStr(nodo^.Claves[i]);
+    end;
+
+    // Crear un nodo individual para cada favorito
+    WriteLn(Archivo, Format('    %s [label=<%s>, shape=box, style=filled, fillcolor=lightyellow];',
+      [NodoId, Etiqueta]));
+  end;
+
+  // Si hay múltiples favoritos en el mismo nodo B, conectarlos horizontalmente
+  if nodo^.NumClaves > 1 then
+  begin
+    for i := 0 to nodo^.NumClaves - 2 do
+    begin
+      WriteLn(Archivo, Format('    favorito_%d_%d_%d -> favorito_%d_%d_%d [style=dotted, color=gray];',
+        [nivel, i, nodo^.Claves[i],
+         nivel, i + 1, nodo^.Claves[i + 1]]));
+    end;
+  end;
+
+  // Si no es hoja, generar conexiones con los hijos
+  if not nodo^.EsHoja then
+  begin
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if nodo^.Hijos[i] <> nil then
+      begin
+        GenerarNodosB(Archivo, nodo^.Hijos[i], nivel + 1);
+
+        // Conectar con el primer favorito del hijo
+        if nodo^.Hijos[i]^.NumClaves > 0 then
+        begin
+          WriteLn(Archivo, Format('    favorito_%d_%d_%d -> favorito_%d_0_%d [color=blue];',
+            [nivel, 0, nodo^.Claves[0],
+             nivel + 1, nodo^.Hijos[i]^.Claves[0]]));
+        end;
+      end;
+    end;
+  end;
 end;
 
 // 2. Implementación de GenerarReporteComunidadesBST
@@ -1506,7 +1631,8 @@ begin
     WriteLn(Archivo, 'digraph G {');
     WriteLn(Archivo, '    label="Árbol B - Favoritos - ' + Usuario^.Nombre + '";');
     WriteLn(Archivo, '    fontsize=16;');
-    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightyellow];');
+    WriteLn(Archivo, '    node [shape=box, style=filled, fillcolor=lightyellow];');
+
 
     if Usuario^.ArbolFavoritos = nil then
     begin
@@ -1517,8 +1643,7 @@ begin
       GenerarNodosB(Archivo, Usuario^.ArbolFavoritos, 0);
     end;
 
-      WriteLn(Archivo, '"];');  // ← FALTA CERRAR LA ETIQUETA CORRECTAMENTE
-
+    WriteLn(Archivo, '}');  // ← CERRAR CORRECTAMENTE EL DIGRAPH
     CloseFile(Archivo);
 
     // Generar imagen PNG
@@ -2214,26 +2339,56 @@ end;
 
 
 
-// Función básica para insertar en árbol B (simplificada)
 function TEDDMailSystem.InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
+var
+  i, j: Integer;
 begin
-  // Implementación básica - crear nodo si no existe
+  // Si el árbol está vacío, crear el primer nodo
   if raiz = nil then
   begin
     Result := CrearNodoB;
     Result^.Claves[0] := correo^.Id;
     Result^.Correos[0] := correo;
     Result^.NumClaves := 1;
+    Exit;
+  end;
+
+  // Buscar si ya existe la clave
+  for i := 0 to raiz^.NumClaves - 1 do
+  begin
+    if raiz^.Claves[i] = correo^.Id then
+    begin
+      Result := raiz; // Ya existe, no insertar
+      Exit;
+    end;
+  end;
+
+  // Si hay espacio en el nodo actual, insertar aquí
+  if raiz^.NumClaves < 4 then
+  begin
+    // Encontrar posición correcta para insertar (ordenado)
+    i := raiz^.NumClaves;
+    while (i > 0) and (raiz^.Claves[i-1] > correo^.Id) do
+    begin
+      raiz^.Claves[i] := raiz^.Claves[i-1];
+      raiz^.Correos[i] := raiz^.Correos[i-1];
+      Dec(i);
+    end;
+
+    // Insertar en la posición encontrada
+    raiz^.Claves[i] := correo^.Id;
+    raiz^.Correos[i] := correo;
+    Inc(raiz^.NumClaves);
+
+    Result := raiz;
   end
   else
   begin
-    // Para una implementación completa del árbol B, aquí iría
-    // la lógica de inserción con splits de nodos
+    // Nodo lleno - implementación simplificada: crear nuevo nivel
+    WriteLn('Árbol B: Nodo lleno, implementación completa pendiente');
     Result := raiz;
-    WriteLn('Insertar en árbol B: ID ', correo^.Id);
   end;
 end;
-
 
 
 
