@@ -2,5 +2,5 @@ digraph G {
     label="Árbol B - Favoritos - Luis Garcia";
     fontsize=16;
     node [shape=record, style=filled, fillcolor=lightyellow];
-    empty [label="Sin favoritos", fillcolor=lightgray];
-}
+    nodoB_0 [label="101"];
+"];

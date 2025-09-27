@@ -1,0 +1,10 @@
+digraph G {
+    label="Lista de Listas - Comunidades";
+    fontsize=16;
+    node [shape=box];
+    com1 [label="Comunidad\nComunidad1", style=filled, fillcolor=lightblue];
+    com1 [label="Comunidad\nComunidad2", style=filled, fillcolor=lightblue];
+    { rank=same; 
+com1; com1;  }
+    com1 -> com1 [color=black, constraint=false];
+}

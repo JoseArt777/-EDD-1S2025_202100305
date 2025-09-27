@@ -172,6 +172,9 @@ type
 
     // Función auxiliar para reportes BST
 
+      procedure OnVerMensajesEnComunidadClick(Sender: TObject);
+
+
 
 
 
@@ -646,7 +649,7 @@ begin
   begin
     Caption := 'EDDMail - Sistema de Correos';
     Width := 450;
-    Height := 520;
+    Height := 580;
     Position := poScreenCenter;
     OnClose := @OnFormClose;
   end;
@@ -4375,7 +4378,6 @@ begin
   end;
 end;
 
-// Completar la implementación de OnVerMensajesComunidadClick
 procedure TInterfazEDDMail.OnVerMensajesComunidadClick(Sender: TObject);
 var
   FormVerMensajes: TForm;
@@ -4433,6 +4435,7 @@ begin
     with EditComunidad do
     begin
       Parent := Panel;
+      Name := 'EditComunidad';
       Left := 20;
       Top := 80;
       Width := 400;
@@ -4448,28 +4451,25 @@ begin
       Top := 78;
       Width := 120;
       Height := 26;
-      //OnClick := procedure(Sender: TObject)
-      //begin
-        //if Trim(EditComunidad.Text) = '' then
-        //begin
-        //  MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
-         // Exit;
-       // end;
-
-        OnClick := nil; // Sin funcionalidad por ahora
-    end; // ← Importante: cierra el 'with BtnVer do'
+      OnClick := @OnVerMensajesEnComunidadClick;
+    end;
 
     MemoMensajes := TMemo.Create(Panel);
     with MemoMensajes do
     begin
       Parent := Panel;
+      Name := 'MemoMensajes';
       Left := 20;
       Top := 120;
       Width := 530;
       Height := 280;
       ReadOnly := True;
       ScrollBars := ssVertical;
-      Lines.Add('Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
+      Font.Name := 'Consolas';        // ← Fuente monospace
+      Font.Size := 10;                // ← Tamaño de fuente
+      Color := clSkyBlue;              // ← Color de fondo
+      BorderStyle := bsSingle;        // ← Borde
+      Lines.Add('🔍 Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
     end;
 
     BtnCerrar := TButton.Create(Panel);
@@ -4484,10 +4484,48 @@ begin
       ModalResult := mrCancel;
     end;
 
-   FormVerMensajes.ShowModal;
+    FormVerMensajes.ShowModal;
   finally
     FormVerMensajes.Free;
   end;
+end;
+procedure TInterfazEDDMail.OnVerMensajesEnComunidadClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditComunidad: TEdit;
+  MemoMensajes: TMemo;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar los controles en el panel directamente
+  EditComunidad := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditComunidad') then
+      EditComunidad := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if (EditComunidad = nil) or (MemoMensajes = nil) then
+  begin
+    MostrarMensaje('Error', 'Error interno: controles no encontrados');
+    Exit;
+  end;
+
+  if Trim(EditComunidad.Text) = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Mostrar los mensajes
+  MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(Trim(EditComunidad.Text));
 end;
 
   end.

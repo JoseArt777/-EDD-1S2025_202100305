@@ -1,0 +1,9 @@
+digraph G {
+    label="Lista Circular de Contactos - Luis Garcia";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled, fillcolor=lightblue];
+    contact_mitzep_at_edd_com [label="ID: 7152|Nombre: Marcos Itzep|Usuario: mitzep|Email: mitzep@edd.com|Tel: 87654321"];
+    contact_mitzep_at_edd_com -> contact_mitzep_at_edd_com;
+    edge [color=red, style=dashed];
+}

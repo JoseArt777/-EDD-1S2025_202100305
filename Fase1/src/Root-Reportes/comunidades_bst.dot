@@ -1,0 +1,10 @@
+digraph G {
+    label="Árbol BST - Comunidades";
+    fontsize=16;
+    node [shape=record, style=filled, fillcolor=lightgreen];
+    com_Hola [label="Comunidad: Hola|Creada: 27-09-2025|Mensajes: 0"];
+    com_Hola -> com_Los_mero_mero [label=">"];
+    com_Los_mero_mero [label="Comunidad: Los mero mero|Creada: 27-09-2025|Mensajes: 0"];
+    com_Los_mero_mero -> com_Holaaaa [label="<"];
+    com_Holaaaa [label="Comunidad: Holaaaa|Creada: 27-09-2025|Mensajes: 0"];
+}
