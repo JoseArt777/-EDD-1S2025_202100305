@@ -1368,7 +1368,6 @@ begin
   // Implementar reporte de cola
   WriteLn('Generando reporte de correos programados para: ', Usuario^.Email);
 end;
-
 procedure TEDDMailSystem.GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
 var
   NombreLimpio: String;
@@ -1380,28 +1379,32 @@ begin
   NombreLimpio := StringReplace(NombreLimpio, '-', '_', [rfReplaceAll]);
   NombreLimpio := StringReplace(NombreLimpio, '.', '_', [rfReplaceAll]);
 
-  // Generar el nodo actual
-  WriteLn(Archivo, Format('    com_%s [label="Comunidad: %s|Creada: %s|Mensajes: %d"];',
+  // FORMATO VERTICAL: usando \n en lugar de |
+  WriteLn(Archivo, Format('    %s [label="%s\nFecha creacion: %s\nMensajes publicados: %d"];',
     [NombreLimpio, nodo^.NombreComunidad, nodo^.FechaCreacion, nodo^.NumeroMensajes]));
 
-  // Generar conexión y nodo izquierdo
+  // Generar nodos hijos
+  if nodo^.Izquierdo <> nil then
+    GenerarNodosBST(Archivo, nodo^.Izquierdo);
+
+  if nodo^.Derecho <> nil then
+    GenerarNodosBST(Archivo, nodo^.Derecho);
+
+  // Generar conexiones
   if nodo^.Izquierdo <> nil then
   begin
-    WriteLn(Archivo, Format('    com_%s -> com_%s [label="<"];',
+    WriteLn(Archivo, Format('    %s -> %s;',
       [NombreLimpio, StringReplace(StringReplace(StringReplace(
         nodo^.Izquierdo^.NombreComunidad, ' ', '_', [rfReplaceAll]),
         '-', '_', [rfReplaceAll]), '.', '_', [rfReplaceAll])]));
-    GenerarNodosBST(Archivo, nodo^.Izquierdo);
   end;
 
-  // Generar conexión y nodo derecho
   if nodo^.Derecho <> nil then
   begin
-    WriteLn(Archivo, Format('    com_%s -> com_%s [label=">"];',
+    WriteLn(Archivo, Format('    %s -> %s;',
       [NombreLimpio, StringReplace(StringReplace(StringReplace(
         nodo^.Derecho^.NombreComunidad, ' ', '_', [rfReplaceAll]),
         '-', '_', [rfReplaceAll]), '.', '_', [rfReplaceAll])]));
-    GenerarNodosBST(Archivo, nodo^.Derecho);
   end;
 end;
 
@@ -1437,14 +1440,14 @@ begin
   try
     ForceDirectories(RutaCarpeta);
     NombreArchivo := RutaCarpeta + '/comunidades_bst.dot';
-
     AssignFile(Archivo, NombreArchivo);
     Rewrite(Archivo);
 
     WriteLn(Archivo, 'digraph G {');
-    WriteLn(Archivo, '    label="Árbol BST - Comunidades";');
+    WriteLn(Archivo, '    label="Reporte de comunidades (Árbol BST)";');
     WriteLn(Archivo, '    fontsize=16;');
-    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightgreen];');
+    WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightblue];');
+    WriteLn(Archivo, '    rankdir=TB;');  // ← Forzar dirección top-bottom
 
     if FArbolComunidades = nil then
     begin
@@ -1458,7 +1461,7 @@ begin
     WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
-    // Generar imagen PNG
+    // Resto del código igual...
     try
       Process := TProcess.Create(nil);
       try
@@ -1483,7 +1486,6 @@ begin
       WriteLn('Error al generar reporte BST: ', E.Message);
   end;
 end;
-
 // 3. Implementación de GenerarReporteFavoritos
 procedure TEDDMailSystem.GenerarReporteFavoritos(Usuario: PUsuario; RutaCarpeta: String);
 var
