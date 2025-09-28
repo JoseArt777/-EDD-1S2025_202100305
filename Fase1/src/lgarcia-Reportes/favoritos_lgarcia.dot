@@ -2,9 +2,27 @@ digraph G {
     label="Árbol B - Favoritos - Luis Garcia";
     fontsize=16;
     node [shape=box, style=filled, fillcolor=lightyellow];
-    nodoB_0_548 [label=<Nodo B (Nivel 0)<BR/>Claves: 101, 102<BR/>Hoja: True<BR/>NumClaves: 2>, shape=box, style=filled, fillcolor=lightgreen];
+    nodoB_0_544 [label=<Nodo B (Nivel 0)<BR/>Claves: 7027, 9441<BR/>Hoja: False<BR/>NumClaves: 2>, shape=box, style=filled, fillcolor=lightgreen];
+    dato_7027 [label=<ID: 7027<BR/>Remitente: mitzep@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: D<BR/>Mensaje: lgarcia@edd.com>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_544 -> dato_7027 [style=dashed, color=blue];
+    dato_9441 [label=<ID: 9441<BR/>Remitente: mitzep@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: C<BR/>Mensaje: C
+>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_544 -> dato_9441 [style=dashed, color=blue];
+    nodoB_1_847 [label=<Nodo B (Nivel 1)<BR/>Claves: 101, 102, 6927<BR/>Hoja: True<BR/>NumClaves: 3>, shape=box, style=filled, fillcolor=lightgreen];
     dato_101 [label=<ID: 101<BR/>Remitente: soporte@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: Bienvenido Luis<BR/>Mensaje: Hola Luis, tu cuenta ha sido creada exitosamente.>, shape=box, style=filled, fillcolor=lightyellow];
-    nodoB_0_548 -> dato_101 [style=dashed, color=blue];
+    nodoB_1_847 -> dato_101 [style=dashed, color=blue];
     dato_102 [label=<ID: 102<BR/>Remitente: ventas@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: Promociones del mes<BR/>Mensaje: Estimado Luis, revisa nuestras promociones de agosto.>, shape=box, style=filled, fillcolor=lightyellow];
-    nodoB_0_548 -> dato_102 [style=dashed, color=blue];
+    nodoB_1_847 -> dato_102 [style=dashed, color=blue];
+    dato_6927 [label=<ID: 6927<BR/>Remitente: mitzep@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: A<BR/>Mensaje: lgarcia@edd.com>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_1_847 -> dato_6927 [style=dashed, color=blue];
+    nodoB_0_544 -> nodoB_1_423 [color=red];
+    nodoB_1_623 [label=<Nodo B (Nivel 1)<BR/>Claves: 8151<BR/>Hoja: True<BR/>NumClaves: 1>, shape=box, style=filled, fillcolor=lightgreen];
+    dato_8151 [label=<ID: 8151<BR/>Remitente: mitzep@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: B<BR/>Mensaje: lgarcia@edd.com
+>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_1_623 -> dato_8151 [style=dashed, color=blue];
+    nodoB_0_544 -> nodoB_1_645 [color=red];
+    nodoB_1_384 [label=<Nodo B (Nivel 1)<BR/>Claves: 9578<BR/>Hoja: True<BR/>NumClaves: 1>, shape=box, style=filled, fillcolor=lightgreen];
+    dato_9578 [label=<ID: 9578<BR/>Remitente: mitzep@edd.com<BR/>Destinatario: lgarcia@edd.com<BR/>Asunto: E<BR/>Mensaje: .>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_1_384 -> dato_9578 [style=dashed, color=blue];
+    nodoB_0_544 -> nodoB_1_437 [color=red];
 }

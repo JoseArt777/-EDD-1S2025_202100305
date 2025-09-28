@@ -20,6 +20,7 @@ var
   Aplicacion: TInterfazEDDMail;
 
 begin
+
   // Configurar aplicación
   RequireDerivedFormResource := True;
   Application.Scaled := True;

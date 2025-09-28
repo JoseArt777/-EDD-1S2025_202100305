@@ -1,0 +1,6 @@
+digraph G {
+    label="Árbol B - Favoritos - Marcos Itzep";
+    fontsize=16;
+    node [shape=box, style=filled, fillcolor=lightyellow];
+    empty [label="Sin favoritos", fillcolor=lightgray];
+}
