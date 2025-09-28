@@ -211,13 +211,6 @@ type
 
 
 
-           // En la sección interface, dentro de la clase TEDDMailSystem
-function BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
-function EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
-function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
-  NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
-
-
 
 
 
@@ -2860,10 +2853,9 @@ procedure TEDDMailSystem.GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
 begin
   if nodo = nil then Exit;
 
-  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d|Altura: %d|%s|%s"];',
+  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d\nAltura: %d\nAsunto: %s\nPara: %s"];',
     [nodo^.Correo^.Id, nodo^.Correo^.Id, nodo^.Altura,
      nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario]));
-
   if nodo^.Izquierdo <> nil then
   begin
     WriteLn(Archivo, Format('    nodo_%d -> nodo_%d [label="L"];',

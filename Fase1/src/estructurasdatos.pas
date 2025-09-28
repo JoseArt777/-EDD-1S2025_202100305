@@ -2848,14 +2848,19 @@ begin
   end;
 end;
 
-// Función auxiliar para generar nodos del árbol AVL en Graphviz
 procedure TEDDMailSystem.GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
 begin
   if nodo = nil then Exit;
 
-  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d|Altura: %d|%s|%s"];',
-    [nodo^.Correo^.Id, nodo^.Correo^.Id, nodo^.Altura,
-     nodo^.Correo^.Asunto, nodo^.Correo^.Destinatario]));
+  // FORMATO VERTICAL COMPLETO con toda la información
+  WriteLn(Archivo, Format('    nodo_%d [label="ID: %d\nRemitente: %s\nEstado: %s\nAsunto: %s\nFecha: %s\nMensaje: %s", shape=box, style="filled,rounded", fillcolor=lightyellow];',
+    [nodo^.Correo^.Id,
+     nodo^.Correo^.Id,
+     nodo^.Correo^.Remitente,
+     nodo^.Correo^.Estado,
+     nodo^.Correo^.Asunto,
+     nodo^.Correo^.Fecha,
+     nodo^.Correo^.Mensaje]));
 
   if nodo^.Izquierdo <> nil then
   begin

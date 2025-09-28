@@ -2,5 +2,5 @@ digraph G {
     label="Árbol AVL - Borradores - Luis Garcia";
     fontsize=16;
     node [shape=record, style=filled, fillcolor=lightyellow];
-    nodo_5928 [label="ID: 5928|Altura: 1|Hola|mitzep@edd.com"];
+    nodo_5928 [label="ID: 5928\nRemitente: lgarcia@edd.com\nEstado: NL\nAsunto: Hola\nFecha: 28-09-25 00:48\nMensaje: Solo quería decirte que", shape=box, style="filled,rounded", fillcolor=lightyellow];
 }

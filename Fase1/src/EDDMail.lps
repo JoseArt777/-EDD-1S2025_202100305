@@ -10,7 +10,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="21"/>
         <CursorPos X="3" Y="23"/>
-        <UsageCount Value="83"/>
+        <UsageCount Value="87"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -19,7 +19,7 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="83"/>
+        <UsageCount Value="87"/>
       </Unit>
       <Unit>
         <Filename Value="correomanager.pas"/>
@@ -28,7 +28,7 @@
         <EditorIndex Value="1"/>
         <TopLine Value="13"/>
         <CursorPos X="121" Y="13"/>
-        <UsageCount Value="69"/>
+        <UsageCount Value="73"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -37,15 +37,14 @@
         <UnitName Value="GestorFase2"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="31" Y="6"/>
-        <UsageCount Value="39"/>
+        <UsageCount Value="43"/>
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="3956"/>
-        <CursorPos X="58" Y="3969"/>
-        <UsageCount Value="38"/>
+        <TopLine Value="3875"/>
+        <CursorPos X="53" Y="3887"/>
+        <UsageCount Value="40"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -53,15 +52,16 @@
         <UnitName Value="InterfazGTK"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="207" Y="417"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="6"/>
       </Unit>
       <Unit>
         <Filename Value="estructurasdatos.pas"/>
         <HasResources Value="True"/>
         <UnitName Value="EstructurasDatos"/>
-        <TopLine Value="2771"/>
-        <CursorPos X="51" Y="2788"/>
-        <UsageCount Value="38"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="2854"/>
+        <CursorPos X="45" Y="2867"/>
+        <UsageCount Value="40"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -70,18 +70,10 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="610"/>
         <CursorPos X="32" Y="140"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="2204" Column="53" TopLine="2190"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="3449" Column="40" TopLine="3438"/>
-      </Position>
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="2226" Column="57" TopLine="2214"/>
@@ -193,6 +185,14 @@
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="177" Column="45" TopLine="168"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="2778" Column="16" TopLine="2771"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="2862" Column="58" TopLine="2845"/>
       </Position>
     </JumpHistory>
     <RunParams>
