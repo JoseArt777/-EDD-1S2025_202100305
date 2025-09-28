@@ -173,12 +173,6 @@ type
     // Función auxiliar para reportes BST
 
       procedure OnVerMensajesEnComunidadClick(Sender: TObject);
-      // En la sección interface, dentro de la clase TEDDMailSystem
-function BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
-function EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
-function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
-  NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
-
 
 
 

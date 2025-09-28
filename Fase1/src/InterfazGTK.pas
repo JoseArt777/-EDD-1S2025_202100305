@@ -3963,7 +3963,7 @@ begin
     FListBorradores.Items.Clear;
     for i := 0 to ListaBorradores.Count - 1 do
     begin
-      FListBorradores.Items.Add(ListaBorradores[i]);
+      FListBorradores.Items.AddObject(ListaBorradores[i], ListaBorradores.Objects[i]);
     end;
   finally
     ListaBorradores.Free;

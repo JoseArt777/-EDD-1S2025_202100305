@@ -59,8 +59,8 @@
         <HasResources Value="True"/>
         <UnitName Value="EstructurasDatos"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="64"/>
-        <CursorPos X="24" Y="215"/>
+        <TopLine Value="212"/>
+        <CursorPos X="70" Y="233"/>
         <UsageCount Value="38"/>
         <Loaded Value="True"/>
       </Unit>
@@ -74,10 +74,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="295" Column="25" TopLine="284"/>
-      </Position>
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="106" Column="47" TopLine="97"/>
@@ -194,6 +190,10 @@
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="2923" TopLine="2920"/>
       </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="215" Column="24" TopLine="64"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -221,7 +221,7 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="estructurasdatos.pas"/>
-        <Line Value="389"/>
+        <Line Value="382"/>
       </Item>
     </BreakPoints>
   </Debugging>

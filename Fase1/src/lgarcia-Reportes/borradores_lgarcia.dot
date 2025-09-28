@@ -2,5 +2,5 @@ digraph G {
     label="Árbol AVL - Borradores - Luis Garcia";
     fontsize=16;
     node [shape=record, style=filled, fillcolor=lightyellow];
-    nodo_5928 [label="ID: 5928|Altura: 1|l|mitzep@edd.com"];
+    nodo_5928 [label="ID: 5928|Altura: 1|Hola|mitzep@edd.com"];
 }
