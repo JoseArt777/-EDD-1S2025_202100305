@@ -2188,7 +2188,7 @@ begin
     begin
       Parent := Panel;
       Caption := 'Enviar';
-      Left := 320;
+      Left := 300;
       Top := 380;
       Width := 90;
       Height := 30;
@@ -2205,9 +2205,9 @@ begin
     begin
       Parent := Panel;
       Caption := '📝 Guardar Borrador';
-      Left := 420;
+      Left := 392;
       Top := 380;
-      Width := 130;
+      Width := 150;
       Height := 30;
       ModalResult := mrYes; // Usar mrYes para identificar borrador
       TabOrder := 4;
@@ -2223,7 +2223,7 @@ begin
     begin
       Parent := Panel;
       Caption := 'Cancelar';
-      Left := 560;
+      Left := 544;
       Top := 380;
       Width := 70;
       Height := 30;

@@ -202,6 +202,8 @@ type
   function ValidarPropiedadesB(nodo: PNodoB): Boolean;
   procedure LiberarArbolB(var raiz: PNodoB);
       function ValidarEstructuraArbolB(nodo: PNodoB): Boolean;  // ← AQUÍ
+        procedure GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String); // ← AGREGAR ESTA LÍNEA
+
 
 
 
@@ -1510,15 +1512,18 @@ begin
   end;
 end;
 
-// 1. Implementación de GenerarNodosB
+// =============== VERSIÓN CORREGIDA DE GenerarNodosB ===============
+
 procedure TEDDMailSystem.GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
 var
   i: Integer;
   NodoId: String;
   Etiqueta: String;
+  HijosIds: array[0..4] of String; // Para almacenar IDs de hijos
 begin
   if nodo = nil then Exit;
 
+  // Generar ID único para este nodo
   NodoId := Format('nodoB_%d_%d', [nivel, Random(1000)]);
 
   // Mostrar estructura del nodo B con las claves
@@ -1555,7 +1560,81 @@ begin
     end;
   end;
 
-  // Procesar hijos
+  // CORRECCIÓN PRINCIPAL: Procesar hijos PRIMERO para obtener sus IDs
+  if not nodo^.EsHoja then
+  begin
+    // Inicializar array de IDs de hijos
+    for i := 0 to 4 do
+      HijosIds[i] := '';
+
+    // PRIMERO: Generar todos los nodos hijos y almacenar sus IDs
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if nodo^.Hijos[i] <> nil then
+      begin
+        // Generar ID del hijo ANTES de la recursión
+        HijosIds[i] := Format('nodoB_%d_%d', [nivel + 1, Random(1000)]);
+
+        // Generar el nodo hijo con ID predefinido
+        GenerarNodoHijoConId(Archivo, nodo^.Hijos[i], nivel + 1, HijosIds[i]);
+      end;
+    end;
+
+    // SEGUNDO: Generar las conexiones usando los IDs almacenados
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if (nodo^.Hijos[i] <> nil) and (HijosIds[i] <> '') then
+      begin
+        WriteLn(Archivo, Format('    %s -> %s [color=red];',
+          [NodoId, HijosIds[i]]));
+      end;
+    end;
+  end;
+end;
+
+// =============== FUNCIÓN AUXILIAR NUEVA ===============
+
+procedure TEDDMailSystem.GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String);
+var
+  i: Integer;
+  Etiqueta: String;
+begin
+  if nodo = nil then Exit;
+
+  // Usar el ID proporcionado en lugar de generar uno nuevo
+  Etiqueta := Format('Nodo B (Nivel %d)<BR/>Claves: ', [nivel]);
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if i > 0 then
+      Etiqueta := Etiqueta + ', ';
+    Etiqueta := Etiqueta + IntToStr(nodo^.Claves[i]);
+  end;
+
+  Etiqueta := Etiqueta + Format('<BR/>Hoja: %s<BR/>NumClaves: %d',
+    [BoolToStr(nodo^.EsHoja, True), nodo^.NumClaves]);
+
+  WriteLn(Archivo, Format('    %s [label=<%s>, shape=box, style=filled, fillcolor=lightgreen];',
+    [NodoId, Etiqueta]));
+
+  // Generar nodos de datos
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if nodo^.Correos[i] <> nil then
+    begin
+      WriteLn(Archivo, Format('    dato_%d [label=<ID: %d<BR/>Remitente: %s<BR/>Destinatario: %s<BR/>Asunto: %s<BR/>Mensaje: %s>, shape=box, style=filled, fillcolor=lightyellow];',
+        [nodo^.Claves[i],
+         nodo^.Claves[i],
+         nodo^.Correos[i]^.Remitente,
+         nodo^.Correos[i]^.Destinatario,
+         nodo^.Correos[i]^.Asunto,
+         nodo^.Correos[i]^.Mensaje]));
+
+      WriteLn(Archivo, Format('    %s -> dato_%d [style=dashed, color=blue];',
+        [NodoId, nodo^.Claves[i]]));
+    end;
+  end;
+
+  // Si el nodo hijo tiene sus propios hijos, procesar recursivamente
   if not nodo^.EsHoja then
   begin
     for i := 0 to nodo^.NumClaves do
@@ -1563,8 +1642,6 @@ begin
       if nodo^.Hijos[i] <> nil then
       begin
         GenerarNodosB(Archivo, nodo^.Hijos[i], nivel + 1);
-        WriteLn(Archivo, Format('    %s -> nodoB_%d_%d [color=red];',
-          [NodoId, nivel + 1, Random(1000)]));
       end;
     end;
   end;

@@ -2188,7 +2188,7 @@ begin
     begin
       Parent := Panel;
       Caption := 'Enviar';
-      Left := 320;
+      Left := 300;
       Top := 380;
       Width := 90;
       Height := 30;
@@ -2205,9 +2205,9 @@ begin
     begin
       Parent := Panel;
       Caption := '📝 Guardar Borrador';
-      Left := 420;
+      Left := 392;
       Top := 380;
-      Width := 130;
+      Width := 150;
       Height := 30;
       ModalResult := mrYes; // Usar mrYes para identificar borrador
       TabOrder := 4;
@@ -2223,7 +2223,7 @@ begin
     begin
       Parent := Panel;
       Caption := 'Cancelar';
-      Left := 560;
+      Left := 530;
       Top := 380;
       Width := 70;
       Height := 30;
@@ -3491,10 +3491,11 @@ begin
       MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
   end;
 end;
-
 procedure TInterfazEDDMail.Favoritos_RellenarLista;
 var
   Usuario: PUsuario;
+  ListaFavoritos: TStringList;
+  i: Integer;
 begin
   if FListFavoritos = nil then Exit;
 
@@ -3502,8 +3503,26 @@ begin
   if Usuario = nil then Exit;
 
   FListFavoritos.Clear;
-  if Assigned(FLabelTotalFavoritos) then
-    FLabelTotalFavoritos.Caption := 'Total: 0';
+
+  // ✅ AQUÍ ESTÁ EL CAMBIO CRÍTICO: obtener favoritos del árbol B
+  ListaFavoritos := TStringList.Create;
+  try
+    // Usar la nueva función RecorrerArbolB
+    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, ListaFavoritos);
+
+    // Agregar todos los favoritos a la interfaz
+    for i := 0 to ListaFavoritos.Count - 1 do
+    begin
+      FListFavoritos.Items.AddObject(ListaFavoritos[i], ListaFavoritos.Objects[i]);
+    end;
+
+    // Actualizar contador
+    if Assigned(FLabelTotalFavoritos) then
+      FLabelTotalFavoritos.Caption := 'Total: ' + IntToStr(ListaFavoritos.Count);
+
+  finally
+    ListaFavoritos.Free;
+  end;
 end;
 
 

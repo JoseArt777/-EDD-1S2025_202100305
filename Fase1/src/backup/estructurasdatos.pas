@@ -201,6 +201,8 @@ type
   procedure InsertarEnNodoNoLleno(nodo: PNodoB; correo: PCorreo);
   function ValidarPropiedadesB(nodo: PNodoB): Boolean;
   procedure LiberarArbolB(var raiz: PNodoB);
+      function ValidarEstructuraArbolB(nodo: PNodoB): Boolean;  // ← AQUÍ
+
 
 
 
@@ -1508,15 +1510,18 @@ begin
   end;
 end;
 
-// 1. Implementación de GenerarNodosB
+// =============== VERSIÓN CORREGIDA DE GenerarNodosB ===============
+
 procedure TEDDMailSystem.GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
 var
   i: Integer;
   NodoId: String;
   Etiqueta: String;
+  HijosIds: array[0..4] of String; // Para almacenar IDs de hijos
 begin
   if nodo = nil then Exit;
 
+  // Generar ID único para este nodo
   NodoId := Format('nodoB_%d_%d', [nivel, Random(1000)]);
 
   // Mostrar estructura del nodo B con las claves
@@ -1553,7 +1558,81 @@ begin
     end;
   end;
 
-  // Procesar hijos
+  // CORRECCIÓN PRINCIPAL: Procesar hijos PRIMERO para obtener sus IDs
+  if not nodo^.EsHoja then
+  begin
+    // Inicializar array de IDs de hijos
+    for i := 0 to 4 do
+      HijosIds[i] := '';
+
+    // PRIMERO: Generar todos los nodos hijos y almacenar sus IDs
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if nodo^.Hijos[i] <> nil then
+      begin
+        // Generar ID del hijo ANTES de la recursión
+        HijosIds[i] := Format('nodoB_%d_%d', [nivel + 1, Random(1000)]);
+
+        // Generar el nodo hijo con ID predefinido
+        GenerarNodoHijoConId(Archivo, nodo^.Hijos[i], nivel + 1, HijosIds[i]);
+      end;
+    end;
+
+    // SEGUNDO: Generar las conexiones usando los IDs almacenados
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if (nodo^.Hijos[i] <> nil) and (HijosIds[i] <> '') then
+      begin
+        WriteLn(Archivo, Format('    %s -> %s [color=red];',
+          [NodoId, HijosIds[i]]));
+      end;
+    end;
+  end;
+end;
+
+// =============== FUNCIÓN AUXILIAR NUEVA ===============
+
+procedure TEDDMailSystem.GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String);
+var
+  i: Integer;
+  Etiqueta: String;
+begin
+  if nodo = nil then Exit;
+
+  // Usar el ID proporcionado en lugar de generar uno nuevo
+  Etiqueta := Format('Nodo B (Nivel %d)<BR/>Claves: ', [nivel]);
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if i > 0 then
+      Etiqueta := Etiqueta + ', ';
+    Etiqueta := Etiqueta + IntToStr(nodo^.Claves[i]);
+  end;
+
+  Etiqueta := Etiqueta + Format('<BR/>Hoja: %s<BR/>NumClaves: %d',
+    [BoolToStr(nodo^.EsHoja, True), nodo^.NumClaves]);
+
+  WriteLn(Archivo, Format('    %s [label=<%s>, shape=box, style=filled, fillcolor=lightgreen];',
+    [NodoId, Etiqueta]));
+
+  // Generar nodos de datos
+  for i := 0 to nodo^.NumClaves - 1 do
+  begin
+    if nodo^.Correos[i] <> nil then
+    begin
+      WriteLn(Archivo, Format('    dato_%d [label=<ID: %d<BR/>Remitente: %s<BR/>Destinatario: %s<BR/>Asunto: %s<BR/>Mensaje: %s>, shape=box, style=filled, fillcolor=lightyellow];',
+        [nodo^.Claves[i],
+         nodo^.Claves[i],
+         nodo^.Correos[i]^.Remitente,
+         nodo^.Correos[i]^.Destinatario,
+         nodo^.Correos[i]^.Asunto,
+         nodo^.Correos[i]^.Mensaje]));
+
+      WriteLn(Archivo, Format('    %s -> dato_%d [style=dashed, color=blue];',
+        [NodoId, nodo^.Claves[i]]));
+    end;
+  end;
+
+  // Si el nodo hijo tiene sus propios hijos, procesar recursivamente
   if not nodo^.EsHoja then
   begin
     for i := 0 to nodo^.NumClaves do
@@ -1561,8 +1640,6 @@ begin
       if nodo^.Hijos[i] <> nil then
       begin
         GenerarNodosB(Archivo, nodo^.Hijos[i], nivel + 1);
-        WriteLn(Archivo, Format('    %s -> nodoB_%d_%d [color=red];',
-          [NodoId, nivel + 1, Random(1000)]));
       end;
     end;
   end;
@@ -2400,6 +2477,8 @@ end;
 
 // =============== AGREGAR ESTAS NUEVAS FUNCIONES AUXILIARES ===============
 
+// =============== CORRECCIÓN DE LA FUNCIÓN DividirNodoB ===============
+
 procedure TEDDMailSystem.DividirNodoB(nodo: PNodoB; indiceHijo: Integer; var nuevaRaiz: PNodoB);
 var
   hijoLleno, nuevoHijo: PNodoB;
@@ -2410,31 +2489,58 @@ begin
   hijoLleno := nodo^.Hijos[indiceHijo];
   nuevoHijo := CrearNodoB;
 
+  // IMPORTANTE: Para orden 5, cuando tenemos 4 claves [0,1,2,3]
+  // La clave mediana es el índice 2, NO el índice 1
+
+  WriteLn('🔧 ANTES DE DIVISIÓN:');
+  WriteLn('   Claves: [', hijoLleno^.Claves[0], ', ', hijoLleno^.Claves[1],
+           ', ', hijoLleno^.Claves[2], ', ', hijoLleno^.Claves[3], ']');
+
   // El nuevo nodo tendrá la misma propiedad de hoja que el nodo original
   nuevoHijo^.EsHoja := hijoLleno^.EsHoja;
-  nuevoHijo^.NumClaves := 1; // Mínimo de claves
 
-  // Copiar las claves y correos de la mitad superior al nuevo nodo
-  for i := 0 to 1 do // En orden 5: índices 2 y 3 van al nuevo nodo
-  begin
-    nuevoHijo^.Claves[i] := hijoLleno^.Claves[i + 2];
-    nuevoHijo^.Correos[i] := hijoLleno^.Correos[i + 2];
-  end;
-  nuevoHijo^.NumClaves := 2;
+  // ========== CORRECCIÓN CRÍTICA ==========
+  // Para un nodo con 4 claves [0,1,2,3], la mediana es índice 2
+  // Claves 0,1 van al nodo izquierdo
+  // Clave 2 se promote a padre
+  // Claves 3 va al nodo derecho
 
-  // Si no es hoja, copiar también los hijos
+  // Obtener la clave mediana (índice 2) para promover
+  claveMediana := hijoLleno^.Claves[2];  // ← CAMBIO: era [1], ahora [2]
+  correoMediana := hijoLleno^.Correos[2]; // ← CAMBIO: era [1], ahora [2]
+
+  WriteLn('   Clave mediana a promover: ', claveMediana);
+
+  // Copiar claves 3 al nuevo nodo (hijo derecho)
+  nuevoHijo^.Claves[0] := hijoLleno^.Claves[3];
+  nuevoHijo^.Correos[0] := hijoLleno^.Correos[3];
+  nuevoHijo^.NumClaves := 1;
+
+  // El nodo original conserva claves 0,1 (hijo izquierdo)
+  hijoLleno^.NumClaves := 2;  // ← CAMBIO: conserva 2 claves, no 1
+
+  // Limpiar las claves que ya no pertenecen al nodo original
+  hijoLleno^.Claves[2] := 0;
+  hijoLleno^.Correos[2] := nil;
+  hijoLleno^.Claves[3] := 0;
+  hijoLleno^.Correos[3] := nil;
+
+  WriteLn('🎯 DESPUÉS DE DIVISIÓN:');
+  WriteLn('   Hijo izq: [', hijoLleno^.Claves[0], ', ', hijoLleno^.Claves[1], ']');
+  WriteLn('   Promovida: [', claveMediana, ']');
+  WriteLn('   Hijo der: [', nuevoHijo^.Claves[0], ']');
+
+  // Si no es hoja, mover hijos correspondientes
   if not hijoLleno^.EsHoja then
   begin
-    for i := 0 to 2 do
-      nuevoHijo^.Hijos[i] := hijoLleno^.Hijos[i + 2];
+    // Los hijos 3,4 van al nuevo nodo
+    nuevoHijo^.Hijos[0] := hijoLleno^.Hijos[3];
+    nuevoHijo^.Hijos[1] := hijoLleno^.Hijos[4];
+
+    // Limpiar referencias en nodo original
+    hijoLleno^.Hijos[3] := nil;
+    hijoLleno^.Hijos[4] := nil;
   end;
-
-  // El nodo original ahora solo tiene las primeras claves
-  hijoLleno^.NumClaves := 1;
-
-  // Obtener la clave mediana (índice 1) para promover
-  claveMediana := hijoLleno^.Claves[1];
-  correoMediana := hijoLleno^.Correos[1];
 
   // Mover hijos en el nodo padre para hacer espacio
   for i := nodo^.NumClaves downto indiceHijo + 1 do
@@ -2454,6 +2560,45 @@ begin
   nodo^.Claves[indiceHijo] := claveMediana;
   nodo^.Correos[indiceHijo] := correoMediana;
   Inc(nodo^.NumClaves);
+
+  WriteLn('✅ División completada correctamente');
+end;
+
+// =============== FUNCIÓN DE VALIDACIÓN ADICIONAL ===============
+
+function TEDDMailSystem.ValidarEstructuraArbolB(nodo: PNodoB): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  if nodo = nil then Exit;
+
+  // Verificar que no hay nodos con más de 4 claves
+  if nodo^.NumClaves > 4 then
+  begin
+    WriteLn('❌ ERROR: Nodo con ', nodo^.NumClaves, ' claves (máximo 4)');
+    Result := False;
+  end;
+
+  // Verificar que las claves están ordenadas
+  for i := 0 to nodo^.NumClaves - 2 do
+  begin
+    if nodo^.Claves[i] >= nodo^.Claves[i + 1] then
+    begin
+      WriteLn('❌ ERROR: Claves desordenadas: ', nodo^.Claves[i], ' >= ', nodo^.Claves[i + 1]);
+      Result := False;
+    end;
+  end;
+
+  // Verificar hijos recursivamente
+  if not nodo^.EsHoja then
+  begin
+    for i := 0 to nodo^.NumClaves do
+    begin
+      if not ValidarEstructuraArbolB(nodo^.Hijos[i]) then
+        Result := False;
+    end;
+  end;
 end;
 
 procedure TEDDMailSystem.InsertarEnNodoNoLleno(nodo: PNodoB; correo: PCorreo);
