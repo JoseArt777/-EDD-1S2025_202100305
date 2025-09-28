@@ -5,7 +5,7 @@ unit EstructurasDatos;
 interface
 
 uses
-  Classes, SysUtils, Math, process;
+  Classes, SysUtils, Math, process, DateUtils;
 
 type
   // Tipos de punteros
@@ -82,6 +82,8 @@ type
     Destinatario: String;
     Estado: String; // 'NL' = No Leído, 'L' = Leído
     Programado: Boolean;
+     Cuerpo: String;        // ← AGREGAR ESTA LÍNEA
+  FechaHora: TDateTime;  // ← AGREGAR ESTA LÍNEA TAMBIÉN
     Asunto: String;
     Fecha: String;
     Mensaje: String;
@@ -203,7 +205,9 @@ type
   procedure LiberarArbolB(var raiz: PNodoB);
       function ValidarEstructuraArbolB(nodo: PNodoB): Boolean;  // ← AQUÍ
         procedure GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String); // ← AGREGAR ESTA LÍNEA
-
+        // Funciones adicionales para AVL (agregar a la sección private existente)
+        function EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
+        function BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
 
 
 
@@ -294,6 +298,12 @@ type
   function ObtenerAlturaArbolB(nodo: PNodoB): Integer;
   function ObtenerNumeroNodos(nodo: PNodoB): Integer;
   function EsArbolBValido(nodo: PNodoB): Boolean;
+
+  // Métodos públicos para borradores (agregar a la sección public existente)
+function BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
+function EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
+function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
+  NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
 
     end;
 implementation
@@ -2238,6 +2248,10 @@ begin
     False
   );
 
+  // AGREGAR ESTAS LÍNEAS DESPUÉS DEL CrearCorreo:
+  NuevoCorreo^.Cuerpo := Mensaje;     // Nueva línea
+  NuevoCorreo^.FechaHora := Now;      // Nueva línea
+
   Usuario^.ArbolBorradores := InsertarAVL(Usuario^.ArbolBorradores, NuevoCorreo);
   WriteLn('Borrador guardado para usuario: ', Usuario^.Email);
   Result := True;
@@ -2903,5 +2917,169 @@ begin
   Dispose(raiz);
   raiz := nil;
 end;
+           
 
+
+
+     // =================== IMPLEMENTACIONES PARA BORRADORES ===================
+
+// Función para buscar borrador
+function TEDDMailSystem.BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
+begin
+  Result := nil;
+  if (Usuario = nil) or (Usuario^.ArbolBorradores = nil) then Exit;
+
+  Result := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, Id);
+end;
+
+// Función para encontrar el nodo con valor mínimo
+function TEDDMailSystem.BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
+begin
+  Result := nodo;
+  if Result = nil then Exit;
+
+  while Result^.Izquierdo <> nil do
+    Result := Result^.Izquierdo;
+end;
+
+// Función para eliminar un nodo del AVL
+function TEDDMailSystem.EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
+var
+  temp: PNodoAVL;
+  balance: Integer;
+begin
+  // Paso 1: Eliminación estándar de BST
+  if nodo = nil then
+  begin
+    Result := nodo;
+    Exit;
+  end;
+
+  if id < nodo^.Correo^.Id then
+    nodo^.Izquierdo := EliminarAVL(nodo^.Izquierdo, id)
+  else if id > nodo^.Correo^.Id then
+    nodo^.Derecho := EliminarAVL(nodo^.Derecho, id)
+  else
+  begin
+    // Este es el nodo a eliminar
+    if (nodo^.Izquierdo = nil) or (nodo^.Derecho = nil) then
+    begin
+      if nodo^.Izquierdo <> nil then
+        temp := nodo^.Izquierdo
+      else
+        temp := nodo^.Derecho;
+
+      if temp = nil then
+      begin
+        // Sin hijos
+        temp := nodo;
+        nodo := nil;
+      end
+      else
+      begin
+        // Un hijo
+        nodo^ := temp^;
+      end;
+
+      Dispose(temp);
+    end
+    else
+    begin
+      // Nodo con dos hijos
+      temp := BuscarMinimoAVL(nodo^.Derecho);
+
+      // Copiar los datos del sucesor inorden al nodo actual
+      nodo^.Correo := temp^.Correo;
+
+      // Eliminar el sucesor inorden
+      nodo^.Derecho := EliminarAVL(nodo^.Derecho, temp^.Correo^.Id);
+    end;
+  end;
+
+  // Si el árbol tenía solo un nodo
+  if nodo = nil then
+  begin
+    Result := nodo;
+    Exit;
+  end;
+
+  // Paso 2: Actualizar altura del nodo actual
+  nodo^.Altura := 1 + Max(ObtenerAltura(nodo^.Izquierdo), ObtenerAltura(nodo^.Derecho));
+
+  // Paso 3: Obtener balance
+  balance := ObtenerBalance(nodo);
+
+  // Paso 4: Balancear el árbol si es necesario
+
+  // Caso izquierda-izquierda
+  if (balance > 1) and (ObtenerBalance(nodo^.Izquierdo) >= 0) then
+  begin
+    Result := RotarDerecha(nodo);
+    Exit;
+  end;
+
+  // Caso derecha-derecha
+  if (balance < -1) and (ObtenerBalance(nodo^.Derecho) <= 0) then
+  begin
+    Result := RotarIzquierda(nodo);
+    Exit;
+  end;
+
+  // Caso izquierda-derecha
+  if (balance > 1) and (ObtenerBalance(nodo^.Izquierdo) < 0) then
+  begin
+    nodo^.Izquierdo := RotarIzquierda(nodo^.Izquierdo);
+    Result := RotarDerecha(nodo);
+    Exit;
+  end;
+
+  // Caso derecha-izquierda
+  if (balance < -1) and (ObtenerBalance(nodo^.Derecho) > 0) then
+  begin
+    nodo^.Derecho := RotarDerecha(nodo^.Derecho);
+    Result := RotarIzquierda(nodo);
+    Exit;
+  end;
+
+  Result := nodo;
+end;
+
+// Función pública para eliminar borrador
+function TEDDMailSystem.EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
+begin
+  Result := False;
+  if (Usuario = nil) or (Usuario^.ArbolBorradores = nil) then Exit;
+
+  try
+    Usuario^.ArbolBorradores := EliminarAVL(Usuario^.ArbolBorradores, Id);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+// Función para actualizar borrador
+function TEDDMailSystem.ActualizarBorrador(Usuario: PUsuario; Id: Integer;
+  NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
+var
+  BorradorExistente: PCorreo;
+begin
+  Result := False;
+  if (Usuario = nil) or (Usuario^.ArbolBorradores = nil) then Exit;
+
+  BorradorExistente := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, Id);
+  if BorradorExistente = nil then Exit;
+
+  try
+    // Actualizar los campos del borrador
+    BorradorExistente^.Destinatario := NuevoDestinatario;
+    BorradorExistente^.Asunto := NuevoAsunto;
+    BorradorExistente^.Cuerpo := NuevoCuerpo;
+    BorradorExistente^.FechaHora := Now; // Actualizar fecha de modificación
+
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
  end.

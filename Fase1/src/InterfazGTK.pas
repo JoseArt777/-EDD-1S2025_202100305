@@ -179,6 +179,7 @@ type
 
 
 
+
   public
     constructor Create;
     destructor Destroy; override;
@@ -3970,21 +3971,316 @@ begin
 end;
 
 procedure TInterfazEDDMail.Borradores_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
 begin
-  // Implementar selección de borrador
-  // Similar a otras ventanas, mostrar detalles en el memo
-end;
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    FMemoBorrador.Clear;
+    Exit;
+  end;
 
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // Obtener el ID del borrador seleccionado
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+
+  // Buscar el borrador específico
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado <> nil then
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('═══════════════════════════════════════');
+    FMemoBorrador.Lines.Add('📧 DETALLES DEL BORRADOR');
+    FMemoBorrador.Lines.Add('═══════════════════════════════════════');
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('📨 Para: ' + BorradorSeleccionado^.Destinatario);
+    FMemoBorrador.Lines.Add('📑 Asunto: ' + BorradorSeleccionado^.Asunto);
+    FMemoBorrador.Lines.Add('📅 Creado: ' + DateTimeToStr(BorradorSeleccionado^.FechaHora));
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('💬 Mensaje:');
+    FMemoBorrador.Lines.Add('─────────────────────────────────────');
+    FMemoBorrador.Lines.Add(BorradorSeleccionado^.Cuerpo);
+  end
+  else
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('❌ Error: No se pudo cargar el borrador seleccionado');
+  end;
+end;
 procedure TInterfazEDDMail.Borradores_OnEditarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  FormEditar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto, LabelCuerpo: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnGuardar, BtnCancelar: TButton;
+  ResultadoModal: Integer;
 begin
-  // Abrir ventana de edición de borrador
-  MostrarMensaje('Info', 'Funcionalidad de editar borrador por implementar');
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para editar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Crear formulario de edición
+  FormEditar := TForm.Create(nil);
+  try
+    with FormEditar do
+    begin
+      Caption := 'Editar Borrador';
+      Width := 650;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormEditar);
+    with Panel do
+    begin
+      Parent := FormEditar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      Color := clMoneyGreen;
+    end;
+
+    // Etiquetas y campos
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12;
+      Top := 15;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 35;
+      Width := 600;
+      Text := BorradorSeleccionado^.Destinatario;
+      TabOrder := 0;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12;
+      Top := 70;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 90;
+      Width := 600;
+      Text := BorradorSeleccionado^.Asunto;
+      TabOrder := 1;
+    end;
+
+    LabelCuerpo := TLabel.Create(Panel);
+    with LabelCuerpo do
+    begin
+      Parent := Panel;
+      Caption := 'Mensaje:';
+      Left := 12;
+      Top := 125;
+      Font.Style := [fsBold];
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 145;
+      Width := 600;
+      Height := 250;
+      ScrollBars := ssVertical;
+      Lines.Text := BorradorSeleccionado^.Cuerpo;
+      TabOrder := 2;
+    end;
+
+    // Botones
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := '📧 Enviar';
+      Left := 200;
+      Top := 410;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrOk;
+      Font.Style := [fsBold];
+      Color := clLime;
+      TabOrder := 3;
+    end;
+
+    BtnGuardar := TButton.Create(Panel);
+    with BtnGuardar do
+    begin
+      Parent := Panel;
+      Caption := '💾 Guardar Cambios';
+      Left := 310;
+      Top := 410;
+      Width := 140;
+      Height := 35;
+      ModalResult := mrYes;
+      Font.Style := [fsBold];
+      Color := clAqua;
+      TabOrder := 4;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 460;
+      Top := 410;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrCancel;
+      TabOrder := 5;
+    end;
+
+    ResultadoModal := FormEditar.ShowModal;
+
+    case ResultadoModal of
+      mrOk: begin // ENVIAR
+        if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') then
+        begin
+          MostrarMensaje('Error', 'Debe ingresar destinatario y asunto');
+          Exit;
+        end;
+
+        // Enviar el correo
+        if FCorreoManager.EnviarCorreo(
+              FSistema,
+              Usuario^.Email,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          // Eliminar el borrador después de enviarlo
+          if FSistema.EliminarBorrador(Usuario, IdSel) then
+          begin
+            MostrarMensaje('Éxito',
+              '✅ Correo enviado correctamente y borrador eliminado' + LineEnding +
+              'Destinatario: ' + Trim(EditPara.Text));
+            Borradores_RellenarLista; // Actualizar lista
+          end
+          else
+          begin
+            MostrarMensaje('Advertencia',
+              'Correo enviado pero no se pudo eliminar el borrador');
+          end;
+        end
+        else
+        begin
+          MostrarMensaje('Error', 'No se pudo enviar el correo');
+        end;
+      end;
+
+      mrYes: begin // GUARDAR CAMBIOS
+        if FSistema.ActualizarBorrador(
+              Usuario,
+              IdSel,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Borrador actualizado correctamente');
+          Borradores_RellenarLista; // Actualizar lista
+        end
+        else
+        begin
+          MostrarMensaje('Error', 'No se pudo actualizar el borrador');
+        end;
+      end;
+    end;
+
+  finally
+    FormEditar.Free;
+  end;
 end;
 
 procedure TInterfazEDDMail.Borradores_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  Respuesta: Integer;
 begin
-  // Eliminar borrador del árbol AVL
-  MostrarMensaje('Info', 'Funcionalidad de eliminar borrador por implementar');
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para eliminar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Confirmar eliminación
+  Respuesta := MessageDlg('Confirmar Eliminación',
+    '¿Está seguro que desea eliminar este borrador?' + LineEnding + LineEnding +
+    'Asunto: ' + BorradorSeleccionado^.Asunto + LineEnding +
+    'Para: ' + BorradorSeleccionado^.Destinatario,
+    mtConfirmation, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    if FSistema.EliminarBorrador(Usuario, IdSel) then
+    begin
+      MostrarMensaje('Éxito', 'Borrador eliminado correctamente');
+      Borradores_RellenarLista; // Actualizar lista
+      FMemoBorrador.Clear; // Limpiar memo de detalles
+    end
+    else
+    begin
+      MostrarMensaje('Error', 'No se pudo eliminar el borrador');
+    end;
+  end;
 end;
 procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
 var
@@ -4546,7 +4842,6 @@ begin
   // Mostrar los mensajes
   MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(Trim(EditComunidad.Text));
 end;
-
   end.
 
 
