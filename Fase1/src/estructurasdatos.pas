@@ -53,7 +53,7 @@ type
   TNodoB = record
     NumClaves: Integer;
     Claves: array[0..3] of Integer; // Máximo 4 claves
-    Correos: array[0..3] of PCorreo; // Correos asociados a las claves
+    Correos: array[0..3] of PCorreo; // Correos asociados a claves
     Hijos: array[0..4] of PNodoB; // Máximo 5 hijos
     EsHoja: Boolean;
   end;
@@ -82,8 +82,8 @@ type
     Destinatario: String;
     Estado: String; // 'NL' = No Leído, 'L' = Leído
     Programado: Boolean;
-     Cuerpo: String;        // ← AGREGAR ESTA LÍNEA
-  FechaHora: TDateTime;  // ← AGREGAR ESTA LÍNEA TAMBIÉN
+     Cuerpo: String;        // nueva línea para manejar el cuerpo del correo
+  FechaHora: TDateTime;  // nueva línea para menejar fecha
     Asunto: String;
     Fecha: String;
     Mensaje: String;
@@ -151,7 +151,7 @@ type
       FMatrizFilas: PMatrizDispersaFila;
       FMatrizColumnas: PMatrizDispersaColumna;
       FUsuarioActual: PUsuario;
-      FArbolComunidades: PNodoBST;    // Árbol BST para comunidades
+      FArbolComunidades: PNodoBST;    // Árbol BST de comunidades
 
       // Funciones auxiliares para correos
       function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
@@ -173,7 +173,6 @@ type
       // Funciones para métodos de Fase 2
 
       function BuscarCorreoEnAVL(nodo: PNodoAVL; CorreoId: Integer): PCorreo;
-
       procedure GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
 
       // Funciones para BST
@@ -184,7 +183,6 @@ type
       function CrearNodoB: PNodoB;
       function InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
 
-
       // Funciones auxiliares adicionales
       function BuscarCorreoEnBandeja(Usuario: PUsuario; CorreoId: Integer): PCorreo;
 
@@ -193,21 +191,21 @@ type
       procedure RecorridoPreOrdenAVL(nodo: PNodoAVL; lista: TStringList);
       procedure RecorridoPostOrdenAVL(nodo: PNodoAVL; lista: TStringList);
 
-      // MÉTODOS AUXILIARES FALTANTES PARA FASE 2:
+      // MÉTODOS AUXILIARES ADICIONALES PARA FASE 2:
       procedure GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
-        procedure GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
+      procedure GenerarNodosBST(var Archivo: TextFile; nodo: PNodoBST);
 
 
           // NUEVAS FUNCIONES PRIVATE PARA ÁRBOL B:
-  procedure DividirNodoB(nodo: PNodoB; indiceHijo: Integer; var nuevaRaiz: PNodoB);
-  procedure InsertarEnNodoNoLleno(nodo: PNodoB; correo: PCorreo);
-  function ValidarPropiedadesB(nodo: PNodoB): Boolean;
-  procedure LiberarArbolB(var raiz: PNodoB);
+      procedure DividirNodoB(nodo: PNodoB; indiceHijo: Integer; var nuevaRaiz: PNodoB);
+      procedure InsertarEnNodoNoLleno(nodo: PNodoB; correo: PCorreo);
+      function ValidarPropiedadesB(nodo: PNodoB): Boolean;
+      procedure LiberarArbolB(var raiz: PNodoB);
       function ValidarEstructuraArbolB(nodo: PNodoB): Boolean;  // ← AQUÍ
-        procedure GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String); // ← AGREGAR ESTA LÍNEA
-        // Funciones adicionales para AVL (agregar a la sección private existente)
-        function EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
-        function BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
+      procedure GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String); // Nodos hijos
+      // Funciones adicionales para AVL
+      function EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
+      function BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
 
 
 
@@ -267,43 +265,43 @@ type
       procedure GenerarReporteContactos(Usuario: PUsuario; RutaCarpeta: String);
       procedure GenerarReporteComunidades(RutaCarpeta: String);
 
-      // FASE 2 - Nuevas funciones públicas
+      // FASE 2 - Nuevas funciones necesarias
       function GuardarBorrador(Usuario: PUsuario; Destinatario, Asunto, Mensaje: String): Boolean;
       function ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
       function MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
       function CrearComunidadBST(nombreComunidad: String): Boolean;
       function PublicarMensajeAComunidad(nombreComunidad, correoUsuario, mensaje: String): Boolean;
 
-      // MÉTODOS PÚBLICOS FALTANTES PARA FASE 2:
+      // MÉTODOS PÚBLICOS ADICIONALES PARA FASE 2:
       procedure GenerarReporteComunidadesBST(RutaCarpeta: String);
       procedure GenerarReporteFavoritos(Usuario: PUsuario; RutaCarpeta: String);
       function ObtenerMensajesComunidad(nombreComunidad: String): String;
-        procedure GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
+      procedure GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
 
-            function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
+      function BuscarB(nodo: PNodoB; id: Integer): PCorreo;
 
 
-              function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-              procedure RecorrerArbolB(nodo: PNodoB; lista: TStringList); // ← AGREGAR ESTA LÍNEA
+      function EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+      procedure RecorrerArbolB(nodo: PNodoB; lista: TStringList); // ← AGREGAR ESTA LÍNEA
 
                 // NUEVAS FUNCIONES PUBLIC PARA ÁRBOL B:
-  function DesmarcarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-  function BuscarEnFavoritos(Usuario: PUsuario; CorreoId: Integer): PCorreo;
-  function ContarFavoritos(Usuario: PUsuario): Integer;
+      function DesmarcarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
+      function BuscarEnFavoritos(Usuario: PUsuario; CorreoId: Integer): PCorreo;
+      function ContarFavoritos(Usuario: PUsuario): Integer;
 
-  // Recorridos del Árbol B
-  procedure RecorridoInOrdenB(nodo: PNodoB; lista: TStringList);
+      // Recorridos del Árbol B
+      procedure RecorridoInOrdenB(nodo: PNodoB; lista: TStringList);
 
-  // Funciones de validación
-  function ObtenerAlturaArbolB(nodo: PNodoB): Integer;
-  function ObtenerNumeroNodos(nodo: PNodoB): Integer;
-  function EsArbolBValido(nodo: PNodoB): Boolean;
+      // Funciones de validación
+      function ObtenerAlturaArbolB(nodo: PNodoB): Integer;
+      function ObtenerNumeroNodos(nodo: PNodoB): Integer;
+      function EsArbolBValido(nodo: PNodoB): Boolean;
 
-  // Métodos públicos para borradores (agregar a la sección public existente)
-function BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
-function EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
-function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
-  NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
+      // Métodos  para borradores
+      function BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
+      function EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
+      function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
+        NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
 
     end;
 implementation
@@ -319,7 +317,7 @@ begin
   FMatrizFilas := nil;
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
-    FArbolComunidades := nil;  // ← NUEVO: Inicializar árbol de comunidades
+    FArbolComunidades := nil;  // se inicializa árbol de comunidades
 
 
   // Crear usuario root por defecto (Id fijo = 0)
@@ -434,7 +432,6 @@ begin
   else
     WriteLn('Favorito no encontrado: ID ', CorreoId);
 end;
-// Agregar esta función nueva
 procedure TEDDMailSystem.RecorrerArbolB(nodo: PNodoB; lista: TStringList);
 var
   i: Integer;
@@ -527,7 +524,7 @@ begin
     Result := Usuario;
 end;
 
-// Modificar el RegistrarUsuario para inicializar nuevas estructuras
+// modificando  RegistrarUsuario para inicializar nuevas estructuras
 function TEDDMailSystem.RegistrarUsuario(Nombre, Usuario, Email, Telefono, Password: String; IdFijo: Integer): Boolean;
 var
   NuevoUsuario, Cur: PUsuario;
@@ -535,18 +532,18 @@ var
 begin
   Result := False;
 
-  // Verificar que el email no exista
+  // Verificar si el email no exista
   if BuscarUsuario(Email) <> nil then
     Exit;
 
-  // Validar que el IdFijo (si viene) no esté duplicado
+  // Validar que el IdFijo no esté duplicado
   if (IdFijo >= 0) and (BuscarUsuarioPorId(IdFijo) <> nil) then
   begin
     WriteLn('Error: id duplicado en JSON: ', IdFijo, ' (', Email, ')');
     Exit;
   end;
 
-  // Crear nuevo usuario
+  // Crea nuevo usuario
   New(NuevoUsuario);
 
   // Calcular MaxId actual
@@ -578,11 +575,11 @@ begin
   NuevoUsuario^.Papelera := nil;
   NuevoUsuario^.CorreosProgramados := nil;
 
-  // ← NUEVO: INICIALIZAR NUEVAS ESTRUCTURAS FASE 2
+  // INICIALIZAR ESTRUCTURAS FASE 2
   NuevoUsuario^.ArbolBorradores := nil;
   NuevoUsuario^.ArbolFavoritos := nil;
 
-  // Agregar a la lista (al final)
+  // Agregar a la lista (se agregan al final)
   if FUsuarios = nil then
     FUsuarios := NuevoUsuario
   else
@@ -596,7 +593,7 @@ begin
   Result := True;
 end;
 
-  // Implementación mejorada de GetContactos:
+  // Implementación GetContactos:
 function TEDDMailSystem.GetContactos(Usuario: PUsuario): PContacto;
 begin
   Result := nil;
@@ -604,7 +601,7 @@ begin
     Result := Usuario^.ListaContactos;
 end;
 
-// Implementación mejorada de AgregarContacto:
+// Implementación de AgregarContacto:
 function TEDDMailSystem.AgregarContacto(Usuario: PUsuario; Email: String): Boolean;
 var
   NuevoContacto: PContacto;
@@ -672,7 +669,7 @@ var
   IdJson: Integer;
 
 begin
-  JsonString := '';  // *** AGREGAR ESTA INICIALIZACIÓN ***
+  JsonString := '';
   try
     if not FileExists(RutaArchivo) then
     begin
@@ -946,7 +943,7 @@ begin
     end;
     Actual := Actual^.Siguiente;
     Inc(Contador);
-  until (Actual = PrimerContacto) or (Contador > 1000); // Prevenir bucle infinito
+  until (Actual = PrimerContacto) or (Contador > 1000); // previene bucle infinito
 end;
 function TEDDMailSystem.EliminarContacto(Usuario: PUsuario; Email: String): Boolean;
 var
@@ -1522,18 +1519,18 @@ begin
   end;
 end;
 
-// =============== VERSIÓN CORREGIDA DE GenerarNodosB ===============
+// =============== GenerarNodosB ===============
 
 procedure TEDDMailSystem.GenerarNodosB(var Archivo: TextFile; nodo: PNodoB; nivel: Integer);
 var
   i: Integer;
   NodoId: String;
   Etiqueta: String;
-  HijosIds: array[0..4] of String; // Para almacenar IDs de hijos
+  HijosIds: array[0..4] of String; // se almacenan IDs de hijos
 begin
   if nodo = nil then Exit;
 
-  // Generar ID único para este nodo
+  // Genera ID único para este nodo
   NodoId := Format('nodoB_%d_%d', [nivel, Random(1000)]);
 
   // Mostrar estructura del nodo B con las claves
@@ -1570,10 +1567,10 @@ begin
     end;
   end;
 
-  // CORRECCIÓN PRINCIPAL: Procesar hijos PRIMERO para obtener sus IDs
+  // Procesar hijos PRIMERO para obtener sus IDs
   if not nodo^.EsHoja then
   begin
-    // Inicializar array de IDs de hijos
+    // Inicializamos array de IDs de hijos
     for i := 0 to 4 do
       HijosIds[i] := '';
 
@@ -1602,7 +1599,7 @@ begin
   end;
 end;
 
-// =============== FUNCIÓN AUXILIAR NUEVA ===============
+// =============== FUNCIÓN AUXILIAR ADICIONAL ===============
 
 procedure TEDDMailSystem.GenerarNodoHijoConId(var Archivo: TextFile; nodo: PNodoB; nivel: Integer; const NodoId: String);
 var
@@ -1673,7 +1670,7 @@ begin
     WriteLn(Archivo, '    label="Reporte de comunidades (Árbol BST)";');
     WriteLn(Archivo, '    fontsize=16;');
     WriteLn(Archivo, '    node [shape=record, style=filled, fillcolor=lightblue];');
-    WriteLn(Archivo, '    rankdir=TB;');  // ← Forzar dirección top-bottom
+    WriteLn(Archivo, '    rankdir=TB;');  // dirección top-bottom
 
     if FArbolComunidades = nil then
     begin
@@ -1687,7 +1684,6 @@ begin
     WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
-    // Resto del código igual...
     try
       Process := TProcess.Create(nil);
       try
@@ -1744,7 +1740,7 @@ begin
       GenerarNodosB(Archivo, Usuario^.ArbolFavoritos, 0);
     end;
 
-    WriteLn(Archivo, '}');  // ← CERRAR CORRECTAMENTE EL DIGRAPH
+    WriteLn(Archivo, '}');
     CloseFile(Archivo);
 
     // Generar imagen PNG
@@ -1874,10 +1870,10 @@ var
   Process: TProcess;
   NombreArchivo: String;
   EmailLimpio: String;
-  SigEmailLimpio: String;  // <- DECLARAR AQUÍ
-  UltimoLimpio: String;    // <- DECLARAR AQUÍ
-  PrimeroLimpio: String;   // <- DECLARAR AQUÍ
-  UltimoEmail: String;     // <- DECLARAR AQUÍ
+  SigEmailLimpio: String;
+  UltimoLimpio: String;
+  PrimeroLimpio: String;
+  UltimoEmail: String;
   Contador: Integer;
 begin
   if Usuario = nil then
@@ -1920,7 +1916,7 @@ begin
 
         Contacto := Contacto^.Siguiente;
         Inc(Contador);
-      until (Contacto = PrimerContacto) or (Contador > 100); // Prevenir bucle infinito
+      until (Contacto = PrimerContacto) or (Contador > 100); // para evitar bucle infinito
 
       // Generar las conexiones circulares
       Contacto := PrimerContacto;
@@ -2118,7 +2114,7 @@ begin
 end;
 
 //Fase 2
-// Agregar estas implementaciones en EstructurasDatos.pas
+
 
 // =============== FUNCIONES PARA ÁRBOL AVL (BORRADORES) ===============
 function TEDDMailSystem.ObtenerAltura(nodo: PNodoAVL): Integer;
@@ -2188,7 +2184,7 @@ begin
     nodo^.Derecho := InsertarAVL(nodo^.Derecho, correo)
   else
   begin
-    Result := nodo; // Igual, no insertar
+    Result := nodo;
     Exit;
   end;
 
@@ -2248,9 +2244,9 @@ begin
     False
   );
 
-  // AGREGAR ESTAS LÍNEAS DESPUÉS DEL CrearCorreo:
-  NuevoCorreo^.Cuerpo := Mensaje;     // Nueva línea
-  NuevoCorreo^.FechaHora := Now;      // Nueva línea
+
+  NuevoCorreo^.Cuerpo := Mensaje;
+  NuevoCorreo^.FechaHora := Now;
 
   Usuario^.ArbolBorradores := InsertarAVL(Usuario^.ArbolBorradores, NuevoCorreo);
   WriteLn('Borrador guardado para usuario: ', Usuario^.Email);
@@ -2277,7 +2273,7 @@ begin
   else if nombreComunidad > nodo^.NombreComunidad then
     nodo^.Derecho := InsertarBST(nodo^.Derecho, nombreComunidad)
   else
-    Result := nodo; // Ya existe
+    Result := nodo;
 
   Result := nodo;
 end;
@@ -2359,7 +2355,7 @@ begin
     Exit;
   end;
 
-  // Agregar al árbol B de favoritos (implementación básica)
+  // Agregar al árbol B de favoritos
   Usuario^.ArbolFavoritos := InsertarB(Usuario^.ArbolFavoritos, Correo);
   WriteLn('Correo marcado como favorito: ID ', CorreoId);
   Result := True;
@@ -2385,7 +2381,7 @@ begin
   end;
 end;
 
-// Función básica para obtener borradores (simplificada)
+// Función básica para obtener borradores
 function TEDDMailSystem.ObtenerBorradores(Usuario: PUsuario; tipoRecorrido: String): TStringList;
 begin
   Result := TStringList.Create;
@@ -2443,9 +2439,6 @@ begin
 end;
 
 
-
-// =============== REEMPLAZAR InsertarB EXISTENTE CON ESTA VERSIÓN COMPLETA ===============
-
 function TEDDMailSystem.InsertarB(raiz: PNodoB; correo: PCorreo): PNodoB;
 var
   nuevaRaiz: PNodoB;
@@ -2491,9 +2484,9 @@ begin
   end;
 end;
 
-// =============== AGREGAR ESTAS NUEVAS FUNCIONES AUXILIARES ===============
+// ===============  FUNCIONES AUXILIARES ===============
 
-// =============== CORRECCIÓN DE LA FUNCIÓN DividirNodoB ===============
+// =============== FUNCIÓN DividirNodoB ===============
 
 procedure TEDDMailSystem.DividirNodoB(nodo: PNodoB; indiceHijo: Integer; var nuevaRaiz: PNodoB);
 var
@@ -2505,9 +2498,6 @@ begin
   hijoLleno := nodo^.Hijos[indiceHijo];
   nuevoHijo := CrearNodoB;
 
-  // IMPORTANTE: Para orden 5, cuando tenemos 4 claves [0,1,2,3]
-  // La clave mediana es el índice 2, NO el índice 1
-
   WriteLn('🔧 ANTES DE DIVISIÓN:');
   WriteLn('   Claves: [', hijoLleno^.Claves[0], ', ', hijoLleno^.Claves[1],
            ', ', hijoLleno^.Claves[2], ', ', hijoLleno^.Claves[3], ']');
@@ -2515,24 +2505,23 @@ begin
   // El nuevo nodo tendrá la misma propiedad de hoja que el nodo original
   nuevoHijo^.EsHoja := hijoLleno^.EsHoja;
 
-  // ========== CORRECCIÓN CRÍTICA ==========
   // Para un nodo con 4 claves [0,1,2,3], la mediana es índice 2
   // Claves 0,1 van al nodo izquierdo
   // Clave 2 se promote a padre
   // Claves 3 va al nodo derecho
 
   // Obtener la clave mediana (índice 2) para promover
-  claveMediana := hijoLleno^.Claves[2];  // ← CAMBIO: era [1], ahora [2]
-  correoMediana := hijoLleno^.Correos[2]; // ← CAMBIO: era [1], ahora [2]
+  claveMediana := hijoLleno^.Claves[2];
+  correoMediana := hijoLleno^.Correos[2];
 
   WriteLn('   Clave mediana a promover: ', claveMediana);
 
-  // Copiar claves 3 al nuevo nodo (hijo derecho)
+
   nuevoHijo^.Claves[0] := hijoLleno^.Claves[3];
   nuevoHijo^.Correos[0] := hijoLleno^.Correos[3];
   nuevoHijo^.NumClaves := 1;
 
-  // El nodo original conserva claves 0,1 (hijo izquierdo)
+
   hijoLleno^.NumClaves := 2;  // ← CAMBIO: conserva 2 claves, no 1
 
   // Limpiar las claves que ya no pertenecen al nodo original
@@ -2541,7 +2530,7 @@ begin
   hijoLleno^.Claves[3] := 0;
   hijoLleno^.Correos[3] := nil;
 
-  WriteLn('🎯 DESPUÉS DE DIVISIÓN:');
+  WriteLn(' DESPUÉS DE DIVISIÓN:');
   WriteLn('   Hijo izq: [', hijoLleno^.Claves[0], ', ', hijoLleno^.Claves[1], ']');
   WriteLn('   Promovida: [', claveMediana, ']');
   WriteLn('   Hijo der: [', nuevoHijo^.Claves[0], ']');
@@ -2577,10 +2566,10 @@ begin
   nodo^.Correos[indiceHijo] := correoMediana;
   Inc(nodo^.NumClaves);
 
-  WriteLn('✅ División completada correctamente');
+  WriteLn('División completada correctamente');
 end;
 
-// =============== FUNCIÓN DE VALIDACIÓN ADICIONAL ===============
+// =============== VALIDACIÓN ADICIONAL ===============
 
 function TEDDMailSystem.ValidarEstructuraArbolB(nodo: PNodoB): Boolean;
 var
@@ -2592,7 +2581,7 @@ begin
   // Verificar que no hay nodos con más de 4 claves
   if nodo^.NumClaves > 4 then
   begin
-    WriteLn('❌ ERROR: Nodo con ', nodo^.NumClaves, ' claves (máximo 4)');
+    WriteLn('ERROR: Nodo con ', nodo^.NumClaves, ' claves (máximo 4)');
     Result := False;
   end;
 
@@ -2601,7 +2590,7 @@ begin
   begin
     if nodo^.Claves[i] >= nodo^.Claves[i + 1] then
     begin
-      WriteLn('❌ ERROR: Claves desordenadas: ', nodo^.Claves[i], ' >= ', nodo^.Claves[i + 1]);
+      WriteLn('ERROR: Claves desordenadas: ', nodo^.Claves[i], ' >= ', nodo^.Claves[i + 1]);
       Result := False;
     end;
   end;
@@ -2625,7 +2614,7 @@ begin
 
   if nodo^.EsHoja then
   begin
-    // Insertar en hoja: mover elementos y encontrar posición
+    //  mover elementos y encontrar posición
     while (i >= 0) and (nodo^.Claves[i] > correo^.Id) do
     begin
       nodo^.Claves[i + 1] := nodo^.Claves[i];
@@ -2644,7 +2633,7 @@ begin
     while (i >= 0) and (nodo^.Claves[i] > correo^.Id) do
       Dec(i);
 
-    Inc(i); // Índice del hijo apropiado
+    Inc(i);
 
     // Si el hijo está lleno, dividirlo primero
     if nodo^.Hijos[i]^.NumClaves = 4 then
@@ -2661,7 +2650,7 @@ begin
   end;
 end;
 
-// =============== FUNCIONES ADICIONALES ÚTILES ===============
+// =============== FUNCIONES ADICIONALES ===============
 
 function TEDDMailSystem.ContarFavoritos(Usuario: PUsuario): Integer;
 
@@ -2696,7 +2685,7 @@ end;
 
 function TEDDMailSystem.DesmarcarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
 begin
-  Result := EliminarFavorito(Usuario, CorreoId); // Usar función existente
+  Result := EliminarFavorito(Usuario, CorreoId); // función que existe arriba
 end;
 
 procedure TEDDMailSystem.RecorridoInOrdenB(nodo: PNodoB; lista: TStringList);
@@ -2769,7 +2758,7 @@ end;
 
 
 
-// Agregar función auxiliar para buscar en AVL
+//  función auxiliar para buscar en AVL
 function TEDDMailSystem.BuscarCorreoEnAVL(nodo: PNodoAVL; CorreoId: Integer): PCorreo;
 begin
   Result := nil;
@@ -2788,7 +2777,7 @@ begin
 end;
 
 
-// Agregar función para generar reportes de nuevas estructuras
+//  función para generar reportes de las nuevas estructuras
 procedure TEDDMailSystem.GenerarReporteBorradores(Usuario: PUsuario; RutaCarpeta: String);
 var
   Archivo: TextFile;
@@ -2852,7 +2841,7 @@ procedure TEDDMailSystem.GenerarNodosAVL(var Archivo: TextFile; nodo: PNodoAVL);
 begin
   if nodo = nil then Exit;
 
-  // FORMATO VERTICAL COMPLETO con toda la información
+
   WriteLn(Archivo, Format('    nodo_%d [label="ID: %d\nRemitente: %s\nEstado: %s\nAsunto: %s\nFecha: %s\nMensaje: %s", shape=box, style="filled,rounded", fillcolor=lightyellow];',
     [nodo^.Correo^.Id,
      nodo^.Correo^.Id,
@@ -2926,9 +2915,9 @@ end;
 
 
 
-     // =================== IMPLEMENTACIONES PARA BORRADORES ===================
+// =================== IMPLEMENTACIONES PARA BORRADORES ===================
 
-// Función para buscar borrador
+//  para buscar borrador
 function TEDDMailSystem.BuscarBorrador(Usuario: PUsuario; Id: Integer): PCorreo;
 begin
   Result := nil;
@@ -2937,7 +2926,7 @@ begin
   Result := BuscarCorreoEnAVL(Usuario^.ArbolBorradores, Id);
 end;
 
-// Función para encontrar el nodo con valor mínimo
+// encontrar el nodo con valor mínimo
 function TEDDMailSystem.BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
 begin
   Result := nodo;
@@ -2947,7 +2936,7 @@ begin
     Result := Result^.Izquierdo;
 end;
 
-// Función para eliminar un nodo del AVL
+// eliminar un nodo del AVL
 function TEDDMailSystem.EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
 var
   temp: PNodoAVL;
@@ -2966,7 +2955,7 @@ begin
     nodo^.Derecho := EliminarAVL(nodo^.Derecho, id)
   else
   begin
-    // Este es el nodo a eliminar
+    // nodo a eliminar
     if (nodo^.Izquierdo = nil) or (nodo^.Derecho = nil) then
     begin
       if nodo^.Izquierdo <> nil then
@@ -3011,7 +3000,7 @@ begin
   // Paso 2: Actualizar altura del nodo actual
   nodo^.Altura := 1 + Max(ObtenerAltura(nodo^.Izquierdo), ObtenerAltura(nodo^.Derecho));
 
-  // Paso 3: Obtener balance
+  // Paso 3: para obtener balance
   balance := ObtenerBalance(nodo);
 
   // Paso 4: Balancear el árbol si es necesario
@@ -3049,7 +3038,7 @@ begin
   Result := nodo;
 end;
 
-// Función pública para eliminar borrador
+// Función pública: eliminar borrador
 function TEDDMailSystem.EliminarBorrador(Usuario: PUsuario; Id: Integer): Boolean;
 begin
   Result := False;
@@ -3063,7 +3052,7 @@ begin
   end;
 end;
 
-// Función para actualizar borrador
+// para actualizar borrador
 function TEDDMailSystem.ActualizarBorrador(Usuario: PUsuario; Id: Integer;
   NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
 var
@@ -3080,7 +3069,7 @@ begin
     BorradorExistente^.Destinatario := NuevoDestinatario;
     BorradorExistente^.Asunto := NuevoAsunto;
     BorradorExistente^.Cuerpo := NuevoCuerpo;
-    BorradorExistente^.FechaHora := Now; // Actualizar fecha de modificación
+    BorradorExistente^.FechaHora := Now; // Actualizamos a fecha de modificación
 
     Result := True;
   except
