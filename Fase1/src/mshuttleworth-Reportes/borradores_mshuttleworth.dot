@@ -1,0 +1,8 @@
+digraph G {
+    label="Árbol AVL - Borradores - Mark Shuttleworth";
+    fontsize=16;
+    node [shape=record, style=filled, fillcolor=lightyellow];
+    nodo_8472 [label="ID: 8472\nRemitente: mshuttleworth@edd.com\nEstado: NL\nAsunto: hola\nFecha: 03-10-25 18:46\nMensaje: hola", shape=box, style="filled,rounded", fillcolor=lightyellow];
+    nodo_8472 -> nodo_4237 [label="L"];
+    nodo_4237 [label="ID: 4237\nRemitente: mshuttleworth@edd.com\nEstado: NL\nAsunto: adios\nFecha: 03-10-25 18:46\nMensaje: adios", shape=box, style="filled,rounded", fillcolor=lightyellow];
+}

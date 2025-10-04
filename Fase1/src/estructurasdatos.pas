@@ -782,8 +782,10 @@ var
   FS: TFileStream;
   S: String;
   estadoTxt, progTxt: String;
+  destinatarioEmail: String;
+  EsEstructuraAgrupada: Boolean;
 begin
-    S := '';
+  S := '';
 
   if not FileExists(RutaArchivo) then
   begin
@@ -791,7 +793,7 @@ begin
     Exit;
   end;
 
-  // leer archivo completo
+  // Leer archivo completo
   FS := TFileStream.Create(RutaArchivo, fmOpenRead);
   try
     SetLength(S, FS.Size);
@@ -809,48 +811,125 @@ begin
   JsonData := GetJSON(S);
   try
     Root := JsonData as TJSONObject;
-    ArrCorreos := Root.Arrays['correos'];        // estructura esperada
+    ArrCorreos := Root.Arrays['correos'];
 
-    for i := 0 to ArrCorreos.Count - 1 do
+    // Detectar estructura del JSON
+    if ArrCorreos.Count > 0 then
     begin
-      ObjUsuario := ArrCorreos.Objects[i];
-      UsuarioId := ObjUsuario.Get('usuario_id', 0);
+      ObjUsuario := ArrCorreos.Objects[0];
+      // Si tiene 'usuario_id' y 'bandeja_entrada', es estructura agrupada
+      EsEstructuraAgrupada := (ObjUsuario.Find('usuario_id') <> nil) and
+                               (ObjUsuario.Find('bandeja_entrada') <> nil);
+    end
+    else
+      Exit; // Array vacío
 
-      U := BuscarUsuarioPorId(UsuarioId);
-      if U = nil then
+    // ========== ESTRUCTURA AGRUPADA (por usuario) ==========
+    if EsEstructuraAgrupada then
+    begin
+      WriteLn('Detectada estructura AGRUPADA por usuario');
+      for i := 0 to ArrCorreos.Count - 1 do
       begin
-        WriteLn('Aviso: usuario_id ', UsuarioId, ' no existe. Se omite su bandeja.');
-        Continue;
+        ObjUsuario := ArrCorreos.Objects[i];
+        UsuarioId := ObjUsuario.Get('usuario_id', 0);
+
+        U := BuscarUsuarioPorId(UsuarioId);
+        if U = nil then
+        begin
+          WriteLn('Aviso: usuario_id ', UsuarioId, ' no existe. Se omite su bandeja.');
+          Continue;
+        end;
+
+        Inbox := ObjUsuario.Arrays['bandeja_entrada'];
+        for k := 0 to Inbox.Count - 1 do
+        begin
+          MailObj := Inbox.Objects[k];
+
+          New(C);
+          C^.Id          := MailObj.Get('id', 0);
+          C^.Remitente   := MailObj.Get('remitente', '');
+          C^.Destinatario:= U^.Email;
+          estadoTxt      := LowerCase(MailObj.Get('estado',''));
+          if (Pos('no', estadoTxt) > 0) or (estadoTxt = 'nl') then
+            C^.Estado := 'NL'
+          else
+            C^.Estado := 'L';
+
+          progTxt        := LowerCase(MailObj.Get('programado','no'));
+          C^.Programado  := (progTxt = 'si') or (progTxt = 'sí');
+          C^.Asunto      := MailObj.Get('asunto', '');
+          C^.Fecha       := MailObj.Get('fecha', '');
+          C^.Mensaje     := MailObj.Get('mensaje', '');
+          C^.FechaEnvio  := '';
+
+          C^.Anterior := nil;
+          C^.Siguiente := nil;
+
+          Inbox_InsertTail(U^.BandejaEntrada, C);
+          ActualizarMatrizRelaciones(C^.Remitente, U^.Email);
+        end;
       end;
-
-      Inbox := ObjUsuario.Arrays['bandeja_entrada'];
-      for k := 0 to Inbox.Count - 1 do
+    end
+    // ========== ESTRUCTURA PLANA (lista de correos) ==========
+    else
+    begin
+      WriteLn('Detectada estructura PLANA (lista de correos)');
+      for i := 0 to ArrCorreos.Count - 1 do
       begin
-        MailObj := Inbox.Objects[k];
+        MailObj := ArrCorreos.Objects[i];
 
+        // Obtener destinatario del correo
+        destinatarioEmail := MailObj.Get('destinatario', '');
+        if destinatarioEmail = '' then
+        begin
+          WriteLn('Aviso: Correo sin destinatario, se omite.');
+          Continue;
+        end;
+
+        // Buscar usuario destinatario
+        U := BuscarUsuario(destinatarioEmail);
+        if U = nil then
+        begin
+          WriteLn('Aviso: destinatario ', destinatarioEmail, ' no existe. Se omite correo.');
+          Continue;
+        end;
+
+        // Crear correo
         New(C);
-        // mapear campos
         C^.Id          := MailObj.Get('id', 0);
         C^.Remitente   := MailObj.Get('remitente', '');
-        C^.Destinatario:= U^.Email; // destinatario es el dueño de la bandeja
+        C^.Destinatario:= destinatarioEmail;
+
         estadoTxt      := LowerCase(MailObj.Get('estado',''));
-        if (Pos('no', estadoTxt) > 0) then C^.Estado := 'NL' else C^.Estado := 'L';
+        if (Pos('no', estadoTxt) > 0) or (estadoTxt = 'nl') then
+          C^.Estado := 'NL'
+        else if (estadoTxt = 'eliminado') then
+          C^.Estado := 'ELIMINADO'
+        else
+          C^.Estado := 'L';
 
         progTxt        := LowerCase(MailObj.Get('programado','no'));
         C^.Programado  := (progTxt = 'si') or (progTxt = 'sí');
-
         C^.Asunto      := MailObj.Get('asunto', '');
-        C^.Fecha       := MailObj.Get('fecha', '');
+        C^.Fecha       := MailObj.Get('fecha', FormatDateTime('dd/mm/yy hh:nn', Now));
         C^.Mensaje     := MailObj.Get('mensaje', '');
-        C^.FechaEnvio  := ''; // solo se usa para programados salientes
+        C^.FechaEnvio  := '';
 
         C^.Anterior := nil;
         C^.Siguiente := nil;
 
-        // insertar al final de la bandeja (lista doble)
-        Inbox_InsertTail(U^.BandejaEntrada, C);
+        // Insertar en bandeja de entrada o papelera según estado
+        if C^.Estado = 'ELIMINADO' then
+        begin
+          Inbox_InsertTail(U^.Papelera, C);
+          WriteLn('  -> Correo ID ', C^.Id, ' agregado a PAPELERA de ', U^.Email);
+        end
+        else
+        begin
+          Inbox_InsertTail(U^.BandejaEntrada, C);
+          WriteLn('  -> Correo ID ', C^.Id, ' agregado a BANDEJA de ', U^.Email);
+        end;
 
-        // actualizar matriz remitente->destinatario
         ActualizarMatrizRelaciones(C^.Remitente, U^.Email);
       end;
     end;

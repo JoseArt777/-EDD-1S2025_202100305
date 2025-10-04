@@ -10,7 +10,7 @@ uses
 type
   TCorreoManager = class
   private
-
+    function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
     function AgregarABandejaEntrada(Usuario: PUsuario; Correo: PCorreo): Boolean;
     function AgregarAPapelera(Usuario: PUsuario; Correo: PCorreo): Boolean;
     function AgregarACorreosProgramados(Usuario: PUsuario; Correo: PCorreo): Boolean;
@@ -21,7 +21,6 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False): PCorreo;
     // Funciones principales
     function EnviarCorreo(Sistema: TEDDMailSystem; RemitenteEmail, Destinatario, Asunto, Mensaje: String): Boolean;
     function ProgramarCorreo(Sistema: TEDDMailSystem; RemitenteEmail, Destinatario, Asunto, Mensaje, FechaEnvio: String): Boolean;

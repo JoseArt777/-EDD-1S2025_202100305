@@ -3,7 +3,15 @@ digraph G {
     fontsize=16;
     node [shape=record, style=filled, fillcolor=lightblue];
     rankdir=TB;
-    Comunidad_del_negrito [label="Comunidad del negrito\nFecha creacion: 27-09-2025\nMensajes publicados: 1"];
-    casposo_barbon [label="casposo barbon\nFecha creacion: 27-09-2025\nMensajes publicados: 1"];
-    Comunidad_del_negrito -> casposo_barbon;
+    Ejemplo_1 [label="Ejemplo 1\nFecha creacion: 03-10-2025\nMensajes publicados: 1"];
+    Astronomía [label="Astronomía\nFecha creacion: 03-10-2025\nMensajes publicados: 0"];
+    Ejemplo_2 [label="Ejemplo 2\nFecha creacion: 03-10-2025\nMensajes publicados: 1"];
+    Ejemplo_3 [label="Ejemplo 3\nFecha creacion: 03-10-2025\nMensajes publicados: 0"];
+    Música [label="Música\nFecha creacion: 03-10-2025\nMensajes publicados: 0"];
+    Videojuegos [label="Videojuegos\nFecha creacion: 03-10-2025\nMensajes publicados: 0"];
+    Música -> Videojuegos;
+    Ejemplo_3 -> Música;
+    Ejemplo_2 -> Ejemplo_3;
+    Ejemplo_1 -> Astronomía;
+    Ejemplo_1 -> Ejemplo_2;
 }

@@ -247,7 +247,7 @@ begin
 
   Usuario := FSistema.GetUsuarioActual;
 
-  // Header (igual)
+  // Header
   LabelSaludo := TLabel.Create(Panel);
   with LabelSaludo do
   begin
@@ -320,7 +320,7 @@ begin
   // CARD 1
   // ═══════════════════════════════════════════════════════
 
-  // Sombra (shape gris oscuro desplazado)
+  // Sombra
   ShapeShadow1 := TShape.Create(Panel);
   with ShapeShadow1 do
   begin
@@ -329,7 +329,7 @@ begin
     Top := 103;
     Width := 410;
     Height := 260;
-    Brush.Color := $00CCCCCC;  // Gris claro para sombra
+    Brush.Color := $00CCCCCC;
     Pen.Style := psClear;
     SendToBack;  // Enviar al fondo
   end;
@@ -363,7 +363,7 @@ begin
 
   YPos1 := 45;
 
-  // Botones (todos igual que antes)
+  // Botones
   BtnBandeja := TButton.Create(CardFase1);
   with BtnBandeja do
   begin
@@ -472,10 +472,10 @@ begin
   end;
 
   // ═══════════════════════════════════════════════════════
-  // CARD 2 CON EFECTO SOMBRA
+  // CARD 2
   // ═══════════════════════════════════════════════════════
 
-  // Sombra Card 2
+  // Sombra
   ShapeShadow2 := TShape.Create(Panel);
   with ShapeShadow2 do
   begin
@@ -497,7 +497,7 @@ begin
     Top := 375;
     Width := 410;
     Height := 160;
-    BevelOuter := bvRaised;  // ← Cambiar a bvRaised
+    BevelOuter := bvRaised;
     BorderWidth := 1;
     Color := $00F5A4BE;
     ParentBackground := False;

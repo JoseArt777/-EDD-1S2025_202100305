@@ -1,0 +1,8 @@
+digraph G {
+    label="Pila (LIFO) - Papelera - Luis Garcia";
+    fontsize=16;
+    rankdir=TB;
+    node [shape=record, style=filled];
+    // PILA - El último agregado está arriba
+    correo_101 [label="ID: 101|Estado: Eliminado|De: soporte@edd.com|Asunto: Bienvenido Luis|Fecha: 2025-08-20", fillcolor=lightpink];
+}

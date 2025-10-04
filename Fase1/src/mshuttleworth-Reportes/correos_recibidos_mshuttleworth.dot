@@ -1,0 +1,10 @@
+digraph G {
+    label="Lista Doblemente Enlazada - Correos Recibidos - Mark Shuttleworth";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled];
+    correo_4 [label="ID: 4|Estado: L|De: gkroah-hartman@edd.com|Asunto: Nueva propuesta para el kernel|Fecha: 03-10-25 18:42", fillcolor=lightblue];
+    correo_4 -> correo_18;
+    correo_18 -> correo_4;
+    correo_18 [label="ID: 18|Estado: NL|De: ksandler@edd.com|Asunto: Revisión de términos|Fecha: 03-10-25 18:42", fillcolor=lightblue];
+}

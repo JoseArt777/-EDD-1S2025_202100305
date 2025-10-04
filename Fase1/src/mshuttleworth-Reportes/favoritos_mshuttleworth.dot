@@ -1,0 +1,10 @@
+digraph G {
+    label="Árbol B - Favoritos - Mark Shuttleworth";
+    fontsize=16;
+    node [shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_623 [label=<Nodo B (Nivel 0)<BR/>Claves: 4, 18<BR/>Hoja: True<BR/>NumClaves: 2>, shape=box, style=filled, fillcolor=lightgreen];
+    dato_4 [label=<ID: 4<BR/>Remitente: gkroah-hartman@edd.com<BR/>Destinatario: mshuttleworth@edd.com<BR/>Asunto: Nueva propuesta para el kernel<BR/>Mensaje: Te envío un borrador con la propuesta de mejora para revisión.>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_623 -> dato_4 [style=dashed, color=blue];
+    dato_18 [label=<ID: 18<BR/>Remitente: ksandler@edd.com<BR/>Destinatario: mshuttleworth@edd.com<BR/>Asunto: Revisión de términos<BR/>Mensaje: Necesito tu aprobación sobre los cambios legales en el módulo de autenticación.>, shape=box, style=filled, fillcolor=lightyellow];
+    nodoB_0_623 -> dato_18 [style=dashed, color=blue];
+}
