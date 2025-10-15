@@ -1,0 +1,8 @@
+graph GrafoNoDirigido {
+  node [shape=ellipse, style=filled, fillcolor=lightblue];
+  edge [color=black];
+
+  A -- B;
+  A -- C;
+  B -- D;
+}
