@@ -42,8 +42,8 @@
         <Filename Value="InterfazGTK.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="5497"/>
-        <CursorPos Y="5504"/>
+        <TopLine Value="962"/>
+        <CursorPos X="37" Y="970"/>
         <UsageCount Value="84"/>
         <Loaded Value="True"/>
       </Unit>
@@ -82,22 +82,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="223" TopLine="221"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="200" Column="3" TopLine="189"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="947" TopLine="956"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="806" Column="6" TopLine="793"/>
-      </Position>
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="2509" Column="52" TopLine="2491"/>
@@ -202,6 +186,22 @@
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="5921" Column="39" TopLine="5913"/>
       </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="6009" Column="56" TopLine="6000"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5175" Column="44" TopLine="5169"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5161" TopLine="5156"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="199" Column="3" TopLine="192"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -215,7 +215,7 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="InterfazGTK.pas"/>
-        <Line Value="6894"/>
+        <Line Value="6758"/>
       </Item>
       <Item>
         <Kind Value="bpkSource"/>

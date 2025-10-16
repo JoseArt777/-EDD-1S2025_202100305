@@ -196,7 +196,7 @@ type
   // Control de Logueo
   procedure OnControlLogueoClick(Sender: TObject);
   procedure OnExportarLogueoJSONClick(Sender: TObject);
-  procedure OnVisualizarLogueoClick(Sender: TObject);
+
 
   // Carga Masiva de Contactos
 
@@ -967,7 +967,7 @@ begin
     Top := YPos;
     Width := BtnWidth;
     Height := BtnHeight;
-    OnClick := @OnVisualizarLogueoClick;
+    OnClick := @OnControlLogueoClick;
     Font.Style := [fsBold];
     Color := clAqua;
     Hint := 'Ver registro de entradas y salidas';
@@ -5158,143 +5158,7 @@ end;
 // IMPLEMENTACIÓN CONTROL DE LOGUEO (FASE 3)
 // ═══════════════════════════════════════════════════════
 
-procedure TInterfazEDDMail.OnVisualizarLogueoClick(Sender: TObject);
-var
-  Panel: TPanel;
-  LabelTitulo, LabelBuscar: TLabel;
-  BtnExportar, BtnReporte, BtnCerrar: TButton;
 
-  BtnBuscar: TButton;              // ← FALTA ESTA
-
-begin
-  if Assigned(FFormLogueo) then
-  begin
-    FFormLogueo.Show;
-    FFormLogueo.BringToFront;
-    Exit;
-  end;
-
-  FFormLogueo := TForm.Create(nil);
-  with FFormLogueo do
-  begin
-    Caption := 'Control de Logueo - Entradas y Salidas';
-    Width := 800;
-    Height := 500;
-    Position := poOwnerFormCenter;
-    BorderStyle := bsSizeable;
-    OnClose := @OnFormLogueoClose;
-    Color := $00ED618E;
-  end;
-
-  Panel := TPanel.Create(FFormLogueo);
-  with Panel do
-  begin
-    Parent := FFormLogueo;
-    Align := alClient;
-    BevelOuter := bvNone;
-    BorderWidth := 10;
-    Color := $00ED618E;
-  end;
-
-  LabelTitulo := TLabel.Create(Panel);
-  with LabelTitulo do
-  begin
-    Parent := Panel;
-    Caption := 'Control de Logueo 📊';
-    Font.Size := 14;
-    Font.Style := [fsBold];
-    Left := 10;
-    Top := 10;
-  end;
-
-  LabelBuscar := TLabel.Create(Panel);
-  with LabelBuscar do
-  begin
-    Parent := Panel;
-    Caption := 'Buscar usuario:';
-    Left := 400;
-    Top := 14;
-    Font.Style := [fsBold];
-  end;
-
-  FEditBuscarUsuarioLog := TEdit.Create(Panel);
-  with FEditBuscarUsuarioLog do
-  begin
-    Parent := Panel;
-    Left := 510;
-    Top := 10;
-    Width := 200;
-  end;
-
-  BtnBuscar := TButton.Create(Panel);
-  with BtnBuscar do
-  begin
-    Parent := Panel;
-    Caption := 'Buscar';
-    Left := 720;
-    Top := 8;
-    Width := 60;
-    Height := 26;
-    OnClick := @Logueo_OnBuscarClick;
-  end;
-
-  // Lista de logs
-  FListLogueo := TListBox.Create(Panel);
-  with FListLogueo do
-  begin
-    Parent := Panel;
-    Left := 10;
-    Top := 50;
-    Width := 760;
-    Height := 350;
-    ItemHeight := 16;
-    Font.Name := 'Courier New';
-  end;
-
-  // Botones inferiores
-  BtnExportar := TButton.Create(Panel);
-  with BtnExportar do
-  begin
-    Parent := Panel;
-    Caption := '💾 Exportar JSON';
-    Left := 10;
-    Top := 410;
-    Width := 150;
-    Height := 35;
-    OnClick := @OnExportarLogueoClick;
-    Font.Style := [fsBold];
-    Color := clAqua;
-  end;
-
-  BtnReporte := TButton.Create(Panel);
-  with BtnReporte do
-  begin
-    Parent := Panel;
-    Caption := '📄 Generar Reporte';
-    Left := 170;
-    Top := 410;
-    Width := 150;
-    Height := 35;
-    OnClick := @OnReporteLogueoClick;
-    Font.Style := [fsBold];
-    Color := clLime;
-  end;
-
-  BtnCerrar := TButton.Create(Panel);
-  with BtnCerrar do
-  begin
-    Parent := Panel;
-    Caption := 'Cerrar';
-    Left := 620;
-    Top := 410;
-    Width := 150;
-    Height := 35;
-    OnClick := @Logueo_OnCerrarClick;
-  end;
-
-  Logueo_RellenarLista;
-  FFormLogueo.Show;
-end;
 
 procedure TInterfazEDDMail.OnFormLogueoClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
