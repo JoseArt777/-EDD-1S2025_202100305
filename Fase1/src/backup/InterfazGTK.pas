@@ -75,6 +75,9 @@ type
     // ======================================
 
         FEditBuscarFavoritos: TEdit;  // ← AGREGAR ESTE CAMPO
+        BtnVaciarPapelera: TButton;   // Variable global si necesitas referencia
+
+
 
     // Control de Logueo
     FFormLogueo: TForm;
@@ -86,6 +89,8 @@ type
     FListBlockchain: TListBox;
     FMemoBlockchain: TMemo;
 
+    FComunidadActual: String;  // Nombre de la comunidad que se está viendo
+    FScrollBoxMensajes: TScrollBox;  // Contenedor con scroll para mensajes
     // ======================================
     // DEFINICIÓN DE MÉTODOS
     // ======================================
@@ -217,7 +222,7 @@ type
   procedure DescargarCorreoComprimido(CorreoId: Integer);
 
   // Reacciones a Mensajes
-  procedure OnReaccionarMensajeClick(Sender: TObject);
+
   procedure MostrarReaccionesDeComunidad(NombreComunidad: String);
 
   // Control de Logueo (Fase 3)
@@ -253,12 +258,32 @@ procedure OnCargaMasivaContactosClick(Sender: TObject);
 
 // Métodos de eventos (handlers)
 procedure OnExportarLogueoClick(Sender: TObject);
+    procedure OnReaccionarMensajeComunidadClick(Sender: TObject );
+
+      procedure UsuarioComunidades_OnVerMensajesClickMejorado(Sender: TObject);
+procedure OnReaccionarMensajeDirectoClick(Sender: TObject);
+function ObtenerReaccionesActuales(NombreComunidad: String; IdMensaje: Integer): Integer;
+
 
 
   public
     constructor Create;
     destructor Destroy; override;
     procedure Ejecutar;
+
+
+    // ===== FASE 3 - MÉTODOS ADICIONALES =====
+
+// Papelera
+procedure Papelera_OnVaciarClick(Sender: TObject);
+
+// Borradores
+procedure Borradores_OnEliminarConPapeleraClick(Sender: TObject);
+    procedure OnGestionarComunidadesUsuarioClick(Sender: TObject);
+    procedure UsuarioComunidades_OnVerMensajesClick(Sender: TObject);
+    procedure UsuarioComunidades_OnPublicarClick(Sender: TObject);
+
+
 
 
 
@@ -627,16 +652,17 @@ begin
   end;
   Inc(YPos2, 48);
 
+  // BUSCAR esta sección (alrededor de línea 760):
   BtnPublicarComunidad := TButton.Create(CardFase2);
   with BtnPublicarComunidad do
   begin
     Parent := CardFase2;
-    Caption := '👥 Comunidades';
+    Caption := '💥 Comunidades';  // ← CAMBIAR texto
     Left := 15;
     Top := YPos2;
     Width := 180;
     Height := 38;
-    OnClick := @OnPublicarComunidadClick;
+    OnClick := @OnGestionarComunidadesUsuarioClick;  // ← CAMBIAR evento
     Font.Style := [fsBold];
     Color := $00CCFFCC;
   end;
@@ -967,7 +993,7 @@ begin
     Top := YPos;
     Width := BtnWidth;
     Height := BtnHeight;
-    OnClick := @OnVisualizarLogueoClick;
+    OnClick := @OnControlLogueoClick;
     Font.Style := [fsBold];
     Color := clAqua;
     Hint := 'Ver registro de entradas y salidas';
@@ -2901,6 +2927,20 @@ begin
     Left := 10; Top := 410; Width := 200; Height := 30;
     OnClick := @Papelera_OnEliminarDefClick;
   end;
+  BtnVaciarPapelera := TButton.Create(Panel);
+with BtnVaciarPapelera do
+begin
+  Parent := Panel;
+  Caption := '🗑️ Vaciar Papelera';
+  Left := 220;
+  Top := 410;
+  Width := 150;
+  Height := 30;
+  OnClick := @Papelera_OnVaciarClick;
+  Color := clRed;
+  Font.Color := clWhite;
+  Font.Style := [fsBold];
+end;
 
   BtnCerrar := TButton.Create(Panel);
   with BtnCerrar do
@@ -4208,16 +4248,19 @@ begin
     OnClick := @Borradores_OnEditarClick;
   end;
 
+  // REEMPLAZAR el botón "Eliminar" existente por:
   BtnEliminar := TButton.Create(Panel);
   with BtnEliminar do
   begin
     Parent := Panel;
-    Caption := 'Eliminar';
+    Caption := '🗑️ Mover a Papelera';
     Left := 140;
     Top := 445;
-    Width := 100;
+    Width := 150;
     Height := 30;
-    OnClick := @Borradores_OnEliminarClick;
+    OnClick := @Borradores_OnEliminarConPapeleraClick; // ← CAMBIAR
+    Hint := 'Elimina el borrador y lo mueve a papelera';
+    ShowHint := True;
   end;
 
   BtnCerrar := TButton.Create(Panel);
@@ -5011,16 +5054,15 @@ var
   LabelTitulo, LabelComunidad: TLabel;
   EditComunidad: TEdit;
   MemoMensajes: TMemo;
-  BtnVer, BtnCerrar: TButton;
-  Mensajes: String;
+  BtnVer, BtnReaccionar, BtnCerrar: TButton;
 begin
   FormVerMensajes := TForm.Create(nil);
   try
     with FormVerMensajes do
     begin
       Caption := 'Ver Mensajes de Comunidad';
-      Width := 600;
-      Height := 500;
+      Width := 700;
+      Height := 600;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
       Color := $00ED618E;
@@ -5087,15 +5129,36 @@ begin
       Name := 'MemoMensajes';
       Left := 20;
       Top := 120;
-      Width := 530;
-      Height := 280;
+      Width := 630;
+      Height := 340;
       ReadOnly := True;
       ScrollBars := ssVertical;
       Font.Name := 'Consolas';
       Font.Size := 10;
-      Color := clSkyBlue;              // ← Color de fondo
-      BorderStyle := bsSingle;        // ← Borde
+      Color := clWhite;
+      BorderStyle := bsSingle;
       Lines.Add('🔍 Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
+      Lines.Add('');
+      Lines.Add('Para reaccionar:');
+      Lines.Add('1. Observe el [ID: X] de cada mensaje');
+      Lines.Add('2. Haga clic en "👍 Reaccionar"');
+      Lines.Add('3. Ingrese el ID del mensaje');
+    end;
+
+    // ¡NUEVO BOTÓN DE REACCIONAR!
+    BtnReaccionar := TButton.Create(Panel);
+    with BtnReaccionar do
+    begin
+      Parent := Panel;
+      Caption := '👍 Reaccionar a Mensaje';
+      Left := 20;
+      Top := 475;
+      Width := 180;
+      Height := 35;
+      Font.Style := [fsBold];
+      Font.Size := 10;
+      Color := $0000FF00;  // Verde
+      OnClick := @OnReaccionarMensajeComunidadClick;
     end;
 
     BtnCerrar := TButton.Create(Panel);
@@ -5103,10 +5166,10 @@ begin
     begin
       Parent := Panel;
       Caption := 'Cerrar';
-      Left := 470;
-      Top := 410;
-      Width := 80;
-      Height := 30;
+      Left := 520;
+      Top := 475;
+      Width := 130;
+      Height := 35;
       ModalResult := mrCancel;
     end;
 
@@ -5262,6 +5325,7 @@ var
   Correo: PCorreo;
   SaveDialog: TSaveDialog;
   MensajeComprimido: String;
+  TamOriginal, TamComprimido: Integer;
 begin
   if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
   begin
@@ -5297,14 +5361,17 @@ begin
       if Execute then
       begin
         // Comprimir usando LZW
-        MensajeComprimido := FSistema.ComprimirLZW(Correo^.Mensaje); // Implementar en EstructurasDatos
+        TamOriginal := Length(Correo^.Mensaje);
+        MensajeComprimido := FSistema.ComprimirLZW(Correo^.Mensaje);
+        TamComprimido := Length(MensajeComprimido);
 
         if FSistema.GuardarArchivoTexto(FileName, MensajeComprimido) then
           MostrarMensaje('Éxito',
             '💾 Correo descargado y comprimido exitosamente' + LineEnding +
             'Archivo: ' + ExtractFileName(FileName) + LineEnding +
-            'Tamaño original: ' + IntToStr(Length(Correo^.Mensaje)) + ' bytes' + LineEnding +
-            'Tamaño comprimido: ' + IntToStr(Length(MensajeComprimido)) + ' bytes')
+            'Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
+            'Tamaño comprimido: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
+            'Compresión: ' + FormatFloat('0.0', (1 - TamComprimido/TamOriginal)*100) + '%')
         else
           MostrarMensaje('Error', 'No se pudo guardar el archivo');
       end;
@@ -5866,16 +5933,760 @@ begin
   WriteLn('Descarga por ID pendiente: ', CorreoId);
 end;
 
-procedure TInterfazEDDMail.OnReaccionarMensajeClick(Sender: TObject);
-begin
-  // TODO: Implementar reacciones a mensajes
-  MostrarMensaje('Información', 'Funcionalidad de reacciones pendiente de implementar');
-end;
 
 procedure TInterfazEDDMail.MostrarReaccionesDeComunidad(NombreComunidad: String);
 begin
-  // TODO: Implementar visualización de reacciones
-  WriteLn('Mostrando reacciones de: ', NombreComunidad);
+  MostrarMensaje('Reacciones de ' + NombreComunidad,
+    '📊 Funcionalidad de visualización de reacciones en desarrollo' + LineEnding +
+    'Se mostrará estadística de reacciones por mensaje');
+end;
+
+
+procedure TInterfazEDDMail.Borradores_OnEliminarConPapeleraClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  Respuesta: Integer;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para eliminar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Confirmar eliminación
+  Respuesta := MessageDlg('Confirmar Eliminación',
+    '¿Desea mover este borrador a la papelera?' + LineEnding + LineEnding +
+    'Asunto: ' + BorradorSeleccionado^.Asunto + LineEnding +
+    'Para: ' + BorradorSeleccionado^.Destinatario,
+    mtConfirmation, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    // Cambiar estado antes de mover
+    BorradorSeleccionado^.Estado := 'Eliminado';
+
+    // Copiar el borrador a la papelera
+    if FCorreoManager.EliminarCorreoDeBandeja(Usuario, IdSel) then // Usa la misma lógica
+    begin
+      // Ahora eliminar del árbol AVL
+      if FSistema.EliminarBorrador(Usuario, IdSel) then
+      begin
+        MostrarMensaje('Éxito', 'Borrador movido a papelera correctamente');
+        Borradores_RellenarLista;
+        FMemoBorrador.Clear;
+      end
+      else
+        MostrarMensaje('Error', 'No se pudo eliminar el borrador del árbol');
+    end
+    else
+      MostrarMensaje('Error', 'No se pudo mover a papelera');
+  end;
+end;
+procedure TInterfazEDDMail.Papelera_OnVaciarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CantidadEliminada: Integer;
+  Respuesta: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  Respuesta := MessageDlg('⚠️ Vaciar Papelera',
+    '¿Está seguro que desea vaciar completamente la papelera?' + LineEnding +
+    'Esta acción no se puede deshacer.',
+    mtWarning, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    CantidadEliminada := FCorreoManager.VaciarPapelera(Usuario);
+
+    MostrarMensaje('Éxito',
+      Format('Se eliminaron %d correos definitivamente de la papelera', [CantidadEliminada]));
+
+    Papelera_RellenarLista;
+    FMemoPapelera.Clear;
+  end;
+end;
+procedure TInterfazEDDMail.OnGestionarComunidadesUsuarioClick(Sender: TObject);
+var
+  FormComunidades: TForm;
+  Panel, PanelTop: TPanel;
+  LabelTitulo, LabelNombreCom: TLabel;
+  EditNombreCom: TEdit;
+  BtnVerMensajes, BtnPublicar, BtnCerrar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormComunidades := TForm.Create(nil);
+  try
+    with FormComunidades do
+    begin
+      Caption := 'Mis Comunidades';
+      Width := 800;
+      Height := 650;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    // Panel superior (búsqueda)
+    PanelTop := TPanel.Create(FormComunidades);
+    with PanelTop do
+    begin
+      Parent := FormComunidades;
+      Align := alTop;
+      Height := 140;
+      BevelOuter := bvNone;
+      Color := $00ED618E;
+    end;
+
+    // Título
+    LabelTitulo := TLabel.Create(PanelTop);
+    with LabelTitulo do
+    begin
+      Parent := PanelTop;
+      Caption := 'Gestión de Comunidades 💬';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Font.Color := clWhite;
+      Left := 20;
+      Top := 20;
+    end;
+
+    // Campo: Nombre de comunidad
+    LabelNombreCom := TLabel.Create(PanelTop);
+    with LabelNombreCom do
+    begin
+      Parent := PanelTop;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+      Font.Color := clWhite;
+    end;
+
+    EditNombreCom := TEdit.Create(PanelTop);
+    with EditNombreCom do
+    begin
+      Parent := PanelTop;
+      Name := 'EditNombreComunidad';
+      Left := 20;
+      Top := 85;
+      Width := 500;
+    end;
+
+    // Botón: Ver Mensajes
+    BtnVerMensajes := TButton.Create(PanelTop);
+    with BtnVerMensajes do
+    begin
+      Parent := PanelTop;
+      Caption := '📖 Ver Mensajes';
+      Left := 530;
+      Top := 83;
+      Width := 230;
+      Height := 28;
+      OnClick := @UsuarioComunidades_OnVerMensajesClickMejorado;  // ← NUEVO MÉTODO
+      Font.Style := [fsBold];
+      Color := clSkyBlue;
+    end;
+
+    // Panel principal con ScrollBox para mensajes
+    Panel := TPanel.Create(FormComunidades);
+    with Panel do
+    begin
+      Parent := FormComunidades;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    // ScrollBox para contener los mensajes
+    FScrollBoxMensajes := TScrollBox.Create(Panel);
+    with FScrollBoxMensajes do
+    begin
+      Parent := Panel;
+      Name := 'ScrollBoxMensajes';
+      Left := 5;
+      Top := 5;
+      Width := Panel.Width - 10;
+      Height := Panel.Height - 60;
+      Anchors := [akLeft, akTop, akRight, akBottom];
+      BorderStyle := bsSingle;
+      Color := clWhite;
+    end;
+
+    // Panel inferior con botones
+    BtnPublicar := TButton.Create(Panel);
+    with BtnPublicar do
+    begin
+      Parent := Panel;
+      Caption := '📢 Publicar Mensaje';
+      Left := 10;
+      Top := Panel.Height - 45;
+      Width := 250;
+      Height := 40;
+      Anchors := [akLeft, akBottom];
+      OnClick := @UsuarioComunidades_OnPublicarClick;
+      Font.Style := [fsBold];
+      Color := clLime;
+    end;
+
+    BtnCerrar := TButton.Create(Panel);
+    with BtnCerrar do
+    begin
+      Parent := Panel;
+      Caption := 'Cerrar';
+      Left := Panel.Width - 260;
+      Top := Panel.Height - 45;
+      Width := 250;
+      Height := 40;
+      Anchors := [akRight, akBottom];
+      ModalResult := mrCancel;
+    end;
+
+    FormComunidades.ShowModal;
+
+  finally
+    FormComunidades.Free;
+    FScrollBoxMensajes := nil;  // Limpiar referencia
+    FComunidadActual := '';
+  end;
+end;
+procedure TInterfazEDDMail.UsuarioComunidades_OnVerMensajesClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditNombreCom: TEdit;
+  MemoMensajes: TMemo;
+  NombreComunidad: String;
+  Mensajes: String;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar controles
+  EditNombreCom := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditNombreComunidad') then
+      EditNombreCom := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if (EditNombreCom = nil) or (MemoMensajes = nil) then
+  begin
+    MostrarMensaje('Error', 'Error interno: controles no encontrados');
+    Exit;
+  end;
+
+  NombreComunidad := Trim(EditNombreCom.Text);
+
+  if NombreComunidad = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Obtener mensajes
+  Mensajes := FSistema.ObtenerMensajesComunidad(NombreComunidad);
+  MemoMensajes.Lines.Text := Mensajes;
+end;
+procedure TInterfazEDDMail.UsuarioComunidades_OnPublicarClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditNombreCom: TEdit;
+  MemoMensajes: TMemo;
+  NombreComunidad, Mensaje: String;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar control de nombre de comunidad
+  EditNombreCom := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditNombreComunidad') then
+      EditNombreCom := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if EditNombreCom = nil then
+  begin
+    MostrarMensaje('Error', 'Error interno');
+    Exit;
+  end;
+
+  NombreComunidad := Trim(EditNombreCom.Text);
+
+  if NombreComunidad = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Solicitar mensaje
+  Mensaje := InputBox('Publicar Mensaje',
+    'Escribe tu mensaje para la comunidad "' + NombreComunidad + '":', '');
+
+  if Trim(Mensaje) = '' then
+  begin
+    MostrarMensaje('Aviso', 'El mensaje no puede estar vacío');
+    Exit;
+  end;
+
+  // Publicar
+  if FSistema.PublicarMensajeAComunidad(
+        NombreComunidad,
+        FSistema.GetUsuarioActual^.Email,
+        Trim(Mensaje)) then
+  begin
+    MostrarMensaje('Éxito',
+      '✓ Mensaje publicado correctamente en: ' + NombreComunidad);
+
+    // Actualizar vista
+    if MemoMensajes <> nil then
+      MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(NombreComunidad);
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo publicar el mensaje');
+end;
+
+
+procedure TInterfazEDDMail.OnReaccionarMensajeComunidadClick(Sender: TObject);
+var
+  FormReaccionar: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelComunidad, LabelMensajeId: TLabel;
+  EditComunidad, EditMensajeId: TEdit;
+  BtnReaccionar, BtnCancelar: TButton;
+  NombreComunidad: String;
+  IdMensaje: Integer;
+begin
+  FormReaccionar := TForm.Create(nil);
+  try
+    with FormReaccionar do
+    begin
+      Caption := 'Reaccionar a Mensaje';
+      Width := 450;
+      Height := 280;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormReaccionar);
+    with Panel do
+    begin
+      Parent := FormReaccionar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 20;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := '👍 Reaccionar a un Mensaje';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 10;
+    end;
+
+    LabelComunidad := TLabel.Create(Panel);
+    with LabelComunidad do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 50;
+      Font.Style := [fsBold];
+    end;
+
+    EditComunidad := TEdit.Create(Panel);
+    with EditComunidad do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 70;
+      Width := 380;
+      TabOrder := 0;
+    end;
+
+    LabelMensajeId := TLabel.Create(Panel);
+    with LabelMensajeId do
+    begin
+      Parent := Panel;
+      Caption := 'ID del Mensaje:';
+      Left := 20;
+      Top := 110;
+      Font.Style := [fsBold];
+    end;
+
+    EditMensajeId := TEdit.Create(Panel);
+    with EditMensajeId do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 130;
+      Width := 380;
+      TabOrder := 1;
+      Text := '1';  // Valor por defecto
+    end;
+
+    BtnReaccionar := TButton.Create(Panel);
+    with BtnReaccionar do
+    begin
+      Parent := Panel;
+      Caption := '👍 Reaccionar';
+      Left := 210;
+      Top := 180;
+      Width := 100;
+      Height := 30;
+      Font.Style := [fsBold];
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 320;
+      Top := 180;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormReaccionar.ShowModal = mrOk then
+    begin
+      NombreComunidad := Trim(EditComunidad.Text);
+
+      if NombreComunidad = '' then
+      begin
+        MostrarMensaje('Error', 'Debe ingresar el nombre de la comunidad');
+        Exit;
+      end;
+
+      if not TryStrToInt(Trim(EditMensajeId.Text), IdMensaje) then
+      begin
+        MostrarMensaje('Error', 'El ID del mensaje debe ser un número');
+        Exit;
+      end;
+
+      // ¡AQUÍ ESTÁ LA DIFERENCIA! Llama a la función real del sistema
+      if FSistema.ReaccionarAMensaje(NombreComunidad, IdMensaje) then
+      begin
+        MostrarMensaje('Éxito',
+          '👍 ¡Reacción agregada exitosamente!' + LineEnding +
+          'Comunidad: ' + NombreComunidad + LineEnding +
+          'Mensaje ID: ' + IntToStr(IdMensaje));
+      end
+      else
+      begin
+        MostrarMensaje('Error',
+          'No se pudo agregar la reacción.' + LineEnding +
+          'Verifique que la comunidad y el mensaje existan.');
+      end;
+    end;
+
+  finally
+    FormReaccionar.Free;
+  end;
+end;
+procedure TInterfazEDDMail.UsuarioComunidades_OnVerMensajesClickMejorado(Sender: TObject);
+var
+  BtnSender: TButton;
+  FormPadre: TForm;
+  EditNombreCom: TEdit;
+  ScrollBox: TScrollBox;
+  NombreComunidad: String;
+  Comunidad: PNodoBST;
+  Mensaje: PMensajeComunidad;
+  i, YPos: Integer;
+
+  // Componentes para cada mensaje
+  PanelMensaje: TPanel;
+  LabelId, LabelAutor, LabelFecha, LabelMensaje, LabelReacciones: TLabel;
+  BtnReaccionar: TButton;
+begin
+  BtnSender := TButton(Sender);
+  FormPadre := TForm(BtnSender.Owner);
+
+  // Buscar controles
+  EditNombreCom := nil;
+  ScrollBox := nil;
+
+  for i := 0 to FormPadre.ComponentCount - 1 do
+  begin
+    if (FormPadre.Components[i] is TEdit) and
+       (TEdit(FormPadre.Components[i]).Name = 'EditNombreComunidad') then
+      EditNombreCom := TEdit(FormPadre.Components[i])
+    else if (FormPadre.Components[i] is TScrollBox) and
+            (TScrollBox(FormPadre.Components[i]).Name = 'ScrollBoxMensajes') then
+      ScrollBox := TScrollBox(FormPadre.Components[i]);
+  end;
+
+  if (EditNombreCom = nil) or (ScrollBox = nil) then
+  begin
+    MostrarMensaje('Error', 'Error interno: controles no encontrados');
+    Exit;
+  end;
+
+  NombreComunidad := Trim(EditNombreCom.Text);
+
+  if NombreComunidad = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Guardar comunidad actual
+  FComunidadActual := NombreComunidad;
+
+  // Limpiar mensajes anteriores
+  while ScrollBox.ControlCount > 0 do
+    ScrollBox.Controls[0].Free;
+
+  // Buscar la comunidad en el sistema
+  Comunidad := FSistema.BuscarComunidadPorNombre(NombreComunidad);
+
+  if Comunidad = nil then
+  begin
+    MostrarMensaje('Error', 'Comunidad no encontrada: ' + NombreComunidad);
+    Exit;
+  end;
+
+  Mensaje := Comunidad^.ListaMensajes;
+
+  if Mensaje = nil then
+  begin
+    // Mostrar mensaje de "sin mensajes"
+    PanelMensaje := TPanel.Create(ScrollBox);
+    with PanelMensaje do
+    begin
+      Parent := ScrollBox;
+      Align := alTop;
+      Height := 60;
+      BevelOuter := bvLowered;
+      Color := clInfoBk;
+    end;
+
+    LabelMensaje := TLabel.Create(PanelMensaje);
+    with LabelMensaje do
+    begin
+      Parent := PanelMensaje;
+      Caption := '📭 No hay mensajes en esta comunidad todavía.';
+      Left := 20;
+      Top := 20;
+      Font.Size := 10;
+    end;
+    Exit;
+  end;
+
+  // Crear un panel por cada mensaje
+  YPos := 0;
+  while Mensaje <> nil do
+  begin
+    // Panel contenedor del mensaje
+    PanelMensaje := TPanel.Create(ScrollBox);
+    with PanelMensaje do
+    begin
+      Parent := ScrollBox;
+      Left := 0;
+      Top := YPos;
+      Width := ScrollBox.ClientWidth - 20;
+      Height := 120;
+      BevelOuter := bvLowered;
+      Color := $00F0F0F0;  // Gris claro
+      Anchors := [akLeft, akTop, akRight];
+    end;
+
+    // Label: ID y Reacciones
+    LabelId := TLabel.Create(PanelMensaje);
+    with LabelId do
+    begin
+      Parent := PanelMensaje;
+      Caption := Format('[ID: %d]', [Mensaje^.Id]);
+      Left := 10;
+      Top := 10;
+      Font.Style := [fsBold];
+      Font.Size := 9;
+      Font.Color := clNavy;
+    end;
+
+    LabelReacciones := TLabel.Create(PanelMensaje);
+    with LabelReacciones do
+    begin
+      Parent := PanelMensaje;
+      Caption := Format('👍 %d reacciones', [Mensaje^.Reacciones]);
+      Left := 80;
+      Top := 10;
+      Font.Size := 9;
+      Font.Color := clGreen;
+    end;
+
+    // Label: Autor
+    LabelAutor := TLabel.Create(PanelMensaje);
+    with LabelAutor do
+    begin
+      Parent := PanelMensaje;
+      Caption := '👤 De: ' + Mensaje^.Correo;
+      Left := 10;
+      Top := 30;
+      Font.Style := [fsBold];
+    end;
+
+    // Label: Fecha
+    LabelFecha := TLabel.Create(PanelMensaje);
+    with LabelFecha do
+    begin
+      Parent := PanelMensaje;
+      Caption := '📅 ' + Mensaje^.FechaPublicacion;
+      Left := 10;
+      Top := 50;
+      Font.Color := clGray;
+    end;
+
+    // Label: Mensaje
+    LabelMensaje := TLabel.Create(PanelMensaje);
+    with LabelMensaje do
+    begin
+      Parent := PanelMensaje;
+      Caption := '💬 ' + Mensaje^.Mensaje;
+      Left := 10;
+      Top := 75;
+      Width := PanelMensaje.Width - 180;
+      Height := 35;
+      AutoSize := False;
+      WordWrap := True;
+      Font.Size := 9;
+    end;
+
+    // Botón: Reaccionar (el más importante!)
+    BtnReaccionar := TButton.Create(PanelMensaje);
+    with BtnReaccionar do
+    begin
+      Parent := PanelMensaje;
+      Caption := '👍 Reaccionar';
+      Left := PanelMensaje.Width - 150;
+      Top := 40;
+      Width := 130;
+      Height := 50;
+      Anchors := [akTop, akRight];
+      Font.Style := [fsBold];
+      Font.Size := 9;
+      Color := $0000FF00;  // Verde
+
+      // ¡AQUÍ ESTÁ LA MAGIA! Guardamos el ID en el Tag
+      Tag := Mensaje^.Id;
+
+      // Evento onClick
+      OnClick := @OnReaccionarMensajeDirectoClick;
+    end;
+
+    Inc(YPos, 125);  // Espaciado entre mensajes
+    Mensaje := Mensaje^.Siguiente;
+  end;
+end;
+procedure TInterfazEDDMail.OnReaccionarMensajeDirectoClick(Sender: TObject);
+var
+  BtnReaccionar: TButton;
+  IdMensaje: Integer;
+  PanelMensaje: TPanel;
+  LabelReacciones: TLabel;
+  i: Integer;
+begin
+  BtnReaccionar := TButton(Sender);
+  IdMensaje := BtnReaccionar.Tag;  // ¡El ID estaba guardado aquí!
+
+  // Verificar que tengamos la comunidad actual
+  if FComunidadActual = '' then
+  begin
+    MostrarMensaje('Error', 'No hay una comunidad seleccionada');
+    Exit;
+  end;
+
+  // Llamar a la función del sistema
+  if FSistema.ReaccionarAMensaje(FComunidadActual, IdMensaje) then
+  begin
+    MostrarMensaje('Éxito',
+      Format('👍 ¡Reacción agregada!' + LineEnding +
+             'Mensaje ID: %d', [IdMensaje]));
+
+    // Actualizar el label de reacciones en el panel
+    PanelMensaje := TPanel(BtnReaccionar.Parent);
+    for i := 0 to PanelMensaje.ControlCount - 1 do
+    begin
+      if PanelMensaje.Controls[i] is TLabel then
+      begin
+        LabelReacciones := TLabel(PanelMensaje.Controls[i]);
+        // Buscar el label que tiene "reacciones"
+        if Pos('reacciones', LabelReacciones.Caption) > 0 then
+        begin
+          // Obtener el nuevo número de reacciones
+          LabelReacciones.Caption := Format('👍 %d reacciones',
+            [ObtenerReaccionesActuales(FComunidadActual, IdMensaje)]);
+          Break;
+        end;
+      end;
+    end;
+  end
+  else
+  begin
+    MostrarMensaje('Error', 'No se pudo agregar la reacción');
+  end;
+end;
+function TInterfazEDDMail.ObtenerReaccionesActuales(NombreComunidad: String; IdMensaje: Integer): Integer;
+var
+  Comunidad: PNodoBST;
+  Mensaje: PMensajeComunidad;
+begin
+  Result := 0;
+
+  Comunidad := FSistema.BuscarComunidadPorNombre(NombreComunidad);
+  if Comunidad = nil then Exit;
+
+  Mensaje := Comunidad^.ListaMensajes;
+  while Mensaje <> nil do
+  begin
+    if Mensaje^.Id = IdMensaje then
+    begin
+      Result := Mensaje^.Reacciones;
+      Exit;
+    end;
+    Mensaje := Mensaje^.Siguiente;
+  end;
 end;
   end.
 

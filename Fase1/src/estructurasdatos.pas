@@ -33,9 +33,11 @@ type
   PMensajeComunidad = ^TMensajeComunidad;
 
   TMensajeComunidad = record
+    Id: Integer;                    // ← NUEVO: ID único del mensaje
     Correo: String;
     Mensaje: String;
     FechaPublicacion: String;
+    Reacciones: Integer;            // ← NUEVO: Contador de reacciones
     Siguiente: PMensajeComunidad;
   end;
 
@@ -331,6 +333,15 @@ type
 
     // Importación
     procedure CargarContactosDesdeJSON(RutaArchivo: String);
+
+
+    // En la sección PUBLIC de TEDDMailSystem class:
+function ReaccionarAMensaje(nombreComunidad: String; idMensaje: Integer): Boolean;
+
+function GetArbolComunidades: PNodoBST;
+
+
+    function BuscarComunidadPorNombre(Nombre: String): PNodoBST;
 
     end;
 implementation
@@ -1895,7 +1906,7 @@ begin
   Result := 'Comunidad: ' + Comunidad^.NombreComunidad + LineEnding;
   Result := Result + 'Fecha de creación: ' + Comunidad^.FechaCreacion + LineEnding;
   Result := Result + 'Total de mensajes: ' + IntToStr(Comunidad^.NumeroMensajes) + LineEnding;
-  Result := Result + '----------------------------------------' + LineEnding + LineEnding;
+  Result := Result + '========================================' + LineEnding + LineEnding;
 
   Mensaje := Comunidad^.ListaMensajes;
   if Mensaje = nil then
@@ -1904,8 +1915,11 @@ begin
     Exit;
   end;
 
+  // Listar mensajes CON ID Y REACCIONES
   while Mensaje <> nil do
   begin
+    Result := Result + Format('[ID: %d] 👍 %d reacciones',
+      [Mensaje^.Id, Mensaje^.Reacciones]) + LineEnding;
     Result := Result + 'De: ' + Mensaje^.Correo + LineEnding;
     Result := Result + 'Fecha: ' + Mensaje^.FechaPublicacion + LineEnding;
     Result := Result + 'Mensaje: ' + Mensaje^.Mensaje + LineEnding;
@@ -2416,9 +2430,11 @@ begin
   end;
 
   New(NuevoMensaje);
+  NuevoMensaje^.Id := Comunidad^.NumeroMensajes + 1;  // ← NUEVO: Asignar ID
   NuevoMensaje^.Correo := correoUsuario;
   NuevoMensaje^.Mensaje := mensaje;
   NuevoMensaje^.FechaPublicacion := FormatDateTime('dd/mm/yyyy hh:nn', Now);
+  NuevoMensaje^.Reacciones := 0;                       // ← NUEVO: Inicializar en 0
   NuevoMensaje^.Siguiente := Comunidad^.ListaMensajes;
 
   Comunidad^.ListaMensajes := NuevoMensaje;
@@ -3274,4 +3290,52 @@ begin
   WriteLn('Carga de contactos JSON pendiente: ', RutaArchivo);
   // TODO: Implementar
 end;
+function TEDDMailSystem.ReaccionarAMensaje(nombreComunidad: String; idMensaje: Integer): Boolean;
+var
+  Comunidad: PNodoBST;
+  Mensaje: PMensajeComunidad;
+begin
+  Result := False;
+
+  // Buscar la comunidad
+  Comunidad := BuscarComunidadBST(FArbolComunidades, nombreComunidad);
+  if Comunidad = nil then
+  begin
+    WriteLn('Error: La comunidad no existe');
+    Exit;
+  end;
+
+  // Buscar el mensaje específico por ID
+  Mensaje := Comunidad^.ListaMensajes;
+  while Mensaje <> nil do
+  begin
+    if Mensaje^.Id = idMensaje then
+    begin
+      // Incrementar el contador de reacciones
+      Inc(Mensaje^.Reacciones);
+      WriteLn(Format('👍 Reacción agregada al mensaje ID %d. Total: %d',
+        [idMensaje, Mensaje^.Reacciones]));
+      Result := True;
+      Exit;
+    end;
+    Mensaje := Mensaje^.Siguiente;
+  end;
+
+  WriteLn('Error: Mensaje no encontrado');
+end;
+    // ═══════════════════════════════════════════════════════
+// MÉTODOS PÚBLICOS PARA ACCEDER AL ÁRBOL DE COMUNIDADES
+// ═══════════════════════════════════════════════════════
+
+function TEDDMailSystem.GetArbolComunidades: PNodoBST;
+begin
+  Result := FArbolComunidades;
+end;
+
+function TEDDMailSystem.BuscarComunidadPorNombre(Nombre: String): PNodoBST;
+begin
+  // Esta función pública llama a la búsqueda recursiva interna
+  Result := BuscarComunidadBST(FArbolComunidades, Nombre);
+end;
+
  end.

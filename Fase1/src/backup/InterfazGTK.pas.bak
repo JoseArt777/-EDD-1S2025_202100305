@@ -1,0 +1,6387 @@
+unit InterfazGTK;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  FileUtil, EstructurasDatos, CorreoManager, Math;
+
+type
+  TInterfazEDDMail = class
+  private
+    // ======================================
+    // VARIABLES
+    // ======================================
+    FSistema: TEDDMailSystem;
+    FFormLogin: TForm;
+    FFormPrincipal: TForm;
+    FUsuarioActivo: Boolean;
+    FEditEmail: TEdit;
+    FEditPassword: TEdit;
+    FCorreoManager: TCorreoManager;
+
+    FContactoActual: PContacto;
+    FPrimerContacto: PContacto;
+    FIndiceContactoActual: Integer;
+    FTotalContactos: Integer;
+
+    FFormContactos: TForm;
+    FLabelContadorContactos: TLabel;
+    FLabelNombreContacto: TLabel;
+    FLabelUsuarioContacto: TLabel;
+    FLabelEmailContacto: TLabel;
+    FLabelTelefonoContacto: TLabel;
+
+    // Controles para comunidades
+    FEditNombreComunidad: TEdit;
+    FEditEmailUsuario: TEdit;
+    FMemoComunidades: TMemo;
+
+    //  Bandeja de entrada
+    FFormBandeja: TForm;
+    FListBandeja: TListBox;
+    FMemoMensaje: TMemo;
+    FLabelNoLeidosInbox: TLabel;
+
+    //Papelera
+    FFormPapelera: TForm;
+    FListPapelera: TListBox;
+    FMemoPapelera: TMemo;
+    FEditBuscarPapelera: TEdit;
+
+    //Correos Programados
+    FFormCorreosProgramados: TForm;
+    FListCorreosProgramados: TListBox;
+    FMemoCorreoProgramado: TMemo;
+    FLabelTotalProgramados: TLabel;
+
+    //Favoritos (Fase 2)
+    FFormFavoritos: TForm;
+    FListFavoritos: TListBox;
+    FMemoFavorito: TMemo;
+    FLabelTotalFavoritos: TLabel;
+
+    //Borradores (Fase 2)
+    FFormBorradores: TForm;
+    FListBorradores: TListBox;
+    FMemoBorrador: TMemo;
+    FComboRecorrido: TComboBox;
+    private
+
+    // ======================================
+    // VARIABLES FASE 3
+    // ======================================
+
+        FEditBuscarFavoritos: TEdit;  // ← AGREGAR ESTE CAMPO
+        BtnVaciarPapelera: TButton;   // Variable global si necesitas referencia
+
+
+
+    // Control de Logueo
+    FFormLogueo: TForm;
+    FListLogueo: TListBox;
+    FEditBuscarUsuarioLog: TEdit;
+
+    // Blockchain
+    FFormBlockchain: TForm;
+    FListBlockchain: TListBox;
+    FMemoBlockchain: TMemo;
+
+    // ======================================
+    // DEFINICIÓN DE MÉTODOS
+    // ======================================
+
+    // Métodos básicos de la aplicación
+    procedure CrearFormLogin;
+    procedure CrearFormPrincipal;
+    procedure CrearInterfazRoot;
+    procedure CrearInterfazUsuario;
+    procedure MostrarMensaje(Titulo, Mensaje: String);
+
+    // Event handlers básicos
+    procedure OnEnviarCorreoClick(Sender: TObject);
+    procedure OnLoginClick(Sender: TObject);
+    procedure OnCrearCuentaClick(Sender: TObject);
+    procedure OnCargaMasivaClick(Sender: TObject);
+    procedure OnReporteUsuariosClick(Sender: TObject);
+    procedure OnReporteRelacionesClick(Sender: TObject);
+    procedure OnCerrarSesionClick(Sender: TObject);
+    procedure OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure OnKeyPress(Sender: TObject; var Key: Char);
+
+    // Reportes generales
+    procedure OnGenerarReportesClick(Sender: TObject);
+    procedure OnReporteCorreosRecibidosClick(Sender: TObject);
+    procedure OnReportePapeleraClick(Sender: TObject);
+    procedure OnReporteCorreosProgramadosClick(Sender: TObject);
+    procedure OnReporteFavoritosClick(Sender: TObject);
+    procedure OnReporteBorradoresClick(Sender: TObject);
+
+    // Bandeja de entrada
+    procedure OnBandejaClick(Sender: TObject);
+    procedure OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Inbox_RellenarLista;
+    procedure Inbox_OnSeleccion(Sender: TObject);
+    procedure Inbox_OnOrdenarClick(Sender: TObject);
+    procedure Inbox_OnEliminarClick(Sender: TObject);
+    procedure Inbox_OnMarcarLeidoClick(Sender: TObject);
+    procedure Inbox_OnMarcarFavoritoClick(Sender: TObject);
+    procedure Inbox_OnCerrarClick(Sender: TObject);
+
+    // Papelera
+    procedure OnPapeleraClick(Sender: TObject);
+    procedure OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Papelera_RellenarLista;
+    procedure Papelera_OnSeleccion(Sender: TObject);
+    procedure Papelera_OnBuscarClick(Sender: TObject);
+    procedure Papelera_OnEliminarDefClick(Sender: TObject);
+    procedure Papelera_OnCerrarClick(Sender: TObject);
+
+    // Correos programados
+    procedure OnProgramarCorreoClick(Sender: TObject);
+    procedure OnCorreosProgramadosClick(Sender: TObject);
+    procedure OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure CorreosProgramados_RellenarLista;
+    procedure CorreosProgramados_OnSeleccion(Sender: TObject);
+    procedure CorreosProgramados_OnEnviarClick(Sender: TObject);
+    procedure CorreosProgramados_OnEliminarClick(Sender: TObject);
+    procedure CorreosProgramados_OnCerrarClick(Sender: TObject);
+
+    // Contactos
+    procedure OnAgregarContactoClick(Sender: TObject);
+    procedure OnVerContactosClick(Sender: TObject);
+    procedure OnContactoAnteriorClick(Sender: TObject);
+    procedure OnContactoSiguienteClick(Sender: TObject);
+    procedure OnGenerarReporteContactosClick(Sender: TObject);
+    procedure OnEliminarContactoClick(Sender: TObject);
+    procedure OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure ActualizarVistaContacto;
+
+    // Comunidades (Fase 1)
+    procedure OnGestionarComunidadesClick(Sender: TObject);
+    procedure OnReporteComunidadesClick(Sender: TObject);
+    procedure OnActualizarPerfilClick(Sender: TObject);
+    procedure OnCrearComunidadClick(Sender: TObject);
+    procedure OnAsignarUsuarioClick(Sender: TObject);
+    procedure OnListarComunidadesClick(Sender: TObject);
+
+    // Comunidades BST (Fase 2)
+    procedure OnCrearComunidadBSTClick(Sender: TObject);
+    procedure OnVerMensajesComunidadClick(Sender: TObject);
+    procedure OnPublicarComunidadClick(Sender: TObject);
+
+    // Favoritos (Fase 2)
+    procedure OnVerFavoritosClick(Sender: TObject);
+    procedure OnFormFavoritosClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Favoritos_OnSeleccion(Sender: TObject);
+    procedure Favoritos_OnEliminarClick(Sender: TObject);
+    procedure Favoritos_OnCerrarClick(Sender: TObject);
+    procedure Favoritos_RellenarLista;
+
+    // Borradores (Fase 2)
+    procedure OnVerBorradoresClick(Sender: TObject);
+    procedure OnFormBorradoresClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure Borradores_OnSeleccion(Sender: TObject);
+    procedure Borradores_OnEditarClick(Sender: TObject);
+    procedure Borradores_OnEliminarClick(Sender: TObject);
+    procedure Borradores_OnRecorridoChange(Sender: TObject);
+    procedure Borradores_OnCerrarClick(Sender: TObject);
+    procedure Borradores_RellenarLista;
+
+    // Función auxiliar para reportes BST
+
+    procedure OnVerMensajesEnComunidadClick(Sender: TObject);
+
+  // ===== PROCEDIMIENTOS PARA FASE 3 =====
+
+  // Control de Logueo
+  procedure OnControlLogueoClick(Sender: TObject);
+  procedure OnExportarLogueoJSONClick(Sender: TObject);
+
+
+  // Carga Masiva de Contactos
+
+  procedure CargarContactosDesdeJSON(RutaArchivo: String);
+
+  // Blockchain
+  procedure OnReporteBlockchainClick(Sender: TObject);
+
+  // Árbol de Merkle (Favoritos)
+  procedure OnReporteMerkleClick(Sender: TObject);
+  procedure Merkle_ConvertirDeArbolB; // Migración de Árbol B a Merkle
+
+  // Grafos (Contactos)
+  procedure OnReporteGrafosContactosClick(Sender: TObject);
+
+  // Compresión LZW
+  procedure OnDescargarCorreoClick(Sender: TObject);
+  procedure DescargarCorreoComprimido(CorreoId: Integer);
+
+  // Reacciones a Mensajes
+  procedure OnReaccionarMensajeClick(Sender: TObject);
+  procedure MostrarReaccionesDeComunidad(NombreComunidad: String);
+
+  // Control de Logueo (Fase 3)
+
+
+procedure OnFormLogueoClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure Logueo_RellenarLista;
+procedure Logueo_OnBuscarClick(Sender: TObject);
+procedure Logueo_OnCerrarClick(Sender: TObject);
+
+// Blockchain (Fase 3)
+procedure OnVerBlockchainClick(Sender: TObject);
+procedure OnFormBlockchainClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure Blockchain_RellenarLista;
+procedure Blockchain_OnSeleccion(Sender: TObject);
+procedure Blockchain_OnCerrarClick(Sender: TObject);
+
+// Descargar correo comprimido (Fase 3)
+procedure Inbox_OnDescargarClick(Sender: TObject);
+
+// Búsqueda en Favoritos (Fase 3)
+procedure Favoritos_OnBuscarClick(Sender: TObject);
+
+// Reportes Fase 3
+procedure OnReporteGrafoClick(Sender: TObject);
+
+
+procedure OnReporteLogueoClick(Sender: TObject);
+
+// Carga masiva de contactos (Fase 3 - Integración por grupos)
+procedure OnCargaMasivaContactosClick(Sender: TObject);
+
+
+// Métodos de eventos (handlers)
+procedure OnExportarLogueoClick(Sender: TObject);
+
+
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Ejecutar;
+
+
+    // ===== FASE 3 - MÉTODOS ADICIONALES =====
+
+// Papelera
+procedure Papelera_OnVaciarClick(Sender: TObject);
+
+// Borradores
+procedure Borradores_OnEliminarConPapeleraClick(Sender: TObject);
+    procedure OnGestionarComunidadesUsuarioClick(Sender: TObject);
+    procedure UsuarioComunidades_OnVerMensajesClick(Sender: TObject);
+    procedure UsuarioComunidades_OnPublicarClick(Sender: TObject);
+    procedure UsuarioComunidades_OnReaccionarClick(Sender: TObject);
+
+
+  end;
+
+implementation
+
+uses
+  LCLIntf, LCLType;
+
+constructor TInterfazEDDMail.Create;
+begin
+  inherited Create;
+  FSistema := TEDDMailSystem.Create;
+    FCorreoManager := TCorreoManager.Create;
+
+  FUsuarioActivo := False;
+  FFormLogin := nil;
+  FFormPrincipal := nil;
+end;
+
+destructor TInterfazEDDMail.Destroy;
+begin
+  FSistema.Free;
+    FCorreoManager.Free;
+
+  if Assigned(FFormLogin) then
+    FFormLogin.Free;
+  if Assigned(FFormPrincipal) then
+    FFormPrincipal.Free;
+  inherited Destroy;
+end;
+procedure TInterfazEDDMail.Inbox_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBandeja) then
+    FFormBandeja.Close;
+end;
+
+procedure TInterfazEDDMail.Ejecutar;
+begin
+  Application.Initialize;
+  CrearFormLogin;
+  Application.Run;
+end;
+procedure TInterfazEDDMail.CrearInterfazUsuario;
+var
+  Panel, CardFase1, CardFase2: TPanel;
+  ShapeShadow1, ShapeShadow2: TShape;  // ← Sombras
+  LabelSaludo, LabelMenu, LabelInfo, LabelCardTitle1, LabelCardTitle2: TLabel;
+  Usuario: PUsuario;
+  BtnBandeja, BtnEnviar, BtnPapelera, BtnProgramar,
+  BtnCorreosProgramados, BtnAgregarContacto, BtnContactos,
+  BtnPerfil, BtnReportes, BtnCerrarSesion: TButton;
+  BtnFavoritos, BtnBorradores, BtnPublicarComunidad, BtnEliminarContacto: TButton;
+  YPos1, YPos2: Integer;
+begin
+  Panel := TPanel.Create(FFormPrincipal);
+  with Panel do
+  begin
+    Parent := FFormPrincipal;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := $00B5315B;   // Fondo Principal
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+
+  // Header
+  LabelSaludo := TLabel.Create(Panel);
+  with LabelSaludo do
+  begin
+    Parent := Panel;
+    Caption := 'Hola de nuevo ' + Usuario^.Nombre+ ' 👋 ';
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 20;
+    Top := 20;
+    AutoSize := True;
+  end;
+
+  BtnReportes := TButton.Create(Panel);
+  with BtnReportes do
+  begin
+    Parent := Panel;
+    Caption := '📊';
+    Left := 330;
+    Top := 15;
+    Width := 50;
+    Height := 50;
+    Hint := 'Generar Reportes';
+    ShowHint := True;
+    OnClick := @OnGenerarReportesClick;
+    Font.Size := 20;
+    Color := clWhite;
+    Font.Color := $00336699;
+  end;
+
+  BtnCerrarSesion := TButton.Create(Panel);
+  with BtnCerrarSesion do
+  begin
+    Parent := Panel;
+    Caption := '❌';
+    Left := 385;
+    Top := 15;
+    Width := 50;
+    Height := 50;
+    Hint := 'Cerrar Sesión';
+    ShowHint := True;
+    OnClick := @OnCerrarSesionClick;
+    Color := clWhite;
+    Font.Size := 20;
+    Font.Color := clRed;
+  end;
+
+  LabelMenu := TLabel.Create(Panel);
+  with LabelMenu do
+  begin
+    Parent := Panel;
+    Caption := 'Menú de Usuario Estándar';
+    Left := 20;
+    Top := 50;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+  end;
+
+  LabelInfo := TLabel.Create(Panel);
+  with LabelInfo do
+  begin
+    Parent := Panel;
+    Caption := 'Email: ' + Usuario^.Email + ' | Teléfono: ' + Usuario^.Telefono;
+    Left := 20;
+    Top := 70;
+    Font.Color := clWhite;
+  end;
+
+  // ═══════════════════════════════════════════════════════
+  // CARD 1
+  // ═══════════════════════════════════════════════════════
+
+  // Sombra
+  ShapeShadow1 := TShape.Create(Panel);
+  with ShapeShadow1 do
+  begin
+    Parent := Panel;
+    Left := 20;
+    Top := 103;
+    Width := 410;
+    Height := 260;
+    Brush.Color := $00CCCCCC;
+    Pen.Style := psClear;
+    SendToBack;  // Enviar al fondo
+  end;
+
+  CardFase1 := TPanel.Create(Panel);
+  with CardFase1 do
+  begin
+    Parent := Panel;
+    Left := 15;
+    Top := 100;
+    Width := 410;
+    Height := 260;
+    BevelOuter := bvRaised;
+    BorderWidth := 1;
+    Color := $00F5A4BE;
+    ParentBackground := False;
+  end;
+
+  LabelCardTitle1 := TLabel.Create(CardFase1);
+  with LabelCardTitle1 do
+  begin
+    Parent := CardFase1;
+    Caption := '📋 PRINCIPAL';
+    Font.Size := 11;
+    Font.Style := [fsBold];
+    Font.Color := $00CC6600;
+    Left := 15;
+    Top := 10;
+    AutoSize := True;
+  end;
+
+  YPos1 := 45;
+
+  // Botones
+  BtnBandeja := TButton.Create(CardFase1);
+  with BtnBandeja do
+  begin
+    Parent := CardFase1;
+    Caption := '✉️ Bandeja de Entrada';
+    Left := 15;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnBandejaClick;
+    Color := $00E8F4FF;
+  end;
+
+  BtnEnviar := TButton.Create(CardFase1);
+  with BtnEnviar do
+  begin
+    Parent := CardFase1;
+    Caption := '📩 Enviar Correo';
+    Left := 210;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnEnviarCorreoClick;
+    Color := $00E8F4FF;
+  end;
+  Inc(YPos1, 48);
+
+  BtnPapelera := TButton.Create(CardFase1);
+  with BtnPapelera do
+  begin
+    Parent := CardFase1;
+    Caption := '🗑️ Papelera';
+    Left := 15;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnPapeleraClick;
+    Color := $00E8F4FF;
+  end;
+
+  BtnProgramar := TButton.Create(CardFase1);
+  with BtnProgramar do
+  begin
+    Parent := CardFase1;
+    Caption := '📒 Programar Correo';
+    Left := 210;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnProgramarCorreoClick;
+    Color := $00E8F4FF;
+  end;
+  Inc(YPos1, 48);
+
+  BtnCorreosProgramados := TButton.Create(CardFase1);
+  with BtnCorreosProgramados do
+  begin
+    Parent := CardFase1;
+    Caption := '📅 Correos Programados';
+    Left := 15;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnCorreosProgramadosClick;
+    Color := $00E8F4FF;
+  end;
+
+  BtnAgregarContacto := TButton.Create(CardFase1);
+  with BtnAgregarContacto do
+  begin
+    Parent := CardFase1;
+    Caption := '📇 Agregar Contacto';
+    Left := 210;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnAgregarContactoClick;
+    Color := $00E8F4FF;
+  end;
+  Inc(YPos1, 48);
+
+  BtnContactos := TButton.Create(CardFase1);
+  with BtnContactos do
+  begin
+    Parent := CardFase1;
+    Caption := '📇 Contactos';
+    Left := 15;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnVerContactosClick;
+    Color := $00E8F4FF;
+  end;
+
+  BtnPerfil := TButton.Create(CardFase1);
+  with BtnPerfil do
+  begin
+    Parent := CardFase1;
+    Caption := '👤 Actualizar Perfil';
+    Left := 210;
+    Top := YPos1;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnActualizarPerfilClick;
+    Color := $00E8F4FF;
+  end;
+
+  // ═══════════════════════════════════════════════════════
+  // CARD 2
+  // ═══════════════════════════════════════════════════════
+
+  // Sombra
+  ShapeShadow2 := TShape.Create(Panel);
+  with ShapeShadow2 do
+  begin
+    Parent := Panel;
+    Left := 18;
+    Top := 378;
+    Width := 410;
+    Height := 160;
+    Brush.Color := $00CCCCCC;
+    Pen.Style := psClear;
+    SendToBack;
+  end;
+
+  CardFase2 := TPanel.Create(Panel);
+  with CardFase2 do
+  begin
+    Parent := Panel;
+    Left := 15;
+    Top := 375;
+    Width := 410;
+    Height := 160;
+    BevelOuter := bvRaised;
+    BorderWidth := 1;
+    Color := $00F5A4BE;
+    ParentBackground := False;
+  end;
+
+  LabelCardTitle2 := TLabel.Create(CardFase2);
+  with LabelCardTitle2 do
+  begin
+    Parent := CardFase2;
+    Caption := '✨ ¡NUEVAS FUNCIONES!';
+    Font.Size := 11;
+    Font.Style := [fsBold];
+    Font.Color := $00CC6600;
+    Left := 15;
+    Top := 10;
+    AutoSize := True;
+  end;
+
+  YPos2 := 45;
+
+  BtnFavoritos := TButton.Create(CardFase2);
+  with BtnFavoritos do
+  begin
+    Parent := CardFase2;
+    Caption := '⭐ Ver Favoritos';
+    Left := 15;
+    Top := YPos2;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnVerFavoritosClick;
+    Font.Style := [fsBold];
+    Color := $00CCFFCC;
+  end;
+
+  BtnBorradores := TButton.Create(CardFase2);
+  with BtnBorradores do
+  begin
+    Parent := CardFase2;
+    Caption := '📝 Ver Borradores';
+    Left := 210;
+    Top := YPos2;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnVerBorradoresClick;
+    Font.Style := [fsBold];
+    Color := $00CCFFCC;
+  end;
+  Inc(YPos2, 48);
+
+  // BUSCAR esta sección (alrededor de línea 760):
+  BtnPublicarComunidad := TButton.Create(CardFase2);
+  with BtnPublicarComunidad do
+  begin
+    Parent := CardFase2;
+    Caption := '💥 Comunidades';  // ← CAMBIAR texto
+    Left := 15;
+    Top := YPos2;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnGestionarComunidadesUsuarioClick;  // ← CAMBIAR evento
+    Font.Style := [fsBold];
+    Color := $00CCFFCC;
+  end;
+
+  BtnEliminarContacto := TButton.Create(CardFase2);
+  with BtnEliminarContacto do
+  begin
+    Parent := CardFase2;
+    Caption := '❌ Eliminar Contacto';
+    Left := 210;
+    Top := YPos2;
+    Width := 180;
+    Height := 38;
+    OnClick := @OnEliminarContactoClick;
+    Font.Style := [fsBold];
+    Color := $00CCFFCC;
+  end;
+end;
+procedure TInterfazEDDMail.CrearFormLogin;
+var
+  Panel: TPanel;
+  LabelTitulo, LabelEmail, LabelPassword: TLabel;
+  BtnLogin, BtnCrearCuenta: TButton;
+begin
+  FFormLogin := TForm.Create(nil);
+  with FFormLogin do
+  begin
+    Caption := ' EDDMail - Iniciar Sesión';
+    Width := 430;
+    Height := 350;
+    Position := poScreenCenter;
+    BorderStyle := bsDialog;
+
+
+    OnClose := @Self.OnFormClose;
+    KeyPreview := True;
+    OnKeyPress := @Self.OnKeyPress;
+  end;
+
+  Panel := TPanel.Create(FFormLogin);
+  with Panel do
+  begin
+    Parent := FFormLogin;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := $00B5315B                           ;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := '🔐 EDDMail - Sistema de Correos';
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 80;
+    Top := 30;
+    AutoSize := True;
+  end;
+
+  LabelEmail := TLabel.Create(Panel);
+  with LabelEmail do
+  begin
+    Parent := Panel;
+    Caption := 'Email:';
+    Left := 20;
+    Top := 90;
+    Font.Style := [fsBold];
+  end;
+
+  FEditEmail := TEdit.Create(Panel);
+  with FEditEmail do
+  begin
+    Parent := Panel;
+    Left := 20;
+    Top := 110;
+    Width := 370;
+    Text := 'root@edd.com';
+    TabOrder := 0;
+  end;
+
+  LabelPassword := TLabel.Create(Panel);
+  with LabelPassword do
+  begin
+    Parent := Panel;
+    Caption := 'Password:';
+    Left := 20;
+    Top := 150;
+    Font.Style := [fsBold];
+  end;
+
+  FEditPassword := TEdit.Create(Panel);
+  with FEditPassword do
+  begin
+    Parent := Panel;
+    Left := 20;
+    Top := 170;
+    Width := 370;
+    PasswordChar := '*';
+    Text := 'root123';
+    TabOrder := 1;
+  end;
+
+  BtnLogin := TButton.Create(Panel);
+  with BtnLogin do
+  begin
+    Parent := Panel;
+    Caption := 'Iniciar Sesión';
+    Left := 90;
+    Top := 220;
+    Width := 120;
+    Height := 35;
+    TabOrder := 2;
+    Default := True;
+
+    OnClick := @Self.OnLoginClick;
+    Font.Style := [fsBold];
+  end;
+
+  BtnCrearCuenta := TButton.Create(Panel);
+  with BtnCrearCuenta do
+  begin
+    Parent := Panel;
+    Caption := 'Crear Cuenta';
+    Left := 230;
+    Top := 220;
+    Width := 120;
+    Height := 35;
+    TabOrder := 3;
+    OnClick := @Self.OnCrearCuentaClick;
+
+  end;
+
+  FFormLogin.Show;
+end;
+
+
+procedure TInterfazEDDMail.CrearFormPrincipal;
+begin
+  FFormLogin.Hide;
+  
+  FFormPrincipal := TForm.Create(nil);
+  with FFormPrincipal do
+  begin
+    Caption := 'EDDMail - Sistema de Correos';
+    Width := 450;
+    Height := 580;
+    Position := poScreenCenter;
+    OnClose := @OnFormClose;
+  end;
+  
+  if FSistema.GetUsuarioActual^.Email = 'root@edd.com' then
+    CrearInterfazRoot
+  else
+    CrearInterfazUsuario;
+    
+  FFormPrincipal.Show;
+end;
+
+procedure TInterfazEDDMail.CrearInterfazRoot;
+var
+  Panel: TPanel;
+  LabelTitulo, LabelInfo: TLabel;
+  BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
+  BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
+  BtnCrearComunidadBST, BtnVerMensajesComunidad: TButton;
+  BtnVisualizarLogueo, BtnVerBlockchain, BtnReporteGrafo,
+  BtnCargaMasivaContactos: TButton;
+  YPos, LeftCol1, LeftCol2, BtnWidth, BtnHeight, Spacing: Integer;
+begin
+  Panel := TPanel.Create(FFormPrincipal);
+  with Panel do
+  begin
+    Parent := FFormPrincipal;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 20;
+    Color := $00B5315B;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Root - Panel de Administración';
+    Font.Size := 16;
+    Font.Style := [fsBold];
+    Font.Color := clMaroon;
+    Left := 20;
+    Top := 20;
+    AutoSize := True;
+  end;
+
+  LabelInfo := TLabel.Create(Panel);
+  with LabelInfo do
+  begin
+    Parent := Panel;
+    Caption := 'Bienvenido Administrador 🧑💼. Seleccione una opción:';
+    Left := 20;
+    Top := 50;
+    Font.Color := clWhite;
+  end;
+
+  // Configuración de posiciones y tamaños
+  YPos := 90;
+  LeftCol1 := 20;
+  BtnWidth := 200;
+  BtnHeight := 40;
+  Spacing := 15;
+  LeftCol2 := LeftCol1 + BtnWidth + Spacing;
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 1: Carga Masiva de Usuarios | Reporte de Usuarios
+  // ═══════════════════════════════════════════════════════
+  BtnCargaMasiva := TButton.Create(Panel);
+  with BtnCargaMasiva do
+  begin
+    Parent := Panel;
+    Caption := '📂 Carga Masiva de Usuarios';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnCargaMasivaClick;
+    Font.Style := [fsBold];
+  end;
+
+  BtnReporteUsuarios := TButton.Create(Panel);
+  with BtnReporteUsuarios do
+  begin
+    Parent := Panel;
+    Caption := '📊 Reporte de Usuarios';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnReporteUsuariosClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 2: Reporte de Relaciones | Gestionar Comunidades
+  // ═══════════════════════════════════════════════════════
+  BtnReporteRelaciones := TButton.Create(Panel);
+  with BtnReporteRelaciones do
+  begin
+    Parent := Panel;
+    Caption := '🔗 Reporte de Relaciones';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnReporteRelacionesClick;
+    Font.Style := [fsBold];
+  end;
+
+  BtnGestionarComunidades := TButton.Create(Panel);
+  with BtnGestionarComunidades do
+  begin
+    Parent := Panel;
+    Caption := '👥 Gestionar Comunidades';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnGestionarComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 3: Reporte Comunidades | Crear Comunidad BST
+  // ═══════════════════════════════════════════════════════
+  BtnReporteComunidades := TButton.Create(Panel);
+  with BtnReporteComunidades do
+  begin
+    Parent := Panel;
+    Caption := '📄 Reporte de Comunidades';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnReporteComunidadesClick;
+    Font.Style := [fsBold];
+  end;
+
+  BtnCrearComunidadBST := TButton.Create(Panel);
+  with BtnCrearComunidadBST do
+  begin
+    Parent := Panel;
+    Caption := '🌳 Crear Comunidad (BST)';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnCrearComunidadBSTClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 4: Ver Mensajes Comunidad | Visualizar Logueo
+  // ═══════════════════════════════════════════════════════
+  BtnVerMensajesComunidad := TButton.Create(Panel);
+  with BtnVerMensajesComunidad do
+  begin
+    Parent := Panel;
+    Caption := '💬 Ver Mensajes de Comunidad';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnVerMensajesComunidadClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnVisualizarLogueo := TButton.Create(Panel);
+  with BtnVisualizarLogueo do
+  begin
+    Parent := Panel;
+    Caption := '📊 Control de Logueo';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnControlLogueoClick;
+    Font.Style := [fsBold];
+    Color := clAqua;
+    Hint := 'Ver registro de entradas y salidas';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 5: Ver Blockchain | Reporte Grafo Contactos
+  // ═══════════════════════════════════════════════════════
+  BtnVerBlockchain := TButton.Create(Panel);
+  with BtnVerBlockchain do
+  begin
+    Parent := Panel;
+    Caption := '⛓️ Ver Blockchain';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnVerBlockchainClick;
+    Font.Style := [fsBold];
+    Color := clMoneyGreen;
+    Hint := 'Cadena de bloques de correos';
+    ShowHint := True;
+  end;
+
+  BtnReporteGrafo := TButton.Create(Panel);
+  with BtnReporteGrafo do
+  begin
+    Parent := Panel;
+    Caption := '🕸️ Reporte Grafo Contactos';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnReporteGrafoClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+    Hint := 'Relaciones usuarios-contactos';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 6: Carga Masiva Contactos | (espacio libre)
+  // ═══════════════════════════════════════════════════════
+  BtnCargaMasivaContactos := TButton.Create(Panel);
+  with BtnCargaMasivaContactos do
+  begin
+    Parent := Panel;
+    Caption := '📇 Carga Masiva de Contactos';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnCargaMasivaContactosClick;
+    Font.Style := [fsBold];
+    Color := clYellow;
+    Hint := 'Cargar contactos desde JSON';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 25);
+
+  // ═══════════════════════════════════════════════════════
+  // BOTÓN CERRAR SESIÓN (centrado)
+  // ═══════════════════════════════════════════════════════
+  BtnCerrarSesion := TButton.Create(Panel);
+  with BtnCerrarSesion do
+  begin
+    Parent := Panel;
+    Caption := '🚪 Cerrar Sesión';
+    Left := (LeftCol1 + LeftCol2 + BtnWidth) div 2 - 100;
+    Top := YPos;
+    Width := 200;
+    Height := 35;
+    OnClick := @OnCerrarSesionClick;
+    Font.Color := clRed;
+    Font.Style := [fsBold];
+  end;
+end;
+
+// Event handlers
+procedure TInterfazEDDMail.OnLoginClick(Sender: TObject);
+var
+  Email, Password: String;
+begin
+  Email := Trim(FEditEmail.Text);
+  Password := Trim(FEditPassword.Text);
+  
+  if (Email = '') or (Password = '') then
+  begin
+    MostrarMensaje('Error', 'Por favor ingrese email y password');
+    Exit;
+  end;
+  
+  if FSistema.IniciarSesion(Email, Password) then
+  begin
+    FUsuarioActivo := True;
+    CrearFormPrincipal;
+  end
+  else
+  begin
+    MostrarMensaje('Error', 'Credenciales incorrectas');
+    FEditPassword.Text := '';
+    FEditPassword.SetFocus;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCrearCuentaClick(Sender: TObject);
+var
+  FormRegistro: TForm;
+  PanelRegistro: TPanel;
+  EditNombre, EditUsuario, EditEmail, EditTelefono, EditPassword: TEdit;
+  LabelNombre, LabelUsuario, LabelEmail, LabelTelefono, LabelPassword: TLabel;
+  BtnRegistrar, BtnCancelar: TButton;
+  YPos: Integer;
+  ModalResult: Integer;
+begin
+  FormRegistro := TForm.Create(nil);
+  try
+    with FormRegistro do
+    begin
+      Caption := 'Crear Nueva Cuenta';
+      Width := 400;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+    end;
+    
+    PanelRegistro := TPanel.Create(FormRegistro);
+    with PanelRegistro do
+    begin
+      Parent := FormRegistro;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color:=$00ED618E ;
+    end;
+    
+    YPos := 20;
+    
+    // Nombre
+    LabelNombre := TLabel.Create(PanelRegistro);
+    with LabelNombre do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Nombre completo:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditNombre := TEdit.Create(PanelRegistro);
+    with EditNombre do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 0;
+    end;
+    Inc(YPos, 40);
+    
+    // Usuario
+    LabelUsuario := TLabel.Create(PanelRegistro);
+    with LabelUsuario do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Nombre de usuario:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditUsuario := TEdit.Create(PanelRegistro);
+    with EditUsuario do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 1;
+    end;
+    Inc(YPos, 40);
+    
+    // Email
+    LabelEmail := TLabel.Create(PanelRegistro);
+    with LabelEmail do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Email:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditEmail := TEdit.Create(PanelRegistro);
+    with EditEmail do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 2;
+    end;
+    Inc(YPos, 40);
+    
+    // Teléfono
+    LabelTelefono := TLabel.Create(PanelRegistro);
+    with LabelTelefono do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Teléfono:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditTelefono := TEdit.Create(PanelRegistro);
+    with EditTelefono do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      TabOrder := 3;
+    end;
+    Inc(YPos, 40);
+    
+    // Password
+    LabelPassword := TLabel.Create(PanelRegistro);
+    with LabelPassword do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Password:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+    
+    EditPassword := TEdit.Create(PanelRegistro);
+    with EditPassword do
+    begin
+      Parent := PanelRegistro;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      PasswordChar := '*';
+      TabOrder := 4;
+    end;
+    Inc(YPos, 50);
+    
+    // Botones
+    BtnRegistrar := TButton.Create(PanelRegistro);
+    with BtnRegistrar do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Registrar';
+      Left := 100;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+    
+    BtnCancelar := TButton.Create(PanelRegistro);
+    with BtnCancelar do
+    begin
+      Parent := PanelRegistro;
+      Caption := 'Cancelar';
+      Left := 200;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+    
+    ModalResult := FormRegistro.ShowModal;
+    
+    if ModalResult = mrOk then
+    begin
+      if (Trim(EditNombre.Text) = '') or (Trim(EditUsuario.Text) = '') or 
+         (Trim(EditEmail.Text) = '') or (Trim(EditPassword.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Todos los campos son obligatorios');
+        Exit;
+      end;
+      
+      if FSistema.RegistrarUsuario(
+        Trim(EditNombre.Text),
+        Trim(EditUsuario.Text),
+        Trim(EditEmail.Text),
+        Trim(EditTelefono.Text),
+        Trim(EditPassword.Text)
+      ) then
+      begin
+        MostrarMensaje('Éxito', 'Usuario registrado correctamente');
+        FEditEmail.Text := Trim(EditEmail.Text);
+        FEditPassword.Text := '';
+      end
+      else
+        MostrarMensaje('Error', 'Error al registrar usuario. El email ya existe.');
+    end;
+    
+  finally
+    FormRegistro.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCargaMasivaClick(Sender: TObject);
+var
+  OpenDialogUsuarios, OpenDialogCorreos: TOpenDialog;
+begin
+  // 1) Cargar USUARIOS
+  OpenDialogUsuarios := TOpenDialog.Create(nil);
+  try
+    with OpenDialogUsuarios do
+    begin
+      Title := 'Seleccionar JSON de USUARIOS';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+      if Execute then
+      begin
+        try
+          FSistema.CargarUsuariosDesdeJSON(FileName);
+          MostrarMensaje('Éxito', 'Usuarios cargados desde: ' + ExtractFileName(FileName));
+        except
+          on E: Exception do
+          begin
+            MostrarMensaje('Error', 'Error al cargar usuarios: ' + E.Message);
+            Exit;
+          end;
+        end;
+      end
+      else
+        Exit; // cancelado
+    end;
+  finally
+    OpenDialogUsuarios.Free;
+  end;
+
+  // 2) Cargar CORREOS
+  OpenDialogCorreos := TOpenDialog.Create(nil);
+  try
+    with OpenDialogCorreos do
+    begin
+      Title := 'Seleccionar JSON de CORREOS';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+      if Execute then
+      begin
+        try
+          FSistema.CargarCorreosDesdeJSON(FileName);
+          MostrarMensaje('Éxito', 'Correos cargados desde: ' + ExtractFileName(FileName));
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar correos: ' + E.Message);
+        end;
+      end;
+    end;
+  finally
+    OpenDialogCorreos.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteUsuariosClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteUsuarios('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de usuarios generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- usuarios.dot (código Graphviz)' + LineEnding +
+      '- usuarios.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteRelacionesClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteRelaciones('Root-Reportes');
+    MostrarMensaje('Éxito', 'Reporte de relaciones generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- relaciones.dot (código Graphviz)' + LineEnding +
+      '- relaciones.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCerrarSesionClick(Sender: TObject);
+begin
+  FSistema.CerrarSesion;
+  FUsuarioActivo := False;
+  
+  if Assigned(FFormPrincipal) then
+  begin
+    FFormPrincipal.Close;
+    FFormPrincipal := nil;
+  end;
+  
+  FEditEmail.Text := '';
+  FEditPassword.Text := '';
+  FFormLogin.Show;
+   FFormLogin.BringToFront;
+  FFormLogin.SetFocus;
+  FEditEmail.SetFocus;
+end;
+
+procedure TInterfazEDDMail.OnFormClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  if Sender = FFormLogin then
+  begin
+    Application.Terminate;
+  end
+  else if Sender = FFormPrincipal then
+  begin
+    CloseAction := caFree;
+    FFormPrincipal := nil;
+    if Assigned(FFormLogin) then
+      FFormLogin.Show;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnKeyPress(Sender: TObject; var Key: Char);
+begin
+  if Key = #13 then // Enter
+  begin
+    OnLoginClick(Sender);
+    Key := #0;
+  end;
+end;
+
+procedure TInterfazEDDMail.MostrarMensaje(Titulo, Mensaje: String);
+begin
+  ShowMessage(Mensaje);
+end;
+procedure TInterfazEDDMail.OnGestionarComunidadesClick(Sender: TObject);
+var
+  FormComunidades: TForm;
+  PanelComunidades: TPanel;
+  LabelTitulo, LabelNombreCom, LabelUsuario: TLabel;
+  BtnCrearComunidad, BtnAsignarUsuario, BtnListarComunidades, BtnCerrar: TButton;
+  YPos: Integer;
+begin
+  FormComunidades := TForm.Create(nil);
+  try
+    with FormComunidades do
+    begin
+      Caption := 'Gestión de Comunidades';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color:=$00ED618E;
+    end;
+
+    PanelComunidades := TPanel.Create(FormComunidades);
+    with PanelComunidades do
+    begin
+      Parent := FormComunidades;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color:=clMoneyGreen;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(PanelComunidades);
+    with LabelTitulo do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Gestión de Comunidades';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    // Crear Comunidad
+    LabelNombreCom := TLabel.Create(PanelComunidades);
+    with LabelNombreCom do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditNombreComunidad := TEdit.Create(PanelComunidades);
+    with FEditNombreComunidad do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnCrearComunidad := TButton.Create(PanelComunidades);
+    with BtnCrearComunidad do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Crear';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnCrearComunidadClick;
+    end;
+    Inc(YPos, 50);
+
+    // Asignar Usuario
+    LabelUsuario := TLabel.Create(PanelComunidades);
+    with LabelUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Email del Usuario a Asignar:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 25);
+
+    FEditEmailUsuario := TEdit.Create(PanelComunidades);
+    with FEditEmailUsuario do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 300;
+    end;
+
+    BtnAsignarUsuario := TButton.Create(PanelComunidades);
+    with BtnAsignarUsuario do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Asignar';
+      Left := 330;
+      Top := YPos - 2;
+      Width := 80;
+      Height := 25;
+      OnClick := @Self.OnAsignarUsuarioClick;
+    end;
+    Inc(YPos, 50);
+
+    // Lista de comunidades
+    FMemoComunidades := TMemo.Create(PanelComunidades);
+    with FMemoComunidades do
+    begin
+      Parent := PanelComunidades;
+      Left := 20;
+      Top := YPos;
+      Width := 520;
+      Height := 200;
+      ReadOnly := True;
+      ScrollBars := ssVertical;
+    end;
+
+    BtnListarComunidades := TButton.Create(PanelComunidades);
+    with BtnListarComunidades do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Listar Comunidades';
+      Left := 20;
+      Top := YPos + 210;
+      Width := 150;
+      Height := 30;
+      OnClick := @Self.OnListarComunidadesClick;
+    end;
+
+    BtnCerrar := TButton.Create(PanelComunidades);
+    with BtnCerrar do
+    begin
+      Parent := PanelComunidades;
+      Caption := 'Cerrar';
+      Left := 460;
+      Top := YPos + 210;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormComunidades.ShowModal;
+
+  finally
+    FormComunidades.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnCrearComunidadClick(Sender: TObject);
+begin
+  if Trim(FEditNombreComunidad.Text) <> '' then
+  begin
+    if FSistema.CrearComunidad(Trim(FEditNombreComunidad.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Comunidad creada: ' + FEditNombreComunidad.Text);
+      FEditNombreComunidad.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: La comunidad ya existe');
+  end
+  else
+    MostrarMensaje('Error', 'Ingrese un nombre para la comunidad');
+end;
+
+procedure TInterfazEDDMail.OnAsignarUsuarioClick(Sender: TObject);
+begin
+  if (Trim(FEditNombreComunidad.Text) <> '') and (Trim(FEditEmailUsuario.Text) <> '') then
+  begin
+    if FSistema.AgregarUsuarioAComunidad(Trim(FEditNombreComunidad.Text), Trim(FEditEmailUsuario.Text)) then
+    begin
+      MostrarMensaje('Éxito', 'Usuario asignado correctamente');
+      FEditEmailUsuario.Text := '';
+    end
+    else
+      MostrarMensaje('Error', 'Error: Comunidad no existe o usuario no encontrado');
+  end
+  else
+    MostrarMensaje('Error', 'Complete ambos campos');
+end;
+
+procedure TInterfazEDDMail.OnListarComunidadesClick(Sender: TObject);
+begin
+  FMemoComunidades.Lines.Text := FSistema.ListarComunidades;
+end;
+
+// Actualizar OnReporteComunidadesClick para usar el nuevo árbol BST
+procedure TInterfazEDDMail.OnReporteComunidadesClick(Sender: TObject);
+var
+  FormTipoReporte: TForm;
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnReporteAntiguo, BtnReporteNuevo, BtnCancelar: TButton;
+begin
+  // Crear formulario para elegir tipo de reporte
+  FormTipoReporte := TForm.Create(nil);
+  try
+    with FormTipoReporte do
+    begin
+      Caption := 'Tipo de Reporte de Comunidades';
+      Width := 400;
+      Height := 250;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormTipoReporte);
+    with Panel do
+    begin
+      Parent := FormTipoReporte;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := clMoneyGreen;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Seleccione el tipo de reporte:';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    BtnReporteAntiguo := TButton.Create(Panel);
+    with BtnReporteAntiguo do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte Fase 1 (Lista de Listas)';
+      Left := 20;
+      Top := 60;
+      Width := 340;
+      Height := 40;
+      ModalResult := mrYes;
+      Hint := 'Reporte usando la estructura original';
+      ShowHint := True;
+    end;
+
+    BtnReporteNuevo := TButton.Create(Panel);
+    with BtnReporteNuevo do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte Fase 2 (Árbol BST) 🆕';
+      Left := 20;
+      Top := 110;
+      Width := 340;
+      Height := 40;
+      ModalResult := mrOk;
+      Font.Style := [fsBold];
+      Color := clLime;
+      Hint := 'Reporte usando árbol BST';
+      ShowHint := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 280;
+      Top := 170;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    case FormTipoReporte.ShowModal of
+      mrOk: begin // Reporte nuevo (BST)
+        try
+          FSistema.GenerarReporteComunidadesBST('Root-Reportes');
+          MostrarMensaje('Éxito',
+            'Reporte de comunidades BST generado en: Root-Reportes/' + LineEnding +
+            'Archivos generados:' + LineEnding +
+            '- comunidades_bst.dot (código Graphviz)' + LineEnding +
+            '- comunidades_bst.png (imagen)');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al generar reporte BST: ' + E.Message);
+        end;
+      end;
+
+      mrYes: begin // Reporte antiguo (Lista de Listas)
+        try
+          FSistema.GenerarReporteComunidades('Root-Reportes');
+          MostrarMensaje('Éxito',
+            'Reporte de comunidades (Fase 1) generado en: Root-Reportes/' + LineEnding +
+            'Archivos generados:' + LineEnding +
+            '- comunidades.dot (código Graphviz)' + LineEnding +
+            '- comunidades.png (imagen)');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+        end;
+      end;
+    end;
+
+  finally
+    FormTipoReporte.Free;
+  end;
+end;
+
+
+procedure TInterfazEDDMail.OnActualizarPerfilClick(Sender: TObject);
+var
+  FormPerfil: TForm;
+  PanelPerfil: TPanel;
+  LabelTitulo, LabelNombre, LabelUsuario, LabelTelefono, LabelEmail: TLabel;
+  EditNombre, EditUsuario, EditTelefono: TEdit;
+  BtnActualizar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  YPos: Integer;
+  ModalResult: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then
+    Exit;
+
+  FormPerfil := TForm.Create(nil);
+  try
+    with FormPerfil do
+    begin
+      Caption := 'Actualizar Perfil';
+      Width := 400;
+      Height := 350;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color:=$00ED618E ;
+    end;
+
+    PanelPerfil := TPanel.Create(FormPerfil);
+    with PanelPerfil do
+    begin
+      Parent := FormPerfil;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(PanelPerfil);
+    with LabelTitulo do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Actualizar Información Personal';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    // Email (solo mostrar, no editable)
+    LabelEmail := TLabel.Create(PanelPerfil);
+    with LabelEmail do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Email (no modificable): ' + Usuario^.Email;
+      Left := 20;
+      Top := YPos;
+      Font.Color := clWhite;
+    end;
+    Inc(YPos, 30);
+
+    // Nombre
+    LabelNombre := TLabel.Create(PanelPerfil);
+    with LabelNombre do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Nombre completo:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditNombre := TEdit.Create(PanelPerfil);
+    with EditNombre do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Nombre;
+      TabOrder := 0;
+    end;
+    Inc(YPos, 40);
+
+    // Usuario
+    LabelUsuario := TLabel.Create(PanelPerfil);
+    with LabelUsuario do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Nombre de usuario:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditUsuario := TEdit.Create(PanelPerfil);
+    with EditUsuario do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Usuario;
+      TabOrder := 1;
+    end;
+    Inc(YPos, 40);
+
+    // Teléfono
+    LabelTelefono := TLabel.Create(PanelPerfil);
+    with LabelTelefono do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Teléfono:';
+      Left := 20;
+      Top := YPos;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 20);
+
+    EditTelefono := TEdit.Create(PanelPerfil);
+    with EditTelefono do
+    begin
+      Parent := PanelPerfil;
+      Left := 20;
+      Top := YPos;
+      Width := 340;
+      Text := Usuario^.Telefono;
+      TabOrder := 2;
+    end;
+    Inc(YPos, 50);
+
+    // Botones
+    BtnActualizar := TButton.Create(PanelPerfil);
+    with BtnActualizar do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Actualizar';
+      Left := 100;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(PanelPerfil);
+    with BtnCancelar do
+    begin
+      Parent := PanelPerfil;
+      Caption := 'Cancelar';
+      Left := 200;
+      Top := YPos;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    ModalResult := FormPerfil.ShowModal;
+
+    if ModalResult = mrOk then
+    begin
+      if Trim(EditNombre.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'El nombre no puede estar vacío');
+        Exit;
+      end;
+
+      FSistema.ActualizarPerfil(Usuario,
+        Trim(EditNombre.Text),
+        Trim(EditUsuario.Text),
+        Trim(EditTelefono.Text));
+
+      MostrarMensaje('Éxito', 'Perfil actualizado correctamente');
+
+    end;
+
+  finally
+    FormPerfil.Free;
+  end;
+end;
+procedure TInterfazEDDMail.OnAgregarContactoClick(Sender: TObject);
+var
+  FormAgregarContacto: TForm;
+  PanelContacto: TPanel;
+  LabelTitulo, LabelEmail: TLabel;
+  EditEmail: TEdit;
+  BtnAgregar, BtnCancelar: TButton;
+  ModalResult: Integer;
+begin
+  if FSistema.GetUsuarioActual = nil then
+    Exit;
+
+  FormAgregarContacto := TForm.Create(nil);
+  try
+    with FormAgregarContacto do
+    begin
+      Caption := 'Agregar Contacto';
+      Width := 400;
+      Height := 250;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color:= $00ED618E ;
+    end;
+
+    PanelContacto := TPanel.Create(FormAgregarContacto);
+    with PanelContacto do
+    begin
+      Parent := FormAgregarContacto;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    LabelTitulo := TLabel.Create(PanelContacto);
+    with LabelTitulo do
+    begin
+      Parent := PanelContacto;
+      Caption := 'Agregar Nuevo Contacto';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+      Color:=clTeal;
+    end;
+
+    LabelEmail := TLabel.Create(PanelContacto);
+    with LabelEmail do
+    begin
+      Parent := PanelContacto;
+      Caption := 'Email del contacto:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditEmail := TEdit.Create(PanelContacto);
+    with EditEmail do
+    begin
+      Parent := PanelContacto;
+      Left := 20;
+      Top := 80;
+      Width := 340;
+      TabOrder := 0;
+      Hint := 'Ingrese el email del usuario que desea agregar';
+      ShowHint := True;
+    end;
+
+    BtnAgregar := TButton.Create(PanelContacto);
+    with BtnAgregar do
+    begin
+      Parent := PanelContacto;
+      Caption := 'Agregar';
+      Left := 120;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(PanelContacto);
+    with BtnCancelar do
+    begin
+      Parent := PanelContacto;
+      Caption := 'Cancelar';
+      Left := 210;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    ModalResult := FormAgregarContacto.ShowModal;
+
+    if ModalResult = mrOk then
+    begin
+      if Trim(EditEmail.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'Debe ingresar un email');
+        Exit;
+      end;
+
+      if FSistema.AgregarContacto(FSistema.GetUsuarioActual, Trim(EditEmail.Text)) then
+        MostrarMensaje('Éxito', 'Contacto agregado correctamente')
+      else
+        MostrarMensaje('Error', 'No se pudo agregar el contacto. Verifique que:' + LineEnding +
+                       '- El email existe en el sistema' + LineEnding +
+                       '- No sea su propio email' + LineEnding +
+                       '- No esté ya en sus contactos');
+    end;
+
+  finally
+    FormAgregarContacto.Free;
+  end;
+end;
+procedure TInterfazEDDMail.OnVerContactosClick(Sender: TObject);
+var
+  PanelContactos, PanelInfo: TPanel;
+  LabelTitulo: TLabel;
+  BtnAnterior, BtnSiguiente, BtnAgregar, BtnReporte, BtnCerrar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then
+    Exit;
+
+  // Si ya existe la ventana, solo mostrarla
+  if FFormContactos <> nil then
+  begin
+    FFormContactos.Show;
+    FFormContactos.BringToFront;
+    Exit;
+  end;
+
+  // Inicializar variables de navegación
+  FPrimerContacto := FSistema.GetContactos(Usuario);
+  FContactoActual := FPrimerContacto;
+  FIndiceContactoActual := 1;
+  FTotalContactos := FSistema.ContarContactos(FPrimerContacto);
+
+  FFormContactos := TForm.Create(nil);
+  with FFormContactos do
+  begin
+    Caption := 'Mis Contactos';
+    Width := 500;
+    Height := 400;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormContactosClose;  // evento de cierre
+    Color:=$00ED618E;
+  end;
+
+  PanelContactos := TPanel.Create(FFormContactos);
+  with PanelContactos do
+  begin
+    Parent := FFormContactos;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
+
+  LabelTitulo := TLabel.Create(PanelContactos);
+  with LabelTitulo do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Lista de Contactos 📇';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 20;
+    Top := 20;
+  end;
+
+  FLabelContadorContactos := TLabel.Create(PanelContactos);
+  with FLabelContadorContactos do
+  begin
+    Parent := PanelContactos;
+    Left := 20;
+    Top := 50;
+    Font.Color := clGray;
+    if FTotalContactos = 0 then
+      Caption := 'No tiene contactos agregados'
+    else
+      Caption := Format('Contacto %d de %d', [FIndiceContactoActual, FTotalContactos]);
+  end;
+
+  // Panel para información del contacto
+  PanelInfo := TPanel.Create(PanelContactos);
+  with PanelInfo do
+  begin
+    Parent := PanelContactos;
+    Left := 20;
+    Top := 80;
+    Width := 440;
+    Height := 180;
+    BevelOuter := bvRaised;
+    Color := clWhite;
+  end;
+
+  // Crear labels para información del contacto con variables de instancia
+  if FContactoActual <> nil then
+  begin
+    FLabelNombreContacto := TLabel.Create(PanelInfo);
+    with FLabelNombreContacto do
+    begin
+      Parent := PanelInfo;
+      Caption := 'Nombre: ' + FContactoActual^.Nombre;
+      Left := 20;
+      Top := 20;
+      Font.Style := [fsBold];
+    end;
+
+    FLabelUsuarioContacto := TLabel.Create(PanelInfo);
+    with FLabelUsuarioContacto do
+    begin
+      Parent := PanelInfo;
+      Caption := 'Usuario: ' + FContactoActual^.Usuario;
+      Left := 20;
+      Top := 50;
+    end;
+
+    FLabelEmailContacto := TLabel.Create(PanelInfo);
+    with FLabelEmailContacto do
+    begin
+      Parent := PanelInfo;
+      Caption := 'Email: ' + FContactoActual^.Email;
+      Left := 20;
+      Top := 80;
+      Font.Color := clBlue;
+    end;
+
+    FLabelTelefonoContacto := TLabel.Create(PanelInfo);
+    with FLabelTelefonoContacto do
+    begin
+      Parent := PanelInfo;
+      Caption := 'Teléfono: ' + FContactoActual^.Telefono;
+      Left := 20;
+      Top := 110;
+    end;
+  end;
+
+  // Botones de navegación
+  BtnAnterior := TButton.Create(PanelContactos);
+  with BtnAnterior do
+  begin
+    Parent := PanelContactos;
+    Caption := '< Anterior';
+    Left := 20;
+    Top := 280;
+    Width := 100;
+    Height := 30;
+    Enabled := FTotalContactos > 1;
+    OnClick := @OnContactoAnteriorClick;
+  end;
+
+  BtnSiguiente := TButton.Create(PanelContactos);
+  with BtnSiguiente do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Siguiente >';
+    Left := 130;
+    Top := 280;
+    Width := 100;
+    Height := 30;
+    Enabled := FTotalContactos > 1;
+    OnClick := @OnContactoSiguienteClick;
+  end;
+
+  BtnAgregar := TButton.Create(PanelContactos);
+  with BtnAgregar do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Agregar Contacto';
+    Left := 250;
+    Top := 280;
+    Width := 120;
+    Height := 30;
+    OnClick := @OnAgregarContactoClick;
+  end;
+
+  BtnReporte := TButton.Create(PanelContactos);
+  with BtnReporte do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Generar Reporte';
+    Left := 20;
+    Top := 320;
+    Width := 120;
+    Height := 30;
+    OnClick := @OnGenerarReporteContactosClick;
+  end;
+
+  BtnCerrar := TButton.Create(PanelContactos);
+  with BtnCerrar do
+  begin
+    Parent := PanelContactos;
+    Caption := 'Cerrar';
+    Left := 380;
+    Top := 320;
+    Width := 80;
+    Height := 30;
+    ModalResult := mrCancel;
+  end;
+
+  FFormContactos.ShowModal;
+end;
+
+procedure TInterfazEDDMail.OnContactoAnteriorClick(Sender: TObject);
+var
+  Actual: PContacto;
+  Contador: Integer;
+begin
+  if (FContactoActual = nil) or (FTotalContactos <= 1) then
+    Exit;
+
+  // Buscar el contacto anterior en la lista circular
+  Actual := FPrimerContacto;
+  Contador := 1;
+
+  while (Actual^.Siguiente <> FContactoActual) and (Contador < FTotalContactos) do
+  begin
+    Actual := Actual^.Siguiente;
+    Inc(Contador);
+  end;
+
+  FContactoActual := Actual;
+  Dec(FIndiceContactoActual);
+  if FIndiceContactoActual < 1 then
+    FIndiceContactoActual := FTotalContactos;
+
+  // Actualizar la vista
+  ActualizarVistaContacto;
+end;
+
+procedure TInterfazEDDMail.OnContactoSiguienteClick(Sender: TObject);
+begin
+  if (FContactoActual = nil) or (FTotalContactos <= 1) then
+    Exit;
+
+  FContactoActual := FContactoActual^.Siguiente;
+  Inc(FIndiceContactoActual);
+  if FIndiceContactoActual > FTotalContactos then
+    FIndiceContactoActual := 1;
+
+  // Actualizar la vista
+  ActualizarVistaContacto;
+end;
+
+
+procedure TInterfazEDDMail.OnGenerarReporteContactosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then
+    Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FSistema.GenerarReporteContactos(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito', 'Reporte de contactos generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- contactos_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- contactos_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+procedure TInterfazEDDMail.ActualizarVistaContacto;
+begin
+  if FContactoActual = nil then
+    Exit;
+
+  if FLabelContadorContactos <> nil then
+    FLabelContadorContactos.Caption := Format('Contacto %d de %d', [FIndiceContactoActual, FTotalContactos]);
+
+  if FLabelNombreContacto <> nil then
+    FLabelNombreContacto.Caption := 'Nombre: ' + FContactoActual^.Nombre;
+
+  if FLabelUsuarioContacto <> nil then
+    FLabelUsuarioContacto.Caption := 'Usuario: ' + FContactoActual^.Usuario;
+
+  if FLabelEmailContacto <> nil then
+    FLabelEmailContacto.Caption := 'Email: ' + FContactoActual^.Email;
+
+  if FLabelTelefonoContacto <> nil then
+    FLabelTelefonoContacto.Caption := 'Teléfono: ' + FContactoActual^.Telefono;
+end;
+procedure TInterfazEDDMail.OnFormContactosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormContactos := nil;
+  FLabelContadorContactos := nil;
+  FLabelNombreContacto := nil;
+  FLabelUsuarioContacto := nil;
+  FLabelEmailContacto := nil;
+  FLabelTelefonoContacto := nil;
+end;
+procedure TInterfazEDDMail.OnEnviarCorreoClick(Sender: TObject);
+var
+  FormEnviar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnBorrador, BtnCancelar: TButton;
+  Usuario: PUsuario;
+  ResultadoModal: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormEnviar := TForm.Create(nil);
+  try
+    with FormEnviar do
+    begin
+      Caption := 'Enviar correo';
+      Width := 650;
+      Height := 450;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormEnviar);
+    with Panel do
+    begin
+      Parent := FormEnviar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+      Color := $00ED618E;
+    end;
+
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12;
+      Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 30;
+      Width := 600;
+      TabOrder := 0;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 78;
+      Width := 600;
+      Height := 25;
+      TabOrder := 1;
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 115;
+      Width := 600;
+      Height := 250;
+      ScrollBars := ssVertical;
+      TabOrder := 2;
+    end;
+
+    // BOTÓN ENVIAR
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := 'Enviar';
+      Left := 300;
+      Top := 380;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+      TabOrder := 3;
+      Font.Style := [fsBold];
+      Color := clLime;
+    end;
+
+    // BOTÓN GUARDAR BORRADOR (NUEVO)
+    BtnBorrador := TButton.Create(Panel);
+    with BtnBorrador do
+    begin
+      Parent := Panel;
+      Caption := '📝 Guardar Borrador';
+      Left := 392;
+      Top := 380;
+      Width := 150;
+      Height := 30;
+      ModalResult := mrYes; // mrYes para identificar borrador
+      TabOrder := 4;
+      Font.Style := [fsBold];
+      Color := clAqua;
+      Hint := 'Guarda el correo como borrador para enviarlo después';
+      ShowHint := True;
+    end;
+
+    // BOTÓN CANCELAR
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 544;
+      Top := 380;
+      Width := 70;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+      TabOrder := 5;
+    end;
+
+    // MOSTRAR MODAL Y PROCESAR RESULTADO
+    ResultadoModal := FormEnviar.ShowModal;
+
+    case ResultadoModal of
+      mrOk: begin // ENVIAR CORREO
+        if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') then
+        begin
+          MostrarMensaje('Error', 'Debe ingresar al menos destinatario y asunto');
+          Exit;
+        end;
+
+        // 🔹 ENVIAR CORREO INMEDIATAMENTE
+        if FCorreoManager.EnviarCorreo(
+              FSistema,           // sistema para buscar usuarios y actualizar matriz
+              Usuario^.Email,     // remitente (el usuario logueado)
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Correo enviado correctamente a: ' + Trim(EditPara.Text));
+        end
+        else
+        begin
+          MostrarMensaje('Error',
+            'No se pudo enviar el correo.' + LineEnding +
+            'Verifique que el destinatario exista y que esté en su lista de contactos.');
+        end;
+      end;
+
+      mrYes: begin // GUARDAR COMO BORRADOR
+        if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') then
+        begin
+          MostrarMensaje('Error', 'Debe ingresar al menos destinatario y asunto para guardar el borrador');
+          Exit;
+        end;
+
+        // 🔹 GUARDAR EN ÁRBOL AVL DE BORRADORES
+        if FSistema.GuardarBorrador(
+              Usuario,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito',
+            'Borrador guardado correctamente' + LineEnding +
+            'Podrá editarlo y enviarlo desde "📝 Ver Borradores"');
+        end
+        else
+        begin
+          MostrarMensaje('Error', 'No se pudo guardar el borrador');
+        end;
+      end;
+
+      mrCancel: begin
+        // si el suario canceló no hacer nada
+      end;
+    end;
+
+  finally
+    FormEnviar.Free;
+  end;
+end;
+procedure TInterfazEDDMail.OnBandejaClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnOrdenar, BtnMarcarLeido, BtnEliminar, BtnCerrar: TButton;
+    BtnMarcarFavorito: TButton;
+      BtnDescargar: TButton;          // ← FALTA ESTA
+  LabelFase3: TLabel;             // ← FALTA ESTA
+  BtnReporteMerkle: TButton;      // ← FALTA ESTA
+  LabelBuscar: TLabel;            // ← FALTA ESTA
+
+
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  // si ya existe, solo mostrar
+  if Assigned(FFormBandeja) then
+  begin
+    FFormBandeja.Show;
+    FFormBandeja.BringToFront;
+    Exit;
+  end;
+
+  FFormBandeja := TForm.Create(nil);
+  with FFormBandeja do
+  begin
+    Caption := 'Bandeja de Entrada';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormBandejaClose;
+    Color:=$00ED618E ;
+  end;
+
+  Panel := TPanel.Create(FFormBandeja);
+  with Panel do
+  begin
+    Parent := FFormBandeja;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Bandeja de Entrada✉️ ';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  FLabelNoLeidosInbox := TLabel.Create(Panel);
+  with FLabelNoLeidosInbox do
+  begin
+    Parent := Panel;
+    Caption := 'No leídos: 0';
+    Left := 200;
+    Top := 14;
+    Font.Color := clWhite;
+  end;
+
+  // Lista de correos
+  FListBandeja := TListBox.Create(Panel);
+  with FListBandeja do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 40;
+    Width := 660;
+    Height := 240;
+    OnClick := @Inbox_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo mensaje
+  FMemoMensaje := TMemo.Create(Panel);
+  with FMemoMensaje do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 290;
+    Width := 660;
+    Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  BtnOrdenar := TButton.Create(Panel);
+  with BtnOrdenar do
+  begin
+    Parent := Panel;
+    Caption := 'Ordenar A-Z';
+    Left := 10; Top := 420; Width := 120; Height := 30;
+    OnClick := @Inbox_OnOrdenarClick;
+  end;
+
+  BtnMarcarLeido := TButton.Create(Panel);
+  with BtnMarcarLeido do
+  begin
+    Parent := Panel;
+    Caption := 'Marcar Leído';
+    Left := 140; Top := 420; Width := 120; Height := 30;
+    OnClick := @Inbox_OnMarcarLeidoClick;
+  end;
+
+  // NUEVO BOTÓN: Marcar como Favorito
+  BtnMarcarFavorito := TButton.Create(Panel);
+  with BtnMarcarFavorito do
+  begin
+    Parent := Panel;
+    Caption := '⭐ Favorito';
+    Left := 270; Top := 420; Width := 120; Height := 30;
+    OnClick := @Inbox_OnMarcarFavoritoClick;
+    Font.Style := [fsBold];
+    Color := clYellow;
+  end;
+  // NUEVO BOTÓN FASE 3: Descargar Correo Comprimido
+BtnDescargar := TButton.Create(Panel);
+with BtnDescargar do
+begin
+  Parent := Panel;
+  Caption := '💾 Descargar';
+  Left := 400; Top := 420; Width := 120; Height := 30;
+  OnClick := @Inbox_OnDescargarClick;
+  Font.Style := [fsBold];
+  Color := clSkyBlue;
+  Hint := 'Descargar mensaje comprimido (LZW)';
+  ShowHint := True;
+end;
+
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar';
+    Left := 400; Top := 420; Width := 120; Height := 30;
+    OnClick := @Inbox_OnEliminarClick;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 530; Top := 420; Width := 140; Height := 30;
+    OnClick := @Inbox_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos
+  Inbox_RellenarLista;
+
+  FFormBandeja.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormBandejaClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormBandeja := nil;
+  FListBandeja := nil;
+  FMemoMensaje := nil;
+  FLabelNoLeidosInbox := nil;
+end;
+
+// Llena la lista desde la estructura de datos
+procedure TInterfazEDDMail.Inbox_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display, EstadoTxt: String;
+begin
+  if (FListBandeja = nil) or (FSistema = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListBandeja.Items.BeginUpdate;
+  try
+    FListBandeja.Items.Clear;
+
+    Correo := FCorreoManager.GetBandejaEntrada(Usuario);
+    while Correo <> nil do
+    begin
+      if Correo^.Estado = 'NL' then EstadoTxt := '[NL]' else EstadoTxt := '[L ]';
+      // Mostramos: [Estado] Asunto — Remitente (Fecha)
+      Display := Format('%s %s — %s (%s)', [EstadoTxt, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+
+      // Guardamos el Id en Objects
+      FListBandeja.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListBandeja.Items.EndUpdate;
+  end;
+
+  // Actualizamos contador de no leídos
+  if Assigned(FLabelNoLeidosInbox) then
+    FLabelNoLeidosInbox.Caption := 'No leídos: ' + IntToStr(FCorreoManager.ContarCorreosNoLeidos(Usuario));
+
+  // Limpiar mensaje mostrado
+  if Assigned(FMemoMensaje) then
+    FMemoMensaje.Clear;
+end;
+
+// Al seleccionar un correo: mostrar cuerpo y marcar leído si estaba NL
+procedure TInterfazEDDMail.Inbox_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListBandeja = nil) or (FMemoMensaje = nil) then Exit;
+  if FListBandeja.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  // Buscar el correo seleccionado para mostrar el mensaje
+  Correo := FCorreoManager.GetBandejaEntrada(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+  begin
+    FMemoMensaje.Lines.Text := Correo^.Mensaje;
+
+    // Si está NL, marcar como leído
+    if Correo^.Estado = 'NL' then
+    begin
+      if FCorreoManager.MarcarCorreoLeido(Usuario, IdSel) then
+        Inbox_RellenarLista;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Inbox_OnOrdenarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  if FCorreoManager.OrdenarBandejaPorAsunto(Usuario) then
+    Inbox_RellenarLista;
+end;
+
+procedure TInterfazEDDMail.Inbox_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FCorreoManager.EliminarCorreoDeBandeja(Usuario, IdSel) then
+  begin
+    MostrarMensaje('Éxito', 'Correo movido a Papelera.');
+    Inbox_RellenarLista;
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar el correo.');
+end;
+
+procedure TInterfazEDDMail.Inbox_OnMarcarLeidoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  if FCorreoManager.MarcarCorreoLeido(Usuario, IdSel) then
+    Inbox_RellenarLista
+  else
+    MostrarMensaje('Error', 'No se pudo marcar como leído.');
+end;
+procedure TInterfazEDDMail.OnPapeleraClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnBuscar, BtnEliminarDef, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if Assigned(FFormPapelera) then
+  begin
+    FFormPapelera.Show;
+    FFormPapelera.BringToFront;
+    Exit;
+  end;
+
+  FFormPapelera := TForm.Create(nil);
+  with FFormPapelera do
+  begin
+    Caption := 'Papelera (Pila LIFO)';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormPapeleraClose;
+    Color:=$00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormPapelera);
+  with Panel do
+  begin
+    Parent := FFormPapelera;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color:=$00ED618E;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Papelera (último en entrar, primero en salir) 🗑️';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+    Color:=clMoneyGreen ;
+  end;
+
+  // Buscar
+  FEditBuscarPapelera := TEdit.Create(Panel);
+  with FEditBuscarPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 40; Width := 400;
+    Hint := 'Ingrese palabra clave para buscar en asunto';
+    ShowHint := True;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar';
+    Left := 420; Top := 38; Width := 80; Height := 26;
+    OnClick := @Papelera_OnBuscarClick;
+  end;
+
+  // Lista de correos eliminados
+  FListPapelera := TListBox.Create(Panel);
+  with FListPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 100; Width := 660; Height := 150;
+    OnClick := @Papelera_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo cuerpo
+  FMemoPapelera := TMemo.Create(Panel);
+  with FMemoPapelera do
+  begin
+    Parent := Panel;
+    Left := 10; Top := 270; Width := 660; Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEliminarDef := TButton.Create(Panel);
+  with BtnEliminarDef do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar Definitivamente';
+    Left := 10; Top := 410; Width := 200; Height := 30;
+    OnClick := @Papelera_OnEliminarDefClick;
+  end;
+  BtnVaciarPapelera := TButton.Create(Panel);
+with BtnVaciarPapelera do
+begin
+  Parent := Panel;
+  Caption := '🗑️ Vaciar Papelera';
+  Left := 220;
+  Top := 410;
+  Width := 150;
+  Height := 30;
+  OnClick := @Papelera_OnVaciarClick;
+  Color := clRed;
+  Font.Color := clWhite;
+  Font.Style := [fsBold];
+end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 550; Top := 410; Width := 120; Height := 30;
+          OnClick := @Papelera_OnCerrarClick;
+
+
+
+  end;
+
+  // Llenar lista
+  Papelera_RellenarLista;
+
+  FFormPapelera.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormPapeleraClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormPapelera := nil;
+  FListPapelera := nil;
+  FMemoPapelera := nil;
+  FEditBuscarPapelera := nil;
+end;
+
+procedure TInterfazEDDMail.Papelera_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display: String;
+begin
+  if (FListPapelera = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListPapelera.Items.BeginUpdate;
+  try
+    FListPapelera.Items.Clear;
+    Correo := FCorreoManager.GetPapelera(Usuario);
+    while Correo <> nil do
+    begin
+      Display := Format('[ID %d] %s — %s (%s)',
+        [Correo^.Id, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+      FListPapelera.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListPapelera.Items.EndUpdate;
+  end;
+
+  if Assigned(FMemoPapelera) then
+    FMemoPapelera.Clear;
+end;
+
+procedure TInterfazEDDMail.Papelera_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListPapelera = nil) or (FMemoPapelera = nil) then Exit;
+  if FListPapelera.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListPapelera.Items.Objects[FListPapelera.ItemIndex]));
+
+  Correo := FCorreoManager.BuscarEnPapelera(Usuario, ''); // recorre todos
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+    FMemoPapelera.Lines.Text := Correo^.Mensaje;
+end;
+
+procedure TInterfazEDDMail.Papelera_OnBuscarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Palabra: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  Palabra := Trim(FEditBuscarPapelera.Text);
+  if Palabra = '' then
+  begin
+    MostrarMensaje('Aviso', 'Ingrese una palabra clave');
+    Exit;
+  end;
+
+  Correo := FCorreoManager.BuscarEnPapelera(Usuario, Palabra);
+  if Correo <> nil then
+  begin
+    MostrarMensaje('Éxito', 'Correo encontrado: ' + Correo^.Asunto);
+    FMemoPapelera.Lines.Text := Correo^.Mensaje;
+  end
+  else
+    MostrarMensaje('Aviso', 'No se encontró ningún correo con "'+Palabra+'"');
+end;
+
+procedure TInterfazEDDMail.Papelera_OnEliminarDefClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+begin
+  if (FListPapelera = nil) or (FListPapelera.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // El Id se guarda en Objects de la ListBox
+  IdSel := Integer(PtrInt(FListPapelera.Items.Objects[FListPapelera.ItemIndex]));
+
+  if FCorreoManager.EliminarCorreoDePapelera(Usuario, IdSel) then
+  begin
+    Papelera_RellenarLista; // refrescar UI
+    FMemoPapelera.Clear;
+    MostrarMensaje('Éxito', 'Correo eliminado definitivamente.');
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar definitivamente.');
+end;
+
+procedure TInterfazEDDMail.Papelera_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormPapelera) then
+    FFormPapelera.Close;
+end;
+
+procedure TInterfazEDDMail.OnProgramarCorreoClick(Sender: TObject);
+var
+  FormProgramar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto, LabelFecha: TLabel;
+  EditPara, EditAsunto, EditFecha: TEdit;
+  MemoCuerpo: TMemo;
+  BtnProgramar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormProgramar := TForm.Create(nil);
+  try
+    with FormProgramar do
+    begin
+      Caption := 'Programar Correo';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color:=$00ED618E ;
+    end;
+
+    Panel := TPanel.Create(FormProgramar);
+    with Panel do
+    begin
+      Parent := FormProgramar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 12;
+      Color:=$00ED618E ;
+    end;
+
+    // Para
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12;
+      Top := 12;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 30;
+      Width := 560;
+      TabOrder := 0;
+    end;
+
+    // Asunto
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12;
+      Top := 65;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 80;
+      Width := 560;
+      TabOrder := 1;
+    end;
+
+    // Fecha y hora de envío
+    LabelFecha := TLabel.Create(Panel);
+    with LabelFecha do
+    begin
+      Parent := Panel;
+      Caption := 'Fecha y hora de envío (dd/mm/yy hh:nn):';
+      Left := 12;
+      Top := 120;
+      Font.Style := [fsBold];
+    end;
+
+    EditFecha := TEdit.Create(Panel);
+    with EditFecha do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 140;
+      Width := 560;
+      TabOrder := 2;
+      Hint := 'Formato: 25/08/25 14:30';
+      ShowHint := True;
+      // Sugerir fecha futura como ejemplo
+      Text := FormatDateTime('dd/mm/yy hh:nn', Now + 1); // Mañana a la misma hora
+    end;
+
+    // Mensaje
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 180;
+      Width := 560;
+      Height := 240;
+      ScrollBars := ssVertical;
+      TabOrder := 3;
+    end;
+
+    // Botones
+    BtnProgramar := TButton.Create(Panel);
+    with BtnProgramar do
+    begin
+      Parent := Panel;
+      Caption := 'Programar';
+      Left := 380;
+      Top := 420;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 480;
+      Top := 420;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormProgramar.ShowModal = mrOk then
+    begin
+      if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') or (Trim(EditFecha.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Debe completar todos los campos obligatorios');
+        Exit;
+      end;
+
+      // Validar formato básico de fecha
+      try
+        StrToDateTime(Trim(EditFecha.Text));
+      except
+        MostrarMensaje('Error', 'Formato de fecha inválido. Use: dd/mm/yy hh:nn');
+        Exit;
+      end;
+
+      // Programar el correo usando CorreoManager
+      if FCorreoManager.ProgramarCorreo(
+            FSistema,
+            Usuario^.Email,
+            Trim(EditPara.Text),
+            Trim(EditAsunto.Text),
+            MemoCuerpo.Lines.Text,
+            Trim(EditFecha.Text)) then
+      begin
+        MostrarMensaje('Éxito',
+          'Correo programado exitosamente' + LineEnding +
+          'Para: ' + Trim(EditPara.Text) + LineEnding +
+          'Fecha de envío: ' + Trim(EditFecha.Text));
+      end
+      else
+      begin
+        MostrarMensaje('Error',
+          'No se pudo programar el correo.' + LineEnding +
+          'Verifique que el destinatario exista y esté en sus contactos.');
+      end;
+    end;
+
+  finally
+    FormProgramar.Free;
+  end;
+end;
+// IMPLEMENTACIÓN DE LOS PROCEDIMIENTOS:
+
+procedure TInterfazEDDMail.OnCorreosProgramadosClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnEnviar, BtnEliminar, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormCorreosProgramados) then
+  begin
+    FFormCorreosProgramados.Show;
+    FFormCorreosProgramados.BringToFront;
+    Exit;
+  end;
+
+  FFormCorreosProgramados := TForm.Create(nil);
+  with FFormCorreosProgramados do
+  begin
+    Caption := 'Correos Programados (Cola FIFO)';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormCorreosProgramadosClose;
+    Color:=$00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormCorreosProgramados);
+  with Panel do
+  begin
+    Parent := FFormCorreosProgramados;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color:=$00ED618E;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Correos Programados para Envío ';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  FLabelTotalProgramados := TLabel.Create(Panel);
+  with FLabelTotalProgramados do
+  begin
+    Parent := Panel;
+    Caption := 'Total: 0';
+    Left := 300;
+    Top := 14;
+    Font.Color := clGray;
+  end;
+
+  // Lista de correos programados
+  FListCorreosProgramados := TListBox.Create(Panel);
+  with FListCorreosProgramados do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 40;
+    Width := 660;
+    Height := 240;
+    OnClick := @CorreosProgramados_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo para mostrar el mensaje del correo seleccionado
+  FMemoCorreoProgramado := TMemo.Create(Panel);
+  with FMemoCorreoProgramado do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 290;
+    Width := 660;
+    Height := 120;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEnviar := TButton.Create(Panel);
+  with BtnEnviar do
+  begin
+    Parent := Panel;
+    Caption := 'Enviar Programados';
+    Left := 10;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnEnviarClick;
+    Hint := 'Envía todos los correos cuya fecha ya llegó';
+    ShowHint := True;
+    Font.Style := [fsBold];
+    Color := clTeal;
+  end;
+
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar Seleccionado';
+    Left := 170;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnEliminarClick;
+    Hint := 'Elimina el correo programado seleccionado';
+    ShowHint := True;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 520;
+    Top := 420;
+    Width := 150;
+    Height := 30;
+    OnClick := @CorreosProgramados_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos
+  CorreosProgramados_RellenarLista;
+
+  FFormCorreosProgramados.Show;
+end;
+procedure TInterfazEDDMail.OnFormCorreosProgramadosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormCorreosProgramados := nil;
+  FListCorreosProgramados := nil;
+  FMemoCorreoProgramado := nil;
+  FLabelTotalProgramados := nil;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_RellenarLista;
+var
+  Usuario: PUsuario;
+  Correo: PCorreo;
+  Display: String;
+  Contador: Integer;
+begin
+  if (FListCorreosProgramados = nil) then Exit;
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListCorreosProgramados.Items.BeginUpdate;
+  try
+    FListCorreosProgramados.Items.Clear;
+    Contador := 0;
+
+    Correo := FCorreoManager.GetCorreosProgramados(Usuario);
+    while Correo <> nil do
+    begin
+      Display := Format('[Para: %s] %s — Envío: %s',
+        [Correo^.Destinatario, Correo^.Asunto, Correo^.FechaEnvio]);
+
+      FListCorreosProgramados.Items.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+      Inc(Contador);
+      Correo := Correo^.Siguiente;
+    end;
+  finally
+    FListCorreosProgramados.Items.EndUpdate;
+  end;
+
+  // Actualizar contador
+  if Assigned(FLabelTotalProgramados) then
+    FLabelTotalProgramados.Caption := Format('Total: %d', [Contador]);
+
+  // Limpiar memo
+  if Assigned(FMemoCorreoProgramado) then
+    FMemoCorreoProgramado.Clear;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+begin
+  if (FListCorreosProgramados = nil) or (FMemoCorreoProgramado = nil) then Exit;
+  if FListCorreosProgramados.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListCorreosProgramados.Items.Objects[FListCorreosProgramados.ItemIndex]));
+
+  // Buscar el correo seleccionado
+  Correo := FCorreoManager.GetCorreosProgramados(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo <> nil then
+  begin
+    FMemoCorreoProgramado.Lines.Clear;
+    FMemoCorreoProgramado.Lines.Add('Para: ' + Correo^.Destinatario);
+    FMemoCorreoProgramado.Lines.Add('Asunto: ' + Correo^.Asunto);
+    FMemoCorreoProgramado.Lines.Add('Fecha de envío: ' + Correo^.FechaEnvio);
+    FMemoCorreoProgramado.Lines.Add('');
+    FMemoCorreoProgramado.Lines.Add('Mensaje:');
+    FMemoCorreoProgramado.Lines.Add(Correo^.Mensaje);
+  end;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnEnviarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CorreosEnviados: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // Procesar correos programados usando CorreoManager
+  CorreosEnviados := FCorreoManager.ProcesarCorreosProgramados(FSistema, Usuario);
+
+  if CorreosEnviados > 0 then
+  begin
+    MostrarMensaje('Éxito',
+      Format('Se enviaron %d correos programados exitosamente.', [CorreosEnviados]));
+    CorreosProgramados_RellenarLista; // Refrescar la lista
+  end
+  else
+  begin
+    MostrarMensaje('Información',
+      'No hay correos programados listos para enviar.' + LineEnding +
+      'Verifique que las fechas de envío ya hayan llegado.');
+  end;
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo, CorreoAnterior: PCorreo;
+  Encontrado: Boolean;
+begin
+  if (FListCorreosProgramados = nil) or (FListCorreosProgramados.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListCorreosProgramados.Items.Objects[FListCorreosProgramados.ItemIndex]));
+
+  // Buscar y eliminar el correo de la cola
+  Correo := Usuario^.CorreosProgramados;
+  CorreoAnterior := nil;
+  Encontrado := False;
+
+  while (Correo <> nil) and not Encontrado do
+  begin
+    if Correo^.Id = IdSel then
+    begin
+      // Desenlazar de la cola FIFO
+      if CorreoAnterior = nil then
+        Usuario^.CorreosProgramados := Correo^.Siguiente
+      else
+        CorreoAnterior^.Siguiente := Correo^.Siguiente;
+
+      // Si había enlace hacia atrás, ajustarlo
+      if Correo^.Siguiente <> nil then
+        Correo^.Siguiente^.Anterior := CorreoAnterior;
+
+      Dispose(Correo);
+      Encontrado := True;
+      MostrarMensaje('Éxito', 'Correo programado eliminado.');
+    end
+    else
+    begin
+      CorreoAnterior := Correo;
+      Correo := Correo^.Siguiente;
+    end;
+  end;
+
+  if Encontrado then
+  begin
+    CorreosProgramados_RellenarLista; // Refrescar lista
+    FMemoCorreoProgramado.Clear;
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar el correo programado.');
+end;
+
+procedure TInterfazEDDMail.CorreosProgramados_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormCorreosProgramados) then
+    FFormCorreosProgramados.Close;
+end;
+// Actualizar OnGenerarReportesClick para incluir nuevos reportes
+procedure TInterfazEDDMail.OnGenerarReportesClick(Sender: TObject);
+var
+  FormReportes: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelInfo: TLabel;
+  BtnCorreosRecibidos, BtnPapelera, BtnCorreosProgramados,
+  BtnContactos, BtnFavoritos, BtnBorradores, BtnCerrar: TButton;
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+
+    // ↓↓↓ AGREGAR ESTAS VARIABLES ↓↓↓
+  LabelFase3: TLabel;              // ← FALTA ESTA
+  BtnReporteMerkle: TButton;       // ← FALTA ESTA
+  LabelBuscar: TLabel;             // ← FALTA ESTA (si la usas después)
+
+  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA (si la usas después)
+  YPos: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  FormReportes := TForm.Create(nil);
+  try
+    with FormReportes do
+    begin
+      Caption := '📊 Generar Reportes';
+      Width := 500;
+      Height := 550; // ← Aumentar altura para nuevos botones
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormReportes);
+    with Panel do
+    begin
+      Parent := FormReportes;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    YPos := 20;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Generar Reportes Personales 📊';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := YPos;
+    end;
+    Inc(YPos, 40);
+
+    LabelInfo := TLabel.Create(Panel);
+    with LabelInfo do
+    begin
+      Parent := Panel;
+      Caption := 'Usuario: ' + Usuario^.Nombre + LineEnding +
+                 'Carpeta: ' + CarpetaReportes + LineEnding +
+                 'Seleccione el reporte que desea generar:';
+      Left := 20;
+      Top := YPos;
+      AutoSize := True;
+      Font.Color := clWhite;
+    end;
+    Inc(YPos, 80);
+
+    // Reportes existentes (Fase 1)
+    BtnCorreosRecibidos := TButton.Create(Panel);
+    with BtnCorreosRecibidos do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Correos Recibidos';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Lista doblemente enlazada - Bandeja de entrada';
+      ShowHint := True;
+      OnClick := @OnReporteCorreosRecibidosClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 45);
+
+    BtnPapelera := TButton.Create(Panel);
+    with BtnPapelera do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Papelera';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Pila LIFO - Correos eliminados';
+      ShowHint := True;
+      OnClick := @OnReportePapeleraClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 45);
+
+    BtnCorreosProgramados := TButton.Create(Panel);
+    with BtnCorreosProgramados do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Correos Programados';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Cola FIFO - Correos pendientes de envío';
+      ShowHint := True;
+      OnClick := @OnReporteCorreosProgramadosClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 45);
+
+    BtnContactos := TButton.Create(Panel);
+    with BtnContactos do
+    begin
+      Parent := Panel;
+      Caption := 'Reporte de Contactos';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Lista circular - Contactos del usuario';
+      ShowHint := True;
+      OnClick := @OnGenerarReporteContactosClick;
+      Font.Style := [fsBold];
+    end;
+    Inc(YPos, 45);
+
+    // NUEVOS REPORTES (Fase 2)
+    BtnFavoritos := TButton.Create(Panel);
+    with BtnFavoritos do
+    begin
+      Parent := Panel;
+      Caption := '⭐ Reporte de Favoritos (Árbol B)';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Árbol B orden 5 - Correos favoritos';
+      ShowHint := True;
+      OnClick := @OnReporteFavoritosClick; // ← Nuevo event handler
+      Font.Style := [fsBold];
+      Color := clYellow;
+    end;
+    Inc(YPos, 45);
+
+    BtnBorradores := TButton.Create(Panel);
+    with BtnBorradores do
+    begin
+      Parent := Panel;
+      Caption := '📝 Reporte de Borradores (Árbol AVL)';
+      Left := 20; Top := YPos; Width := 430; Height := 35;
+      Hint := 'Árbol AVL - Borradores de correos';
+      ShowHint := True;
+      OnClick := @OnReporteBorradoresClick; // ← Nuevo event handler
+      Font.Style := [fsBold];
+      Color := clAqua;
+    end;
+    Inc(YPos, 70);
+    // Agregar después de BtnBorradores en el procedimiento OnGenerarReportesClick:
+
+// NUEVOS REPORTES FASE 3
+
+LabelFase3 := TLabel.Create(Panel);
+with LabelFase3 do
+begin
+  Parent := Panel;
+  Caption := '🆕 REPORTES FASE 3';
+  Font.Size := 11;
+  Font.Style := [fsBold];
+  Font.Color := clMaroon;
+  Left := 20;
+  Top := YPos;
+end;
+Inc(YPos, 30);
+
+BtnReporteMerkle := TButton.Create(Panel);
+with BtnReporteMerkle do
+begin
+  Parent := Panel;
+  Caption := '🌳 Reporte Árbol de Merkle';
+  Left := 20; Top := YPos; Width := 430; Height := 35;
+  Hint := 'Árbol de Merkle - Favoritos con verificación de integridad';
+  ShowHint := True;
+  OnClick := @OnReporteMerkleClick;
+  Font.Style := [fsBold];
+  Color := clMoneyGreen;
+end;
+
+    BtnCerrar := TButton.Create(Panel);
+    with BtnCerrar do
+    begin
+      Parent := Panel;
+      Caption := 'Cerrar';
+      Left := 350; Top := YPos; Width := 100; Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormReportes.ShowModal;
+
+  finally
+    FormReportes.Free;
+  end;
+end;
+
+// Nuevos event handlers para reportes Fase 2
+procedure TInterfazEDDMail.OnReporteFavoritosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FSistema.GenerarReporteFavoritos(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de favoritos generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- favoritos_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- favoritos_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteBorradoresClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FSistema.GenerarReporteBorradores(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de borradores generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- borradores_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- borradores_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+procedure TInterfazEDDMail.Favoritos_RellenarLista;
+var
+  Usuario: PUsuario;
+  ListaFavoritos: TStringList;
+  i: Integer;
+begin
+  if FListFavoritos = nil then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FListFavoritos.Clear;
+
+  //  obtener favoritos del árbol B
+  ListaFavoritos := TStringList.Create;
+  try
+    // función RecorrerArbolB
+    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, ListaFavoritos);
+
+    // Agregar todos los favoritos a la interfaz
+    for i := 0 to ListaFavoritos.Count - 1 do
+    begin
+      FListFavoritos.Items.AddObject(ListaFavoritos[i], ListaFavoritos.Objects[i]);
+    end;
+
+    // Actualizar contador
+    if Assigned(FLabelTotalFavoritos) then
+      FLabelTotalFavoritos.Caption := 'Total: ' + IntToStr(ListaFavoritos.Count);
+
+  finally
+    ListaFavoritos.Free;
+  end;
+end;
+
+
+procedure TInterfazEDDMail.Favoritos_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormFavoritos) then
+    FFormFavoritos.Close;
+end;
+
+procedure TInterfazEDDMail.Borradores_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBorradores) then
+    FFormBorradores.Close;
+end;
+
+// event handlers para cada reporte
+procedure TInterfazEDDMail.OnReporteCorreosRecibidosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReporteCorreosRecibidos(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de correos recibidos generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- correos_recibidos_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- correos_recibidos_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReportePapeleraClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReportePapelera(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de papelera generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- papelera_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- papelera_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteCorreosProgramadosClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    FCorreoManager.GenerarReporteCorreosProgramados(Usuario, CarpetaReportes);
+    MostrarMensaje('Éxito',
+      'Reporte de correos programados generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- correos_programados_' + Usuario^.Usuario + '.dot (código Graphviz)' + LineEnding +
+      '- correos_programados_' + Usuario^.Usuario + '.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte: ' + E.Message);
+  end;
+end;
+
+// Implementar ventana de Favoritos
+procedure TInterfazEDDMail.OnVerFavoritosClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnEliminar, BtnCerrar: TButton;
+    LabelBuscar: TLabel;             // ← FALTA ESTA
+
+  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA
+
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if Assigned(FFormFavoritos) then
+  begin
+    FFormFavoritos.Show;
+    FFormFavoritos.BringToFront;
+    Exit;
+  end;
+
+  FFormFavoritos := TForm.Create(nil);
+  with FFormFavoritos do
+  begin
+    Caption := 'Correos Favoritos (Árbol B)';
+    Width := 700;
+    Height := 480;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormFavoritosClose;
+    Color := $00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormFavoritos);
+  with Panel do
+  begin
+    Parent := FFormFavoritos;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  // NUEVO: Campo de búsqueda (Fase 3)
+LabelBuscar := TLabel.Create(Panel);
+with LabelBuscar do
+begin
+  Parent := Panel;
+  Caption := 'Buscar por asunto:';
+  Left := 400;
+  Top := 14;
+  Font.Style := [fsBold];
+end;
+
+FEditBuscarFavoritos := TEdit.Create(Panel);
+with FEditBuscarFavoritos do
+begin
+  Parent := Panel;
+  Left := 520;
+  Top := 10;
+  Width := 120;
+  Hint := 'Ingrese término de búsqueda';
+  ShowHint := True;
+end;
+
+BtnBuscarFavoritos := TButton.Create(Panel);
+with BtnBuscarFavoritos do
+begin
+  Parent := Panel;
+  Caption := '🔍';
+  Left := 645;
+  Top := 9;
+  Width := 25;
+  Height := 25;
+  OnClick := @Favoritos_OnBuscarClick;
+  Hint := 'Buscar en favoritos';
+  ShowHint := True;
+end;
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Correos Favoritos ⭐';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  FLabelTotalFavoritos := TLabel.Create(Panel);
+  with FLabelTotalFavoritos do
+  begin
+    Parent := Panel;
+    Caption := 'Total: 0';
+    Left := 200;
+    Top := 14;
+    Font.Color := clGray;
+  end;
+
+  // Lista de favoritos
+  FListFavoritos := TListBox.Create(Panel);
+  with FListFavoritos do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 40;
+    Width := 660;
+    Height := 200;
+    OnClick := @Favoritos_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo detalles
+  FMemoFavorito := TMemo.Create(Panel);
+  with FMemoFavorito do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 250;
+    Width := 660;
+    Height := 150;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := 'Eliminar de Favoritos';
+    Left := 10;
+    Top := 410;
+    Width := 150;
+    Height := 30;
+    OnClick := @Favoritos_OnEliminarClick;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 520;
+    Top := 410;
+    Width := 150;
+    Height := 30;
+    OnClick := @Favoritos_OnCerrarClick;
+
+  end;
+
+  // Cargar favoritos
+  Favoritos_RellenarLista;
+  FFormFavoritos.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormFavoritosClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormFavoritos := nil;
+  FListFavoritos := nil;
+  FMemoFavorito := nil;
+  FLabelTotalFavoritos := nil;
+end;
+
+procedure TInterfazEDDMail.Favoritos_OnSeleccion(Sender: TObject);
+var
+  CorreoId: Integer;
+  Usuario: PUsuario;
+  Correo: PCorreo;
+begin
+  if (FListFavoritos = nil) or (FMemoFavorito = nil) then Exit;
+  if FListFavoritos.ItemIndex < 0 then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListFavoritos.Items.Objects[FListFavoritos.ItemIndex]));
+
+  // Buscar en árbol B de favoritos
+  Correo := FSistema.BuscarB(Usuario^.ArbolFavoritos, CorreoId);
+  if Correo <> nil then
+  begin
+    FMemoFavorito.Lines.Clear;
+    FMemoFavorito.Lines.Add('Remitente: ' + Correo^.Remitente);
+    FMemoFavorito.Lines.Add('Asunto: ' + Correo^.Asunto);
+    FMemoFavorito.Lines.Add('Fecha: ' + Correo^.Fecha);
+    FMemoFavorito.Lines.Add('');
+    FMemoFavorito.Lines.Add('Mensaje:');
+    FMemoFavorito.Lines.Add(Correo^.Mensaje);
+  end;
+end;
+
+procedure TInterfazEDDMail.Favoritos_OnEliminarClick(Sender: TObject);
+var
+  CorreoId: Integer;
+  Usuario: PUsuario;
+begin
+  if (FListFavoritos = nil) or (FListFavoritos.ItemIndex < 0) then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CorreoId := Integer(PtrInt(FListFavoritos.Items.Objects[FListFavoritos.ItemIndex]));
+
+  if FSistema.EliminarFavorito(Usuario, CorreoId) then
+  begin
+    MostrarMensaje('Éxito', 'Correo eliminado de favoritos');
+    Favoritos_RellenarLista;
+    FMemoFavorito.Clear;
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo eliminar de favoritos');
+end;
+// Implementar ventana de Borradores
+procedure TInterfazEDDMail.OnVerBorradoresClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo, LabelRecorrido: TLabel;
+  BtnEditar, BtnEliminar, BtnCerrar: TButton;
+begin
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if Assigned(FFormBorradores) then
+  begin
+    FFormBorradores.Show;
+    FFormBorradores.BringToFront;
+    Exit;
+  end;
+
+  FFormBorradores := TForm.Create(nil);
+  with FFormBorradores do
+  begin
+    Caption := 'Borradores (Árbol AVL)';
+    Width := 700;
+    Height := 500;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormBorradoresClose;
+    Color := $00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormBorradores);
+  with Panel do
+  begin
+    Parent := FFormBorradores;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Borradores de Correos 📝';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Selector de tipo de recorrido
+  LabelRecorrido := TLabel.Create(Panel);
+  with LabelRecorrido do
+  begin
+    Parent := Panel;
+    Caption := 'Tipo de recorrido:';
+    Left := 10;
+    Top := 45;
+    Font.Style := [fsBold];
+  end;
+
+  FComboRecorrido := TComboBox.Create(Panel);
+  with FComboRecorrido do
+  begin
+    Parent := Panel;
+    Left := 130;
+    Top := 42;
+    Width := 150;
+    Style := csDropDownList;
+    Items.Add('In-Orden');
+    Items.Add('Pre-Orden');
+    Items.Add('Post-Orden');
+    ItemIndex := 0;
+    OnChange := @Borradores_OnRecorridoChange;
+  end;
+
+  // Lista de borradores
+  FListBorradores := TListBox.Create(Panel);
+  with FListBorradores do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 75;
+    Width := 660;
+    Height := 200;
+    OnClick := @Borradores_OnSeleccion;
+    ItemHeight := 16;
+  end;
+
+  // Memo detalles
+  FMemoBorrador := TMemo.Create(Panel);
+  with FMemoBorrador do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 285;
+    Width := 660;
+    Height := 150;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+  end;
+
+  // Botones
+  BtnEditar := TButton.Create(Panel);
+  with BtnEditar do
+  begin
+    Parent := Panel;
+    Caption := 'Editar y Enviar';
+    Left := 10;
+    Top := 445;
+    Width := 120;
+    Height := 30;
+    OnClick := @Borradores_OnEditarClick;
+  end;
+
+  // REEMPLAZAR el botón "Eliminar" existente por:
+  BtnEliminar := TButton.Create(Panel);
+  with BtnEliminar do
+  begin
+    Parent := Panel;
+    Caption := '🗑️ Mover a Papelera';
+    Left := 140;
+    Top := 445;
+    Width := 150;
+    Height := 30;
+    OnClick := @Borradores_OnEliminarConPapeleraClick; // ← CAMBIAR
+    Hint := 'Elimina el borrador y lo mueve a papelera';
+    ShowHint := True;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 520;
+    Top := 445;
+    Width := 150;
+    Height := 30;
+    OnClick := @Borradores_OnCerrarClick;  end;
+
+  // Cargar borradores
+  Borradores_RellenarLista;
+  FFormBorradores.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormBorradoresClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormBorradores := nil;
+  FListBorradores := nil;
+  FMemoBorrador := nil;
+  FComboRecorrido := nil;
+end;
+
+procedure TInterfazEDDMail.Borradores_OnRecorridoChange(Sender: TObject);
+begin
+  Borradores_RellenarLista;
+end;
+
+procedure TInterfazEDDMail.Borradores_RellenarLista;
+var
+  Usuario: PUsuario;
+  ListaBorradores: TStringList;
+  TipoRecorrido: String;
+  i: Integer;
+begin
+  if FListBorradores = nil then Exit;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  case FComboRecorrido.ItemIndex of
+    0: TipoRecorrido := 'InOrden';
+    1: TipoRecorrido := 'PreOrden';
+    2: TipoRecorrido := 'PostOrden';
+    else TipoRecorrido := 'InOrden';
+  end;
+
+  ListaBorradores := FSistema.ObtenerBorradores(Usuario, TipoRecorrido);
+  try
+    FListBorradores.Items.Clear;
+    for i := 0 to ListaBorradores.Count - 1 do
+    begin
+      FListBorradores.Items.AddObject(ListaBorradores[i], ListaBorradores.Objects[i]);
+    end;
+  finally
+    ListaBorradores.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.Borradores_OnSeleccion(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    FMemoBorrador.Clear;
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  // Obtener el ID del borrador seleccionado
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+
+  // Buscar el borrador específico
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado <> nil then
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('═══════════════════════════════════════');
+    FMemoBorrador.Lines.Add('📧 DETALLES DEL BORRADOR');
+    FMemoBorrador.Lines.Add('═══════════════════════════════════════');
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('📨 Para: ' + BorradorSeleccionado^.Destinatario);
+    FMemoBorrador.Lines.Add('📑 Asunto: ' + BorradorSeleccionado^.Asunto);
+    FMemoBorrador.Lines.Add('📅 Creado: ' + DateTimeToStr(BorradorSeleccionado^.FechaHora));
+    FMemoBorrador.Lines.Add('');
+    FMemoBorrador.Lines.Add('💬 Mensaje:');
+    FMemoBorrador.Lines.Add('─────────────────────────────────────');
+    FMemoBorrador.Lines.Add(BorradorSeleccionado^.Cuerpo);
+  end
+  else
+  begin
+    FMemoBorrador.Lines.Clear;
+    FMemoBorrador.Lines.Add('❌ Error: No se pudo cargar el borrador seleccionado');
+  end;
+end;
+procedure TInterfazEDDMail.Borradores_OnEditarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  FormEditar: TForm;
+  Panel: TPanel;
+  LabelPara, LabelAsunto, LabelCuerpo: TLabel;
+  EditPara, EditAsunto: TEdit;
+  MemoCuerpo: TMemo;
+  BtnEnviar, BtnGuardar, BtnCancelar: TButton;
+  ResultadoModal: Integer;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para editar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Crear formulario de edición
+  FormEditar := TForm.Create(nil);
+  try
+    with FormEditar do
+    begin
+      Caption := 'Editar Borrador';
+      Width := 650;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormEditar);
+    with Panel do
+    begin
+      Parent := FormEditar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      Color := $00ED618E;
+    end;
+
+    // Etiquetas y campos
+    LabelPara := TLabel.Create(Panel);
+    with LabelPara do
+    begin
+      Parent := Panel;
+      Caption := 'Para:';
+      Left := 12;
+      Top := 15;
+      Font.Style := [fsBold];
+    end;
+
+    EditPara := TEdit.Create(Panel);
+    with EditPara do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 35;
+      Width := 600;
+      Text := BorradorSeleccionado^.Destinatario;
+      TabOrder := 0;
+    end;
+
+    LabelAsunto := TLabel.Create(Panel);
+    with LabelAsunto do
+    begin
+      Parent := Panel;
+      Caption := 'Asunto:';
+      Left := 12;
+      Top := 70;
+      Font.Style := [fsBold];
+    end;
+
+    EditAsunto := TEdit.Create(Panel);
+    with EditAsunto do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 90;
+      Width := 600;
+      Text := BorradorSeleccionado^.Asunto;
+      TabOrder := 1;
+    end;
+
+    LabelCuerpo := TLabel.Create(Panel);
+    with LabelCuerpo do
+    begin
+      Parent := Panel;
+      Caption := 'Mensaje:';
+      Left := 12;
+      Top := 125;
+      Font.Style := [fsBold];
+    end;
+
+    MemoCuerpo := TMemo.Create(Panel);
+    with MemoCuerpo do
+    begin
+      Parent := Panel;
+      Left := 12;
+      Top := 145;
+      Width := 600;
+      Height := 250;
+      ScrollBars := ssVertical;
+      Lines.Text := BorradorSeleccionado^.Cuerpo;
+      TabOrder := 2;
+    end;
+
+    // Botones
+    BtnEnviar := TButton.Create(Panel);
+    with BtnEnviar do
+    begin
+      Parent := Panel;
+      Caption := '📧 Enviar';
+      Left := 200;
+      Top := 410;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrOk;
+      Font.Style := [fsBold];
+      Color := clLime;
+      TabOrder := 3;
+    end;
+
+    BtnGuardar := TButton.Create(Panel);
+    with BtnGuardar do
+    begin
+      Parent := Panel;
+      Caption := '💾 Guardar Cambios';
+      Left := 310;
+      Top := 410;
+      Width := 140;
+      Height := 35;
+      ModalResult := mrYes;
+      Font.Style := [fsBold];
+      Color := clAqua;
+      TabOrder := 4;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 460;
+      Top := 410;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrCancel;
+      TabOrder := 5;
+    end;
+
+    ResultadoModal := FormEditar.ShowModal;
+
+    case ResultadoModal of
+      mrOk: begin // ENVIAR
+        if (Trim(EditPara.Text) = '') or (Trim(EditAsunto.Text) = '') then
+        begin
+          MostrarMensaje('Error', 'Debe ingresar destinatario y asunto');
+          Exit;
+        end;
+
+        // Enviar el correo
+        if FCorreoManager.EnviarCorreo(
+              FSistema,
+              Usuario^.Email,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          // Eliminar el borrador después de enviarlo
+          if FSistema.EliminarBorrador(Usuario, IdSel) then
+          begin
+            MostrarMensaje('Éxito',
+              '✅ Correo enviado correctamente y borrador eliminado' + LineEnding +
+              'Destinatario: ' + Trim(EditPara.Text));
+            Borradores_RellenarLista; // Actualizar lista
+          end
+          else
+          begin
+            MostrarMensaje('Advertencia',
+              'Correo enviado pero no se pudo eliminar el borrador');
+          end;
+        end
+        else
+        begin
+          MostrarMensaje('Error', 'No se pudo enviar el correo');
+        end;
+      end;
+
+      mrYes: begin // GUARDAR CAMBIOS
+        if FSistema.ActualizarBorrador(
+              Usuario,
+              IdSel,
+              Trim(EditPara.Text),
+              Trim(EditAsunto.Text),
+              MemoCuerpo.Lines.Text) then
+        begin
+          MostrarMensaje('Éxito', 'Borrador actualizado correctamente');
+          Borradores_RellenarLista; // Actualizar lista
+        end
+        else
+        begin
+          MostrarMensaje('Error', 'No se pudo actualizar el borrador');
+        end;
+      end;
+    end;
+
+  finally
+    FormEditar.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.Borradores_OnEliminarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  Respuesta: Integer;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para eliminar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Confirmar eliminación
+  Respuesta := MessageDlg('Confirmar Eliminación',
+    '¿Está seguro que desea eliminar este borrador?' + LineEnding + LineEnding +
+    'Asunto: ' + BorradorSeleccionado^.Asunto + LineEnding +
+    'Para: ' + BorradorSeleccionado^.Destinatario,
+    mtConfirmation, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    if FSistema.EliminarBorrador(Usuario, IdSel) then
+    begin
+      MostrarMensaje('Éxito', 'Borrador eliminado correctamente');
+      Borradores_RellenarLista; // Actualizar lista
+      FMemoBorrador.Clear; // Limpiar memo de detalles
+    end
+    else
+    begin
+      MostrarMensaje('Error', 'No se pudo eliminar el borrador');
+    end;
+  end;
+end;
+procedure TInterfazEDDMail.Inbox_OnMarcarFavoritoClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  CorreoSeleccionado: PCorreo;
+begin
+  // Validar que hay una lista y algo seleccionado
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un correo de la lista para marcarlo como favorito');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then
+  begin
+    MostrarMensaje('Error', 'No hay usuario activo');
+    Exit;
+  end;
+
+  // Obtener el ID del correo seleccionado
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  // Buscar el correo en la bandeja para validar que existe
+  CorreoSeleccionado := FCorreoManager.GetBandejaEntrada(Usuario);
+  while (CorreoSeleccionado <> nil) and (CorreoSeleccionado^.Id <> IdSel) do
+    CorreoSeleccionado := CorreoSeleccionado^.Siguiente;
+
+  if CorreoSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'Correo no encontrado en la bandeja');
+    Exit;
+  end;
+
+  // Intentar marcar como favorito usando el sistema
+  if FSistema.MarcarComoFavorito(Usuario, IdSel) then
+  begin
+    MostrarMensaje('Éxito',
+      '✅ Correo marcado como favorito' + LineEnding +
+      'Asunto: ' + CorreoSeleccionado^.Asunto + LineEnding +
+      'Puede verlo en "⭐ Ver Favoritos"');
+  end
+  else
+  begin
+    MostrarMensaje('Error',
+      'No se pudo marcar como favorito' + LineEnding +
+      'Es posible que el correo ya esté en favoritos');
+  end;
+end;
+// Implementar funcionalidad de Publicar en Comunidad
+procedure TInterfazEDDMail.OnPublicarComunidadClick(Sender: TObject);
+var
+  FormPublicar: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelComunidad, LabelMensaje: TLabel;
+  EditComunidad: TEdit;
+  MemoMensaje: TMemo;
+  BtnPublicar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormPublicar := TForm.Create(nil);
+  try
+    with FormPublicar do
+    begin
+      Caption := 'Publicar Mensaje en Comunidad';
+      Width := 500;
+      Height := 400;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormPublicar);
+    with Panel do
+    begin
+      Parent := FormPublicar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Publicar en Comunidad 📢';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    LabelComunidad := TLabel.Create(Panel);
+    with LabelComunidad do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditComunidad := TEdit.Create(Panel);
+    with EditComunidad do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 80;
+      Width := 440;
+      TabOrder := 0;
+    end;
+
+    LabelMensaje := TLabel.Create(Panel);
+    with LabelMensaje do
+    begin
+      Parent := Panel;
+      Caption := 'Mensaje:';
+      Left := 20;
+      Top := 115;
+      Font.Style := [fsBold];
+    end;
+
+    MemoMensaje := TMemo.Create(Panel);
+    with MemoMensaje do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 135;
+      Width := 440;
+      Height := 150;
+      ScrollBars := ssVertical;
+      TabOrder := 1;
+    end;
+
+    BtnPublicar := TButton.Create(Panel);
+    with BtnPublicar do
+    begin
+      Parent := Panel;
+      Caption := 'Publicar';
+      Left := 280;
+      Top := 300;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 380;
+      Top := 300;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormPublicar.ShowModal = mrOk then
+    begin
+      if (Trim(EditComunidad.Text) = '') or (Trim(MemoMensaje.Lines.Text) = '') then
+      begin
+        MostrarMensaje('Error', 'Complete todos los campos');
+        Exit;
+      end;
+
+      if FSistema.PublicarMensajeAComunidad(
+            Trim(EditComunidad.Text),
+            Usuario^.Email,
+            Trim(MemoMensaje.Lines.Text)) then
+      begin
+        MostrarMensaje('Éxito', 'Mensaje publicado en la comunidad: ' + Trim(EditComunidad.Text));
+      end
+      else
+      begin
+        MostrarMensaje('Error', 'No se pudo publicar el mensaje. Verifique que la comunidad existe.');
+      end;
+    end;
+
+  finally
+    FormPublicar.Free;
+  end;
+end;
+
+// funcionalidad de Eliminar Contacto
+procedure TInterfazEDDMail.OnEliminarContactoClick(Sender: TObject);
+var
+  FormEliminar: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelEmail: TLabel;
+  EditEmail: TEdit;
+  BtnEliminar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormEliminar := TForm.Create(nil);
+  try
+    with FormEliminar do
+    begin
+      Caption := 'Eliminar Contacto';
+      Width := 400;
+      Height := 250;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormEliminar);
+    with Panel do
+    begin
+      Parent := FormEliminar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Eliminar Contacto ❌';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    LabelEmail := TLabel.Create(Panel);
+    with LabelEmail do
+    begin
+      Parent := Panel;
+      Caption := 'Email del contacto a eliminar:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditEmail := TEdit.Create(Panel);
+    with EditEmail do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 80;
+      Width := 340;
+      TabOrder := 0;
+      Hint := 'Ingrese el email del contacto que desea eliminar';
+      ShowHint := True;
+    end;
+
+    BtnEliminar := TButton.Create(Panel);
+    with BtnEliminar do
+    begin
+      Parent := Panel;
+      Caption := 'Eliminar';
+      Left := 180;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 270;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormEliminar.ShowModal = mrOk then
+    begin
+      if Trim(EditEmail.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'Debe ingresar un email');
+        Exit;
+      end;
+
+      if FSistema.EliminarContacto(Usuario, Trim(EditEmail.Text)) then
+        MostrarMensaje('Éxito', 'Contacto eliminado correctamente')
+      else
+        MostrarMensaje('Error', 'No se pudo eliminar el contacto. Verifique que:' + LineEnding +
+                       '- El email sea un contacto válido' + LineEnding +
+                       '- El contacto existe en su lista');
+    end;
+
+  finally
+    FormEliminar.Free;
+  end;
+end;
+//  event handlers:
+procedure TInterfazEDDMail.OnCrearComunidadBSTClick(Sender: TObject);
+var
+  FormCrearComunidad: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelNombre: TLabel;
+  EditNombre: TEdit;
+  BtnCrear, BtnCancelar: TButton;
+begin
+  FormCrearComunidad := TForm.Create(nil);
+  try
+    with FormCrearComunidad do
+    begin
+      Caption := 'Crear Nueva Comunidad';
+      Width := 400;
+      Height := 250;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := clMoneyGreen;
+    end;
+
+    Panel := TPanel.Create(FormCrearComunidad);
+    with Panel do
+    begin
+      Parent := FormCrearComunidad;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Crear Nueva Comunidad 🏘️';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    LabelNombre := TLabel.Create(Panel);
+    with LabelNombre do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditNombre := TEdit.Create(Panel);
+    with EditNombre do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 80;
+      Width := 340;
+      TabOrder := 0;
+    end;
+
+    BtnCrear := TButton.Create(Panel);
+    with BtnCrear do
+    begin
+      Parent := Panel;
+      Caption := 'Crear';
+      Left := 180;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrOk;
+      Default := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 270;
+      Top := 130;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+      Cancel := True;
+    end;
+
+    if FormCrearComunidad.ShowModal = mrOk then
+    begin
+      if Trim(EditNombre.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'Ingrese un nombre para la comunidad');
+        Exit;
+      end;
+
+      if FSistema.CrearComunidadBST(Trim(EditNombre.Text)) then
+        MostrarMensaje('Éxito', 'Comunidad creada: ' + Trim(EditNombre.Text))
+      else
+        MostrarMensaje('Error', 'Error: La comunidad ya existe');
+    end;
+
+  finally
+    FormCrearComunidad.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnVerMensajesComunidadClick(Sender: TObject);
+var
+  FormVerMensajes: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelComunidad: TLabel;
+  EditComunidad: TEdit;
+  MemoMensajes: TMemo;
+  BtnVer, BtnCerrar: TButton;
+  Mensajes: String;
+begin
+  FormVerMensajes := TForm.Create(nil);
+  try
+    with FormVerMensajes do
+    begin
+      Caption := 'Ver Mensajes de Comunidad';
+      Width := 600;
+      Height := 500;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormVerMensajes);
+    with Panel do
+    begin
+      Parent := FormVerMensajes;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := clMoneyGreen;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Mensajes de Comunidad 💬';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    LabelComunidad := TLabel.Create(Panel);
+    with LabelComunidad do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+    end;
+
+    EditComunidad := TEdit.Create(Panel);
+    with EditComunidad do
+    begin
+      Parent := Panel;
+      Name := 'EditComunidad';
+      Left := 20;
+      Top := 80;
+      Width := 400;
+      TabOrder := 0;
+    end;
+
+    BtnVer := TButton.Create(Panel);
+    with BtnVer do
+    begin
+      Parent := Panel;
+      Caption := 'Ver Mensajes';
+      Left := 430;
+      Top := 78;
+      Width := 120;
+      Height := 26;
+      OnClick := @OnVerMensajesEnComunidadClick;
+    end;
+
+    MemoMensajes := TMemo.Create(Panel);
+    with MemoMensajes do
+    begin
+      Parent := Panel;
+      Name := 'MemoMensajes';
+      Left := 20;
+      Top := 120;
+      Width := 530;
+      Height := 280;
+      ReadOnly := True;
+      ScrollBars := ssVertical;
+      Font.Name := 'Consolas';
+      Font.Size := 10;
+      Color := clSkyBlue;              // ← Color de fondo
+      BorderStyle := bsSingle;        // ← Borde
+      Lines.Add('🔍 Ingrese el nombre de una comunidad y presione "Ver Mensajes"');
+    end;
+
+    BtnCerrar := TButton.Create(Panel);
+    with BtnCerrar do
+    begin
+      Parent := Panel;
+      Caption := 'Cerrar';
+      Left := 470;
+      Top := 410;
+      Width := 80;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    FormVerMensajes.ShowModal;
+  finally
+    FormVerMensajes.Free;
+  end;
+end;
+procedure TInterfazEDDMail.OnVerMensajesEnComunidadClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditComunidad: TEdit;
+  MemoMensajes: TMemo;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar los controles en el panel directamente
+  EditComunidad := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditComunidad') then
+      EditComunidad := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if (EditComunidad = nil) or (MemoMensajes = nil) then
+  begin
+    MostrarMensaje('Error', 'Error interno: controles no encontrados');
+    Exit;
+  end;
+
+  if Trim(EditComunidad.Text) = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Mostrar los mensajes
+  MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(Trim(EditComunidad.Text));
+end;
+
+// ═══════════════════════════════════════════════════════
+// IMPLEMENTACIÓN CONTROL DE LOGUEO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+
+
+procedure TInterfazEDDMail.OnFormLogueoClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormLogueo := nil;
+  FListLogueo := nil;
+  FEditBuscarUsuarioLog := nil;
+end;
+
+procedure TInterfazEDDMail.Logueo_RellenarLista;
+var
+  Logs: TStringList;
+  i: Integer;
+begin
+  if FListLogueo = nil then Exit;
+
+  FListLogueo.Items.Clear;
+
+  // Obtener logs del sistema
+  Logs := FSistema.ObtenerLogsDeLogueo; // Esta función debe implementarse en EstructurasDatos
+
+  if Logs <> nil then
+  begin
+    try
+      for i := 0 to Logs.Count - 1 do
+        FListLogueo.Items.Add(Logs[i]);
+    finally
+      Logs.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Logueo_OnBuscarClick(Sender: TObject);
+var
+  Logs: TStringList;
+  i: Integer;
+  Usuario: String;
+begin
+  if FEditBuscarUsuarioLog = nil then Exit;
+
+  Usuario := Trim(FEditBuscarUsuarioLog.Text);
+  if Usuario = '' then
+  begin
+    Logueo_RellenarLista;
+    Exit;
+  end;
+
+  FListLogueo.Items.Clear;
+  Logs := FSistema.FiltrarLogsPorUsuario(Usuario); // Implementar en EstructurasDatos
+
+  if Logs <> nil then
+  begin
+    try
+      for i := 0 to Logs.Count - 1 do
+        FListLogueo.Items.Add(Logs[i]);
+    finally
+      Logs.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnExportarLogueoClick(Sender: TObject);
+var
+  SaveDialog: TSaveDialog;
+begin
+  SaveDialog := TSaveDialog.Create(nil);
+  try
+    with SaveDialog do
+    begin
+      Title := 'Guardar Control de Logueo';
+      Filter := 'Archivos JSON|*.json';
+      DefaultExt := 'json';
+      FileName := 'control_logueo.json';
+
+      if Execute then
+      begin
+        if FSistema.ExportarLogueoJSON(FileName) then
+          MostrarMensaje('Éxito', 'Control de logueo exportado a:' + LineEnding + FileName)
+        else
+          MostrarMensaje('Error', 'No se pudo exportar el control de logueo');
+      end;
+    end;
+  finally
+    SaveDialog.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.Logueo_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormLogueo) then
+    FFormLogueo.Close;
+end;
+// ═══════════════════════════════════════════════════════
+// DESCARGAR CORREO COMPRIMIDO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.Inbox_OnDescargarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+  SaveDialog: TSaveDialog;
+  MensajeComprimido: String;
+  TamOriginal, TamComprimido: Integer;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Seleccione un correo para descargar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  // Buscar el correo
+  Correo := FCorreoManager.GetBandejaEntrada(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo = nil then
+  begin
+    MostrarMensaje('Error', 'Correo no encontrado');
+    Exit;
+  end;
+
+  SaveDialog := TSaveDialog.Create(nil);
+  try
+    with SaveDialog do
+    begin
+      Title := 'Guardar Correo Comprimido';
+      Filter := 'Archivos de texto|*.txt';
+      DefaultExt := 'txt';
+      FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.txt';
+
+      if Execute then
+      begin
+        // Comprimir usando LZW
+        TamOriginal := Length(Correo^.Mensaje);
+        MensajeComprimido := FSistema.ComprimirLZW(Correo^.Mensaje);
+        TamComprimido := Length(MensajeComprimido);
+
+        if FSistema.GuardarArchivoTexto(FileName, MensajeComprimido) then
+          MostrarMensaje('Éxito',
+            '💾 Correo descargado y comprimido exitosamente' + LineEnding +
+            'Archivo: ' + ExtractFileName(FileName) + LineEnding +
+            'Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
+            'Tamaño comprimido: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
+            'Compresión: ' + FormatFloat('0.0', (1 - TamComprimido/TamOriginal)*100) + '%')
+        else
+          MostrarMensaje('Error', 'No se pudo guardar el archivo');
+      end;
+    end;
+  finally
+    SaveDialog.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// BÚSQUEDA EN FAVORITOS (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.Favoritos_OnBuscarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  Termino: String;
+  Resultados: TStringList;
+  i: Integer;
+  TerminoLower, ItemLower: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  if FEditBuscarFavoritos = nil then Exit;
+
+  Termino := Trim(FEditBuscarFavoritos.Text);
+
+  if Termino = '' then
+  begin
+    Favoritos_RellenarLista;
+    Exit;
+  end;
+
+  FListFavoritos.Items.Clear;
+
+  // Obtener todos los favoritos y filtrar por término
+  Resultados := TStringList.Create;
+  try
+    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, Resultados);
+
+    TerminoLower := LowerCase(Termino);
+
+    // Filtrar resultados que contengan el término en el asunto
+    for i := 0 to Resultados.Count - 1 do
+    begin
+      ItemLower := LowerCase(Resultados[i]);
+      if Pos(TerminoLower, ItemLower) > 0 then
+        FListFavoritos.Items.AddObject(Resultados[i], Resultados.Objects[i]);
+    end;
+
+    if FListFavoritos.Items.Count = 0 then
+      MostrarMensaje('Información', 'No se encontraron resultados para: "' + Termino + '"');
+
+  finally
+    Resultados.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// VISUALIZACIÓN DE BLOCKCHAIN (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnVerBlockchainClick(Sender: TObject);
+var
+  Panel, PanelDetalles: TPanel;
+  LabelTitulo, LabelDetalles: TLabel;
+  BtnReporte, BtnCerrar: TButton;
+begin
+  // Validar que solo root pueda acceder
+  if FSistema.GetUsuarioActual = nil then Exit;
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado', 'Solo el usuario root puede acceder al blockchain');
+    Exit;
+  end;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormBlockchain) then
+  begin
+    FFormBlockchain.Show;
+    FFormBlockchain.BringToFront;
+    Exit;
+  end;
+
+  // Crear la ventana
+  FFormBlockchain := TForm.Create(nil);
+  with FFormBlockchain do
+  begin
+    Caption := 'Blockchain - Registro de Correos';
+    Width := 900;
+    Height := 600;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormBlockchainClose;
+    Color := $00ED618E;
+  end;
+
+  // Panel principal
+  Panel := TPanel.Create(FFormBlockchain);
+  with Panel do
+  begin
+    Parent := FFormBlockchain;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  // Título
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Blockchain - Cadena de Bloques 🔗';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Lista de bloques
+  FListBlockchain := TListBox.Create(Panel);
+  with FListBlockchain do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 45;
+    Width := 860;
+    Height := 250;
+    OnClick := @Blockchain_OnSeleccion;
+    ItemHeight := 18;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  // Panel de detalles del bloque
+  PanelDetalles := TPanel.Create(Panel);
+  with PanelDetalles do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 305;
+    Width := 860;
+    Height := 200;
+    BevelOuter := bvRaised;
+    Color := clWhite;
+  end;
+
+  LabelDetalles := TLabel.Create(PanelDetalles);
+  with LabelDetalles do
+  begin
+    Parent := PanelDetalles;
+    Caption := 'Detalles del Bloque Seleccionado:';
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Memo para detalles del bloque
+  FMemoBlockchain := TMemo.Create(PanelDetalles);
+  with FMemoBlockchain do
+  begin
+    Parent := PanelDetalles;
+    Left := 10;
+    Top := 35;
+    Width := 840;
+    Height := 155;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  // Botones de acción
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📊 Generar Reporte Graphviz';
+    Left := 10;
+    Top := 520;
+    Width := 200;
+    Height := 35;
+    OnClick := @OnReporteBlockchainClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 670;
+    Top := 520;
+    Width := 200;
+    Height := 35;
+    OnClick := @Blockchain_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos iniciales
+  Blockchain_RellenarLista;
+
+  FFormBlockchain.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormBlockchainClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormBlockchain := nil;
+  FListBlockchain := nil;
+  FMemoBlockchain := nil;
+end;
+
+procedure TInterfazEDDMail.Blockchain_RellenarLista;
+var
+  Bloques: TStringList;
+  i: Integer;
+begin
+  if FListBlockchain = nil then Exit;
+
+  FListBlockchain.Items.Clear;
+
+  Bloques := FSistema.ObtenerListaBloques; // Implementar en EstructurasDatos
+
+  if Bloques <> nil then
+  begin
+    try
+      for i := 0 to Bloques.Count - 1 do
+        FListBlockchain.Items.AddObject(Bloques[i], Bloques.Objects[i]);
+    finally
+      Bloques.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Blockchain_OnSeleccion(Sender: TObject);
+var
+  IndiceBloque: Integer;
+  DetallesBloque: String;
+begin
+  if (FListBlockchain = nil) or (FMemoBlockchain = nil) then Exit;
+  if FListBlockchain.ItemIndex < 0 then Exit;
+
+  IndiceBloque := Integer(PtrInt(FListBlockchain.Items.Objects[FListBlockchain.ItemIndex]));
+
+  DetallesBloque := FSistema.ObtenerDetallesBloque(IndiceBloque); // Implementar en EstructurasDatos
+
+  FMemoBlockchain.Lines.Text := DetallesBloque;
+end;
+
+procedure TInterfazEDDMail.Blockchain_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBlockchain) then
+    FFormBlockchain.Close;
+end;
+// ═══════════════════════════════════════════════════════
+// REPORTES FASE 3
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnReporteGrafoClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteGrafoContactos('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Grafo generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- grafo_contactos.dot (código Graphviz)' + LineEnding +
+      '- grafo_contactos.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de grafo: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteBlockchainClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteBlockchain('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Blockchain generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- blockchain.dot (código Graphviz)' + LineEnding +
+      '- blockchain.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de blockchain: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteMerkleClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    // ✅ Solo pasar la carpeta, no el usuario
+    FSistema.GenerarReporteMerkle(CarpetaReportes);
+
+    MostrarMensaje('Éxito',
+      'Reporte de Árbol de Merkle generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- merkle_tree.dot (código Graphviz)' + LineEnding +
+      '- merkle_tree.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de Merkle: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteLogueoClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteLogueo('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Control de Logueo generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- logueo.dot (código Graphviz)' + LineEnding +
+      '- logueo.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de logueo: ' + E.Message);
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// CARGA MASIVA DE CONTACTOS (FASE 3 - INTEGRACIÓN GRUPAL)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnCargaMasivaContactosClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(nil);
+  try
+    with OpenDialog do
+    begin
+      Title := 'Seleccionar JSON de Contactos';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+
+      if Execute then
+      begin
+        try
+          FSistema.CargarContactosDesdeJSON(FileName); // Implementar en EstructurasDatos
+          MostrarMensaje('Éxito',
+            'Contactos cargados masivamente desde:' + LineEnding +
+            ExtractFileName(FileName) + LineEnding +
+            'Se han creado las relaciones en el grafo');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar contactos: ' + E.Message);
+        end;
+      end;
+    end;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// MÉTODOS PENDIENTES DE IMPLEMENTAR
+// ═══════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════
+// VENTANA DE CONTROL DE LOGUEO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnControlLogueoClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo, LabelBuscar: TLabel;
+  BtnBuscar, BtnExportar, BtnReporte, BtnCerrar: TButton;
+begin
+  // Validar que solo root pueda acceder
+  if FSistema.GetUsuarioActual = nil then Exit;
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado', 'Solo el usuario root puede acceder al control de logueo');
+    Exit;
+  end;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormLogueo) then
+  begin
+    FFormLogueo.Show;
+    FFormLogueo.BringToFront;
+    Exit;
+  end;
+
+  // Crear la ventana
+  FFormLogueo := TForm.Create(nil);
+  with FFormLogueo do
+  begin
+    Caption := 'Control de Logueo del Sistema';
+    Width := 800;
+    Height := 550;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormLogueoClose;
+    Color := $00ED618E;
+  end;
+
+  // Panel principal
+  Panel := TPanel.Create(FFormLogueo);
+  with Panel do
+  begin
+    Parent := FFormLogueo;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  // Título
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Control de Logueo 🕐';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Campo de búsqueda
+  LabelBuscar := TLabel.Create(Panel);
+  with LabelBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar usuario:';
+    Left := 10;
+    Top := 45;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+  end;
+
+  FEditBuscarUsuarioLog := TEdit.Create(Panel);
+  with FEditBuscarUsuarioLog do
+  begin
+    Parent := Panel;
+    Left := 130;
+    Top := 42;
+    Width := 300;
+    Hint := 'Ingrese email del usuario para filtrar';
+    ShowHint := True;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := '🔍 Buscar';
+    Left := 440;
+    Top := 40;
+    Width := 100;
+    Height := 28;
+    OnClick := @Logueo_OnBuscarClick;
+    Color := clWhite;
+  end;
+
+  // Lista de logs
+  FListLogueo := TListBox.Create(Panel);
+  with FListLogueo do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 80;
+    Width := 760;
+    Height := 350;
+    ItemHeight := 18;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  // Botones de acción
+  BtnExportar := TButton.Create(Panel);
+  with BtnExportar do
+  begin
+    Parent := Panel;
+    Caption := '💾 Exportar JSON';
+    Left := 10;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnExportarLogueoClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📊 Generar Reporte';
+    Left := 170;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnReporteLogueoClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 620;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @Logueo_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos iniciales
+  Logueo_RellenarLista;
+
+  FFormLogueo.Show;
+end;
+
+procedure TInterfazEDDMail.OnExportarLogueoJSONClick(Sender: TObject);
+begin
+  OnExportarLogueoClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.CargarContactosDesdeJSON(RutaArchivo: String);
+begin
+  FSistema.CargarContactosDesdeJSON(RutaArchivo);
+end;
+
+procedure TInterfazEDDMail.Merkle_ConvertirDeArbolB;
+begin
+  // TODO: Implementar conversión de Árbol B a Merkle
+  WriteLn('Conversión a Merkle pendiente de implementar');
+end;
+
+procedure TInterfazEDDMail.OnReporteGrafosContactosClick(Sender: TObject);
+begin
+  OnReporteGrafoClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.OnDescargarCorreoClick(Sender: TObject);
+begin
+  Inbox_OnDescargarClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.DescargarCorreoComprimido(CorreoId: Integer);
+begin
+  // TODO: Implementar descarga específica por ID
+  WriteLn('Descarga por ID pendiente: ', CorreoId);
+end;
+
+procedure TInterfazEDDMail.OnReaccionarMensajeClick(Sender: TObject);
+var
+  FormReaccionar: TForm;
+  Panel: TPanel;
+  LabelComunidad, LabelReaccion: TLabel;
+  EditComunidad: TEdit;
+  ComboReaccion: TComboBox;
+  BtnReaccionar, BtnCancelar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormReaccionar := TForm.Create(nil);
+  try
+    with FormReaccionar do
+    begin
+      Caption := 'Reaccionar a Mensaje en Comunidad';
+      Width := 450;
+      Height := 280;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormReaccionar);
+    with Panel do
+    begin
+      Parent := FormReaccionar;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+    end;
+
+    LabelComunidad := TLabel.Create(Panel);
+    with LabelComunidad do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 20;
+      Font.Style := [fsBold];
+    end;
+
+    EditComunidad := TEdit.Create(Panel);
+    with EditComunidad do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 45;
+      Width := 390;
+    end;
+
+    LabelReaccion := TLabel.Create(Panel);
+    with LabelReaccion do
+    begin
+      Parent := Panel;
+      Caption := 'Selecciona tu reacción:';
+      Left := 20;
+      Top := 85;
+      Font.Style := [fsBold];
+    end;
+
+    ComboReaccion := TComboBox.Create(Panel);
+    with ComboReaccion do
+    begin
+      Parent := Panel;
+      Left := 20;
+      Top := 110;
+      Width := 390;
+      Style := csDropDownList;
+      Items.Add('👍 Me gusta');
+      Items.Add('❤️ Me encanta');
+      Items.Add('😂 Me divierte');
+      Items.Add('😮 Me sorprende');
+      Items.Add('😢 Me entristece');
+      Items.Add('😠 Me enoja');
+      ItemIndex := 0;
+    end;
+
+    BtnReaccionar := TButton.Create(Panel);
+    with BtnReaccionar do
+    begin
+      Parent := Panel;
+      Caption := 'Reaccionar';
+      Left := 200;
+      Top := 160;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrOk;
+      Font.Style := [fsBold];
+      Color := clLime;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 310;
+      Top := 160;
+      Width := 100;
+      Height := 35;
+      ModalResult := mrCancel;
+    end;
+
+    if FormReaccionar.ShowModal = mrOk then
+    begin
+      if Trim(EditComunidad.Text) = '' then
+      begin
+        MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+        Exit;
+      end;
+
+      MostrarMensaje('Reacción Registrada',
+        '✓ Has reaccionado con: ' + ComboReaccion.Text + LineEnding +
+        'En la comunidad: ' + Trim(EditComunidad.Text) + LineEnding + LineEnding +
+        '(Funcionalidad de persistencia en desarrollo)');
+    end;
+
+  finally
+    FormReaccionar.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.MostrarReaccionesDeComunidad(NombreComunidad: String);
+begin
+  MostrarMensaje('Reacciones de ' + NombreComunidad,
+    '📊 Funcionalidad de visualización de reacciones en desarrollo' + LineEnding +
+    'Se mostrará estadística de reacciones por mensaje');
+end;
+
+
+procedure TInterfazEDDMail.Borradores_OnEliminarConPapeleraClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  BorradorSeleccionado: PCorreo;
+  Respuesta: Integer;
+begin
+  if (FListBorradores = nil) or (FListBorradores.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Debe seleccionar un borrador para eliminar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBorradores.Items.Objects[FListBorradores.ItemIndex]));
+  BorradorSeleccionado := FSistema.BuscarBorrador(Usuario, IdSel);
+
+  if BorradorSeleccionado = nil then
+  begin
+    MostrarMensaje('Error', 'No se pudo encontrar el borrador seleccionado');
+    Exit;
+  end;
+
+  // Confirmar eliminación
+  Respuesta := MessageDlg('Confirmar Eliminación',
+    '¿Desea mover este borrador a la papelera?' + LineEnding + LineEnding +
+    'Asunto: ' + BorradorSeleccionado^.Asunto + LineEnding +
+    'Para: ' + BorradorSeleccionado^.Destinatario,
+    mtConfirmation, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    // Cambiar estado antes de mover
+    BorradorSeleccionado^.Estado := 'Eliminado';
+
+    // Copiar el borrador a la papelera
+    if FCorreoManager.EliminarCorreoDeBandeja(Usuario, IdSel) then // Usa la misma lógica
+    begin
+      // Ahora eliminar del árbol AVL
+      if FSistema.EliminarBorrador(Usuario, IdSel) then
+      begin
+        MostrarMensaje('Éxito', 'Borrador movido a papelera correctamente');
+        Borradores_RellenarLista;
+        FMemoBorrador.Clear;
+      end
+      else
+        MostrarMensaje('Error', 'No se pudo eliminar el borrador del árbol');
+    end
+    else
+      MostrarMensaje('Error', 'No se pudo mover a papelera');
+  end;
+end;
+procedure TInterfazEDDMail.Papelera_OnVaciarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CantidadEliminada: Integer;
+  Respuesta: Integer;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  Respuesta := MessageDlg('⚠️ Vaciar Papelera',
+    '¿Está seguro que desea vaciar completamente la papelera?' + LineEnding +
+    'Esta acción no se puede deshacer.',
+    mtWarning, [mbYes, mbNo], 0);
+
+  if Respuesta = mrYes then
+  begin
+    CantidadEliminada := FCorreoManager.VaciarPapelera(Usuario);
+
+    MostrarMensaje('Éxito',
+      Format('Se eliminaron %d correos definitivamente de la papelera', [CantidadEliminada]));
+
+    Papelera_RellenarLista;
+    FMemoPapelera.Clear;
+  end;
+end;
+procedure TInterfazEDDMail.OnGestionarComunidadesUsuarioClick(Sender: TObject);
+var
+  FormComunidades: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelNombreCom, LabelMensaje: TLabel;
+  EditNombreCom: TEdit;
+  MemoMensajes: TMemo;
+  BtnVerMensajes, BtnPublicar, BtnReaccionar, BtnCerrar: TButton;
+  Usuario: PUsuario;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  FormComunidades := TForm.Create(nil);
+  try
+    with FormComunidades do
+    begin
+      Caption := 'Mis Comunidades';
+      Width := 700;
+      Height := 600;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormComunidades);
+    with Panel do
+    begin
+      Parent := FormComunidades;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := $00ED618E;
+    end;
+
+    // Título
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := 'Gestión de Comunidades 💬';
+      Font.Size := 14;
+      Font.Style := [fsBold];
+      Font.Color := clWhite;
+      Left := 20;
+      Top := 20;
+    end;
+
+    // Campo: Nombre de comunidad
+    LabelNombreCom := TLabel.Create(Panel);
+    with LabelNombreCom do
+    begin
+      Parent := Panel;
+      Caption := 'Nombre de la Comunidad:';
+      Left := 20;
+      Top := 60;
+      Font.Style := [fsBold];
+      Font.Color := clWhite;
+    end;
+
+    EditNombreCom := TEdit.Create(Panel);
+    with EditNombreCom do
+    begin
+      Parent := Panel;
+      Name := 'EditNombreComunidad';
+      Left := 20;
+      Top := 85;
+      Width := 400;
+    end;
+
+    // Botón: Ver Mensajes
+    BtnVerMensajes := TButton.Create(Panel);
+    with BtnVerMensajes do
+    begin
+      Parent := Panel;
+      Caption := '📖 Ver Mensajes';
+      Left := 430;
+      Top := 83;
+      Width := 230;
+      Height := 28;
+      OnClick := @UsuarioComunidades_OnVerMensajesClick;
+      Font.Style := [fsBold];
+      Color := clSkyBlue;
+    end;
+
+    // Área de visualización de mensajes
+    LabelMensaje := TLabel.Create(Panel);
+    with LabelMensaje do
+    begin
+      Parent := Panel;
+      Caption := 'Mensajes de la Comunidad:';
+      Left := 20;
+      Top := 130;
+      Font.Style := [fsBold];
+      Font.Color := clWhite;
+    end;
+
+    MemoMensajes := TMemo.Create(Panel);
+    with MemoMensajes do
+    begin
+      Parent := Panel;
+      Name := 'MemoMensajes';
+      Left := 20;
+      Top := 155;
+      Width := 640;
+      Height := 300;
+      ReadOnly := True;
+      ScrollBars := ssVertical;
+      Font.Name := 'Courier New';
+      Font.Size := 9;
+      Color := clWhite;
+    end;
+
+    // Botones de acción
+    BtnPublicar := TButton.Create(Panel);
+    with BtnPublicar do
+    begin
+      Parent := Panel;
+      Caption := '📢 Publicar Mensaje';
+      Left := 20;
+      Top := 470;
+      Width := 200;
+      Height := 40;
+      OnClick := @UsuarioComunidades_OnPublicarClick;
+      Font.Style := [fsBold];
+      Color := clLime;
+    end;
+
+    BtnReaccionar := TButton.Create(Panel);
+    with BtnReaccionar do
+    begin
+      Parent := Panel;
+      Caption := '👍 Reaccionar';
+      Left := 230;
+      Top := 470;
+      Width := 200;
+      Height := 40;
+      OnClick := @UsuarioComunidades_OnReaccionarClick;
+      Font.Style := [fsBold];
+      Color := clYellow;
+    end;
+
+    BtnCerrar := TButton.Create(Panel);
+    with BtnCerrar do
+    begin
+      Parent := Panel;
+      Caption := 'Cerrar';
+      Left := 460;
+      Top := 470;
+      Width := 200;
+      Height := 40;
+      ModalResult := mrCancel;
+    end;
+
+    FormComunidades.ShowModal;
+
+  finally
+    FormComunidades.Free;
+  end;
+end;
+procedure TInterfazEDDMail.UsuarioComunidades_OnVerMensajesClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditNombreCom: TEdit;
+  MemoMensajes: TMemo;
+  NombreComunidad: String;
+  Mensajes: String;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar controles
+  EditNombreCom := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditNombreComunidad') then
+      EditNombreCom := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if (EditNombreCom = nil) or (MemoMensajes = nil) then
+  begin
+    MostrarMensaje('Error', 'Error interno: controles no encontrados');
+    Exit;
+  end;
+
+  NombreComunidad := Trim(EditNombreCom.Text);
+
+  if NombreComunidad = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Obtener mensajes
+  Mensajes := FSistema.ObtenerMensajesComunidad(NombreComunidad);
+  MemoMensajes.Lines.Text := Mensajes;
+end;
+procedure TInterfazEDDMail.UsuarioComunidades_OnPublicarClick(Sender: TObject);
+var
+  BtnSender: TButton;
+  Panel: TPanel;
+  EditNombreCom: TEdit;
+  MemoMensajes: TMemo;
+  NombreComunidad, Mensaje: String;
+  i: Integer;
+begin
+  BtnSender := TButton(Sender);
+  Panel := TPanel(BtnSender.Parent);
+
+  // Buscar control de nombre de comunidad
+  EditNombreCom := nil;
+  MemoMensajes := nil;
+
+  for i := 0 to Panel.ControlCount - 1 do
+  begin
+    if (Panel.Controls[i] is TEdit) and (Panel.Controls[i].Name = 'EditNombreComunidad') then
+      EditNombreCom := TEdit(Panel.Controls[i])
+    else if (Panel.Controls[i] is TMemo) and (Panel.Controls[i].Name = 'MemoMensajes') then
+      MemoMensajes := TMemo(Panel.Controls[i]);
+  end;
+
+  if EditNombreCom = nil then
+  begin
+    MostrarMensaje('Error', 'Error interno');
+    Exit;
+  end;
+
+  NombreComunidad := Trim(EditNombreCom.Text);
+
+  if NombreComunidad = '' then
+  begin
+    MostrarMensaje('Error', 'Ingrese el nombre de la comunidad');
+    Exit;
+  end;
+
+  // Solicitar mensaje
+  Mensaje := InputBox('Publicar Mensaje',
+    'Escribe tu mensaje para la comunidad "' + NombreComunidad + '":', '');
+
+  if Trim(Mensaje) = '' then
+  begin
+    MostrarMensaje('Aviso', 'El mensaje no puede estar vacío');
+    Exit;
+  end;
+
+  // Publicar
+  if FSistema.PublicarMensajeAComunidad(
+        NombreComunidad,
+        FSistema.GetUsuarioActual^.Email,
+        Trim(Mensaje)) then
+  begin
+    MostrarMensaje('Éxito',
+      '✓ Mensaje publicado correctamente en: ' + NombreComunidad);
+
+    // Actualizar vista
+    if MemoMensajes <> nil then
+      MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(NombreComunidad);
+  end
+  else
+    MostrarMensaje('Error', 'No se pudo publicar el mensaje');
+end;
+  end.
+
+
