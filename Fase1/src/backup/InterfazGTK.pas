@@ -68,6 +68,23 @@ type
     FListBorradores: TListBox;
     FMemoBorrador: TMemo;
     FComboRecorrido: TComboBox;
+    private
+
+    // ======================================
+    // VARIABLES FASE 3
+    // ======================================
+
+        FEditBuscarFavoritos: TEdit;  // ← AGREGAR ESTE CAMPO
+
+    // Control de Logueo
+    FFormLogueo: TForm;
+    FListLogueo: TListBox;
+    FEditBuscarUsuarioLog: TEdit;
+
+    // Blockchain
+    FFormBlockchain: TForm;
+    FListBlockchain: TListBox;
+    FMemoBlockchain: TMemo;
 
     // ======================================
     // DEFINICIÓN DE MÉTODOS
@@ -173,6 +190,69 @@ type
     // Función auxiliar para reportes BST
 
     procedure OnVerMensajesEnComunidadClick(Sender: TObject);
+
+  // ===== PROCEDIMIENTOS PARA FASE 3 =====
+
+  // Control de Logueo
+  procedure OnControlLogueoClick(Sender: TObject);
+  procedure OnExportarLogueoJSONClick(Sender: TObject);
+  procedure OnVisualizarLogueoClick(Sender: TObject);
+
+  // Carga Masiva de Contactos
+
+  procedure CargarContactosDesdeJSON(RutaArchivo: String);
+
+  // Blockchain
+  procedure OnReporteBlockchainClick(Sender: TObject);
+
+  // Árbol de Merkle (Favoritos)
+  procedure OnReporteMerkleClick(Sender: TObject);
+  procedure Merkle_ConvertirDeArbolB; // Migración de Árbol B a Merkle
+
+  // Grafos (Contactos)
+  procedure OnReporteGrafosContactosClick(Sender: TObject);
+
+  // Compresión LZW
+  procedure OnDescargarCorreoClick(Sender: TObject);
+  procedure DescargarCorreoComprimido(CorreoId: Integer);
+
+  // Reacciones a Mensajes
+  procedure OnReaccionarMensajeClick(Sender: TObject);
+  procedure MostrarReaccionesDeComunidad(NombreComunidad: String);
+
+  // Control de Logueo (Fase 3)
+
+
+procedure OnFormLogueoClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure Logueo_RellenarLista;
+procedure Logueo_OnBuscarClick(Sender: TObject);
+procedure Logueo_OnCerrarClick(Sender: TObject);
+
+// Blockchain (Fase 3)
+procedure OnVerBlockchainClick(Sender: TObject);
+procedure OnFormBlockchainClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure Blockchain_RellenarLista;
+procedure Blockchain_OnSeleccion(Sender: TObject);
+procedure Blockchain_OnCerrarClick(Sender: TObject);
+
+// Descargar correo comprimido (Fase 3)
+procedure Inbox_OnDescargarClick(Sender: TObject);
+
+// Búsqueda en Favoritos (Fase 3)
+procedure Favoritos_OnBuscarClick(Sender: TObject);
+
+// Reportes Fase 3
+procedure OnReporteGrafoClick(Sender: TObject);
+
+
+procedure OnReporteLogueoClick(Sender: TObject);
+
+// Carga masiva de contactos (Fase 3 - Integración por grupos)
+procedure OnCargaMasivaContactosClick(Sender: TObject);
+
+
+// Métodos de eventos (handlers)
+procedure OnExportarLogueoClick(Sender: TObject);
 
 
   public
@@ -724,12 +804,10 @@ var
   LabelTitulo, LabelInfo: TLabel;
   BtnCargaMasiva, BtnReporteUsuarios, BtnReporteRelaciones,
   BtnGestionarComunidades, BtnReporteComunidades, BtnCerrarSesion: TButton;
-
-  //Fase 2
-  var
   BtnCrearComunidadBST, BtnVerMensajesComunidad: TButton;
-
-  YPos: Integer;
+  BtnVisualizarLogueo, BtnVerBlockchain, BtnReporteGrafo,
+  BtnCargaMasivaContactos: TButton;
+  YPos, LeftCol1, LeftCol2, BtnWidth, BtnHeight, Spacing: Integer;
 begin
   Panel := TPanel.Create(FFormPrincipal);
   with Panel do
@@ -738,9 +816,7 @@ begin
     Align := alClient;
     BevelOuter := bvNone;
     BorderWidth := 20;
-    Color := $00B5315B              ;
-
-
+    Color := $00B5315B;
   end;
 
   LabelTitulo := TLabel.Create(Panel);
@@ -760,121 +836,210 @@ begin
   with LabelInfo do
   begin
     Parent := Panel;
-    Caption := 'Bienvenido Administrador 🧑💼 . Seleccione una opción:';
+    Caption := 'Bienvenido Administrador 🧑💼. Seleccione una opción:';
     Left := 20;
     Top := 50;
     Font.Color := clWhite;
   end;
 
+  // Configuración de posiciones y tamaños
   YPos := 90;
+  LeftCol1 := 20;
+  BtnWidth := 200;
+  BtnHeight := 40;
+  Spacing := 15;
+  LeftCol2 := LeftCol1 + BtnWidth + Spacing;
 
+  // ═══════════════════════════════════════════════════════
+  // FILA 1: Carga Masiva de Usuarios | Reporte de Usuarios
+  // ═══════════════════════════════════════════════════════
   BtnCargaMasiva := TButton.Create(Panel);
   with BtnCargaMasiva do
   begin
     Parent := Panel;
-    Caption := 'Carga Masiva de Usuarios (JSON)';
-    Left := 20;
+    Caption := '📂 Carga Masiva de Usuarios';
+    Left := LeftCol1;
     Top := YPos;
-    Width := 300;
-    Height := 40;
+    Width := BtnWidth;
+    Height := BtnHeight;
     OnClick := @OnCargaMasivaClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 60);
 
   BtnReporteUsuarios := TButton.Create(Panel);
   with BtnReporteUsuarios do
   begin
     Parent := Panel;
-    Caption := 'Generar Reporte de Usuarios';
-    Left := 20;
+    Caption := '📊 Reporte de Usuarios';
+    Left := LeftCol2;
     Top := YPos;
-    Width := 300;
-    Height := 40;
+    Width := BtnWidth;
+    Height := BtnHeight;
     OnClick := @OnReporteUsuariosClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 60);
+  Inc(YPos, BtnHeight + 15);
 
+  // ═══════════════════════════════════════════════════════
+  // FILA 2: Reporte de Relaciones | Gestionar Comunidades
+  // ═══════════════════════════════════════════════════════
   BtnReporteRelaciones := TButton.Create(Panel);
   with BtnReporteRelaciones do
   begin
     Parent := Panel;
-    Caption := 'Generar Reporte de Relaciones';
-    Left := 20;
+    Caption := '🔗 Reporte de Relaciones';
+    Left := LeftCol1;
     Top := YPos;
-    Width := 300;
-    Height := 40;
+    Width := BtnWidth;
+    Height := BtnHeight;
     OnClick := @OnReporteRelacionesClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 60);
 
-  // NUEVOS BOTONES
   BtnGestionarComunidades := TButton.Create(Panel);
   with BtnGestionarComunidades do
   begin
     Parent := Panel;
-    Caption := 'Gestionar Comunidades';
-    Left := 20;
+    Caption := '👥 Gestionar Comunidades';
+    Left := LeftCol2;
     Top := YPos;
-    Width := 300;
-    Height := 40;
+    Width := BtnWidth;
+    Height := BtnHeight;
     OnClick := @OnGestionarComunidadesClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 60);
+  Inc(YPos, BtnHeight + 15);
 
+  // ═══════════════════════════════════════════════════════
+  // FILA 3: Reporte Comunidades | Crear Comunidad BST
+  // ═══════════════════════════════════════════════════════
   BtnReporteComunidades := TButton.Create(Panel);
   with BtnReporteComunidades do
   begin
     Parent := Panel;
-    Caption := 'Generar Reporte de Comunidades';
-    Left := 20;
+    Caption := '📄 Reporte de Comunidades';
+    Left := LeftCol1;
     Top := YPos;
-    Width := 300;
-    Height := 40;
+    Width := BtnWidth;
+    Height := BtnHeight;
     OnClick := @OnReporteComunidadesClick;
     Font.Style := [fsBold];
   end;
-  Inc(YPos, 80);
 
-  // BOTONES PARA FASE 2
-BtnCrearComunidadBST := TButton.Create(Panel);
-with BtnCrearComunidadBST do
-begin
-  Parent := Panel;
-  Caption := 'Crear Comunidad (BST)';
-  Left := 20;
-  Top := YPos;
-  Width := 300;
-  Height := 40;
-  OnClick := @OnCrearComunidadBSTClick;
-  Font.Style := [fsBold];
-  Color := clLime;
-end;
-Inc(YPos, 60);
+  BtnCrearComunidadBST := TButton.Create(Panel);
+  with BtnCrearComunidadBST do
+  begin
+    Parent := Panel;
+    Caption := '🌳 Crear Comunidad (BST)';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnCrearComunidadBSTClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+  Inc(YPos, BtnHeight + 15);
 
-BtnVerMensajesComunidad := TButton.Create(Panel);
-with BtnVerMensajesComunidad do
-begin
-  Parent := Panel;
-  Caption := 'Ver Mensajes de Comunidad';
-  Left := 20;
-  Top := YPos;
-  Width := 300;
-  Height := 40;
-  OnClick := @OnVerMensajesComunidadClick;
-  Font.Style := [fsBold];
-  Color := clLime;
-end;
-Inc(YPos, 60);
+  // ═══════════════════════════════════════════════════════
+  // FILA 4: Ver Mensajes Comunidad | Visualizar Logueo
+  // ═══════════════════════════════════════════════════════
+  BtnVerMensajesComunidad := TButton.Create(Panel);
+  with BtnVerMensajesComunidad do
+  begin
+    Parent := Panel;
+    Caption := '💬 Ver Mensajes de Comunidad';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnVerMensajesComunidadClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnVisualizarLogueo := TButton.Create(Panel);
+  with BtnVisualizarLogueo do
+  begin
+    Parent := Panel;
+    Caption := '📊 Control de Logueo';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnVisualizarLogueoClick;
+    Font.Style := [fsBold];
+    Color := clAqua;
+    Hint := 'Ver registro de entradas y salidas';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 5: Ver Blockchain | Reporte Grafo Contactos
+  // ═══════════════════════════════════════════════════════
+  BtnVerBlockchain := TButton.Create(Panel);
+  with BtnVerBlockchain do
+  begin
+    Parent := Panel;
+    Caption := '⛓️ Ver Blockchain';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnVerBlockchainClick;
+    Font.Style := [fsBold];
+    Color := clMoneyGreen;
+    Hint := 'Cadena de bloques de correos';
+    ShowHint := True;
+  end;
+
+  BtnReporteGrafo := TButton.Create(Panel);
+  with BtnReporteGrafo do
+  begin
+    Parent := Panel;
+    Caption := '🕸️ Reporte Grafo Contactos';
+    Left := LeftCol2;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnReporteGrafoClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+    Hint := 'Relaciones usuarios-contactos';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 15);
+
+  // ═══════════════════════════════════════════════════════
+  // FILA 6: Carga Masiva Contactos | (espacio libre)
+  // ═══════════════════════════════════════════════════════
+  BtnCargaMasivaContactos := TButton.Create(Panel);
+  with BtnCargaMasivaContactos do
+  begin
+    Parent := Panel;
+    Caption := '📇 Carga Masiva de Contactos';
+    Left := LeftCol1;
+    Top := YPos;
+    Width := BtnWidth;
+    Height := BtnHeight;
+    OnClick := @OnCargaMasivaContactosClick;
+    Font.Style := [fsBold];
+    Color := clYellow;
+    Hint := 'Cargar contactos desde JSON';
+    ShowHint := True;
+  end;
+  Inc(YPos, BtnHeight + 25);
+
+  // ═══════════════════════════════════════════════════════
+  // BOTÓN CERRAR SESIÓN (centrado)
+  // ═══════════════════════════════════════════════════════
   BtnCerrarSesion := TButton.Create(Panel);
   with BtnCerrarSesion do
   begin
     Parent := Panel;
-    Caption := 'Cerrar Sesión';
-    Left := 20;
+    Caption := '🚪 Cerrar Sesión';
+    Left := (LeftCol1 + LeftCol2 + BtnWidth) div 2 - 100;
     Top := YPos;
     Width := 200;
     Height := 35;
@@ -883,7 +1048,6 @@ Inc(YPos, 60);
     Font.Style := [fsBold];
   end;
 end;
-
 
 // Event handlers
 procedure TInterfazEDDMail.OnLoginClick(Sender: TObject);
@@ -2356,6 +2520,11 @@ var
   LabelTitulo: TLabel;
   BtnOrdenar, BtnMarcarLeido, BtnEliminar, BtnCerrar: TButton;
     BtnMarcarFavorito: TButton;
+      BtnDescargar: TButton;          // ← FALTA ESTA
+  LabelFase3: TLabel;             // ← FALTA ESTA
+  BtnReporteMerkle: TButton;      // ← FALTA ESTA
+  LabelBuscar: TLabel;            // ← FALTA ESTA
+
 
 begin
   if FSistema.GetUsuarioActual = nil then Exit;
@@ -2465,6 +2634,19 @@ begin
     Font.Style := [fsBold];
     Color := clYellow;
   end;
+  // NUEVO BOTÓN FASE 3: Descargar Correo Comprimido
+BtnDescargar := TButton.Create(Panel);
+with BtnDescargar do
+begin
+  Parent := Panel;
+  Caption := '💾 Descargar';
+  Left := 400; Top := 420; Width := 120; Height := 30;
+  OnClick := @Inbox_OnDescargarClick;
+  Font.Style := [fsBold];
+  Color := clSkyBlue;
+  Hint := 'Descargar mensaje comprimido (LZW)';
+  ShowHint := True;
+end;
 
   BtnEliminar := TButton.Create(Panel);
   with BtnEliminar do
@@ -3345,6 +3527,13 @@ var
   BtnContactos, BtnFavoritos, BtnBorradores, BtnCerrar: TButton;
   Usuario: PUsuario;
   CarpetaReportes: String;
+
+    // ↓↓↓ AGREGAR ESTAS VARIABLES ↓↓↓
+  LabelFase3: TLabel;              // ← FALTA ESTA
+  BtnReporteMerkle: TButton;       // ← FALTA ESTA
+  LabelBuscar: TLabel;             // ← FALTA ESTA (si la usas después)
+
+  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA (si la usas después)
   YPos: Integer;
 begin
   Usuario := FSistema.GetUsuarioActual;
@@ -3483,6 +3672,36 @@ begin
       Color := clAqua;
     end;
     Inc(YPos, 70);
+    // Agregar después de BtnBorradores en el procedimiento OnGenerarReportesClick:
+
+// NUEVOS REPORTES FASE 3
+Inc(YPos, 60); // Separador visual
+
+LabelFase3 := TLabel.Create(Panel);
+with LabelFase3 do
+begin
+  Parent := Panel;
+  Caption := '🆕 REPORTES FASE 3';
+  Font.Size := 11;
+  Font.Style := [fsBold];
+  Font.Color := clMaroon;
+  Left := 20;
+  Top := YPos;
+end;
+Inc(YPos, 30);
+
+BtnReporteMerkle := TButton.Create(Panel);
+with BtnReporteMerkle do
+begin
+  Parent := Panel;
+  Caption := '🌳 Reporte Árbol de Merkle';
+  Left := 20; Top := YPos; Width := 430; Height := 35;
+  Hint := 'Árbol de Merkle - Favoritos con verificación de integridad';
+  ShowHint := True;
+  OnClick := @OnReporteMerkleClick;
+  Font.Style := [fsBold];
+  Color := clMoneyGreen;
+end;
 
     BtnCerrar := TButton.Create(Panel);
     with BtnCerrar do
@@ -3669,6 +3888,10 @@ var
   Panel: TPanel;
   LabelTitulo: TLabel;
   BtnEliminar, BtnCerrar: TButton;
+    LabelBuscar: TLabel;             // ← FALTA ESTA
+
+  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA
+
 begin
   if FSistema.GetUsuarioActual = nil then Exit;
 
@@ -3701,6 +3924,41 @@ begin
     Color := $00ED618E;
   end;
 
+  // NUEVO: Campo de búsqueda (Fase 3)
+LabelBuscar := TLabel.Create(Panel);
+with LabelBuscar do
+begin
+  Parent := Panel;
+  Caption := 'Buscar por asunto:';
+  Left := 400;
+  Top := 14;
+  Font.Style := [fsBold];
+end;
+
+FEditBuscarFavoritos := TEdit.Create(Panel);
+with FEditBuscarFavoritos do
+begin
+  Parent := Panel;
+  Left := 520;
+  Top := 10;
+  Width := 120;
+  Hint := 'Ingrese término de búsqueda';
+  ShowHint := True;
+end;
+
+BtnBuscarFavoritos := TButton.Create(Panel);
+with BtnBuscarFavoritos do
+begin
+  Parent := Panel;
+  Caption := '🔍';
+  Left := 645;
+  Top := 9;
+  Width := 25;
+  Height := 25;
+  OnClick := @Favoritos_OnBuscarClick;
+  Hint := 'Buscar en favoritos';
+  ShowHint := True;
+end;
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
@@ -4895,6 +5153,669 @@ begin
 
   // Mostrar los mensajes
   MemoMensajes.Lines.Text := FSistema.ObtenerMensajesComunidad(Trim(EditComunidad.Text));
+end;
+
+// ═══════════════════════════════════════════════════════
+// IMPLEMENTACIÓN CONTROL DE LOGUEO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnVisualizarLogueoClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo, LabelBuscar: TLabel;
+  BtnExportar, BtnReporte, BtnCerrar: TButton;
+
+  BtnBuscar: TButton;              // ← FALTA ESTA
+
+begin
+  if Assigned(FFormLogueo) then
+  begin
+    FFormLogueo.Show;
+    FFormLogueo.BringToFront;
+    Exit;
+  end;
+
+  FFormLogueo := TForm.Create(nil);
+  with FFormLogueo do
+  begin
+    Caption := 'Control de Logueo - Entradas y Salidas';
+    Width := 800;
+    Height := 500;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormLogueoClose;
+    Color := $00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormLogueo);
+  with Panel do
+  begin
+    Parent := FFormLogueo;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Control de Logueo 📊';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  LabelBuscar := TLabel.Create(Panel);
+  with LabelBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar usuario:';
+    Left := 400;
+    Top := 14;
+    Font.Style := [fsBold];
+  end;
+
+  FEditBuscarUsuarioLog := TEdit.Create(Panel);
+  with FEditBuscarUsuarioLog do
+  begin
+    Parent := Panel;
+    Left := 510;
+    Top := 10;
+    Width := 200;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar';
+    Left := 720;
+    Top := 8;
+    Width := 60;
+    Height := 26;
+    OnClick := @Logueo_OnBuscarClick;
+  end;
+
+  // Lista de logs
+  FListLogueo := TListBox.Create(Panel);
+  with FListLogueo do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 50;
+    Width := 760;
+    Height := 350;
+    ItemHeight := 16;
+    Font.Name := 'Courier New';
+  end;
+
+  // Botones inferiores
+  BtnExportar := TButton.Create(Panel);
+  with BtnExportar do
+  begin
+    Parent := Panel;
+    Caption := '💾 Exportar JSON';
+    Left := 10;
+    Top := 410;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnExportarLogueoClick;
+    Font.Style := [fsBold];
+    Color := clAqua;
+  end;
+
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📄 Generar Reporte';
+    Left := 170;
+    Top := 410;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnReporteLogueoClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 620;
+    Top := 410;
+    Width := 150;
+    Height := 35;
+    OnClick := @Logueo_OnCerrarClick;
+  end;
+
+  Logueo_RellenarLista;
+  FFormLogueo.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormLogueoClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormLogueo := nil;
+  FListLogueo := nil;
+  FEditBuscarUsuarioLog := nil;
+end;
+
+procedure TInterfazEDDMail.Logueo_RellenarLista;
+var
+  Logs: TStringList;
+  i: Integer;
+begin
+  if FListLogueo = nil then Exit;
+
+  FListLogueo.Items.Clear;
+
+  // Obtener logs del sistema
+  Logs := FSistema.ObtenerLogsDeLogueo; // Esta función debe implementarse en EstructurasDatos
+
+  if Logs <> nil then
+  begin
+    try
+      for i := 0 to Logs.Count - 1 do
+        FListLogueo.Items.Add(Logs[i]);
+    finally
+      Logs.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Logueo_OnBuscarClick(Sender: TObject);
+var
+  Logs: TStringList;
+  i: Integer;
+  Usuario: String;
+begin
+  if FEditBuscarUsuarioLog = nil then Exit;
+
+  Usuario := Trim(FEditBuscarUsuarioLog.Text);
+  if Usuario = '' then
+  begin
+    Logueo_RellenarLista;
+    Exit;
+  end;
+
+  FListLogueo.Items.Clear;
+  Logs := FSistema.FiltrarLogsPorUsuario(Usuario); // Implementar en EstructurasDatos
+
+  if Logs <> nil then
+  begin
+    try
+      for i := 0 to Logs.Count - 1 do
+        FListLogueo.Items.Add(Logs[i]);
+    finally
+      Logs.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.OnExportarLogueoClick(Sender: TObject);
+var
+  SaveDialog: TSaveDialog;
+begin
+  SaveDialog := TSaveDialog.Create(nil);
+  try
+    with SaveDialog do
+    begin
+      Title := 'Guardar Control de Logueo';
+      Filter := 'Archivos JSON|*.json';
+      DefaultExt := 'json';
+      FileName := 'control_logueo.json';
+
+      if Execute then
+      begin
+        if FSistema.ExportarLogueoJSON(FileName) then
+          MostrarMensaje('Éxito', 'Control de logueo exportado a:' + LineEnding + FileName)
+        else
+          MostrarMensaje('Error', 'No se pudo exportar el control de logueo');
+      end;
+    end;
+  finally
+    SaveDialog.Free;
+  end;
+end;
+
+procedure TInterfazEDDMail.Logueo_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormLogueo) then
+    FFormLogueo.Close;
+end;
+// ═══════════════════════════════════════════════════════
+// DESCARGAR CORREO COMPRIMIDO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.Inbox_OnDescargarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  IdSel: Integer;
+  Correo: PCorreo;
+  SaveDialog: TSaveDialog;
+  MensajeComprimido: String;
+begin
+  if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
+  begin
+    MostrarMensaje('Aviso', 'Seleccione un correo para descargar');
+    Exit;
+  end;
+
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
+
+  // Buscar el correo
+  Correo := FCorreoManager.GetBandejaEntrada(Usuario);
+  while (Correo <> nil) and (Correo^.Id <> IdSel) do
+    Correo := Correo^.Siguiente;
+
+  if Correo = nil then
+  begin
+    MostrarMensaje('Error', 'Correo no encontrado');
+    Exit;
+  end;
+
+  SaveDialog := TSaveDialog.Create(nil);
+  try
+    with SaveDialog do
+    begin
+      Title := 'Guardar Correo Comprimido';
+      Filter := 'Archivos de texto|*.txt';
+      DefaultExt := 'txt';
+      FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.txt';
+
+      if Execute then
+      begin
+        // Comprimir usando LZW
+        MensajeComprimido := FSistema.ComprimirLZW(Correo^.Mensaje); // Implementar en EstructurasDatos
+
+        if FSistema.GuardarArchivoTexto(FileName, MensajeComprimido) then
+          MostrarMensaje('Éxito',
+            '💾 Correo descargado y comprimido exitosamente' + LineEnding +
+            'Archivo: ' + ExtractFileName(FileName) + LineEnding +
+            'Tamaño original: ' + IntToStr(Length(Correo^.Mensaje)) + ' bytes' + LineEnding +
+            'Tamaño comprimido: ' + IntToStr(Length(MensajeComprimido)) + ' bytes')
+        else
+          MostrarMensaje('Error', 'No se pudo guardar el archivo');
+      end;
+    end;
+  finally
+    SaveDialog.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// BÚSQUEDA EN FAVORITOS (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.Favoritos_OnBuscarClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  Termino: String;
+  Resultados: TStringList;
+  i: Integer;
+  TerminoLower, ItemLower: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  if FEditBuscarFavoritos = nil then Exit;
+
+  Termino := Trim(FEditBuscarFavoritos.Text);
+
+  if Termino = '' then
+  begin
+    Favoritos_RellenarLista;
+    Exit;
+  end;
+
+  FListFavoritos.Items.Clear;
+
+  // Obtener todos los favoritos y filtrar por término
+  Resultados := TStringList.Create;
+  try
+    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, Resultados);
+
+    TerminoLower := LowerCase(Termino);
+
+    // Filtrar resultados que contengan el término en el asunto
+    for i := 0 to Resultados.Count - 1 do
+    begin
+      ItemLower := LowerCase(Resultados[i]);
+      if Pos(TerminoLower, ItemLower) > 0 then
+        FListFavoritos.Items.AddObject(Resultados[i], Resultados.Objects[i]);
+    end;
+
+    if FListFavoritos.Items.Count = 0 then
+      MostrarMensaje('Información', 'No se encontraron resultados para: "' + Termino + '"');
+
+  finally
+    Resultados.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// VISUALIZACIÓN DE BLOCKCHAIN (FASE 3)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnVerBlockchainClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo: TLabel;
+  BtnReporte, BtnCerrar: TButton;
+begin
+  if Assigned(FFormBlockchain) then
+  begin
+    FFormBlockchain.Show;
+    FFormBlockchain.BringToFront;
+    Exit;
+  end;
+
+  FFormBlockchain := TForm.Create(nil);
+  with FFormBlockchain do
+  begin
+    Caption := 'Blockchain - Cadena de Bloques';
+    Width := 900;
+    Height := 600;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormBlockchainClose;
+    Color := $00ED618E;
+  end;
+
+  Panel := TPanel.Create(FFormBlockchain);
+  with Panel do
+  begin
+    Parent := FFormBlockchain;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Blockchain ⛓️ - Registro Seguro de Correos';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Lista de bloques
+  FListBlockchain := TListBox.Create(Panel);
+  with FListBlockchain do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 45;
+    Width := 860;
+    Height := 200;
+    OnClick := @Blockchain_OnSeleccion;
+    ItemHeight := 16;
+    Font.Name := 'Courier New';
+  end;
+
+  // Memo detalles del bloque
+  FMemoBlockchain := TMemo.Create(Panel);
+  with FMemoBlockchain do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 255;
+    Width := 860;
+    Height := 250;
+    ReadOnly := True;
+    ScrollBars := ssVertical;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📄 Generar Reporte';
+    Left := 10;
+    Top := 515;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnReporteBlockchainClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 720;
+    Top := 515;
+    Width := 150;
+    Height := 35;
+    OnClick := @Blockchain_OnCerrarClick;
+  end;
+
+  Blockchain_RellenarLista;
+  FFormBlockchain.Show;
+end;
+
+procedure TInterfazEDDMail.OnFormBlockchainClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  CloseAction := caFree;
+  FFormBlockchain := nil;
+  FListBlockchain := nil;
+  FMemoBlockchain := nil;
+end;
+
+procedure TInterfazEDDMail.Blockchain_RellenarLista;
+var
+  Bloques: TStringList;
+  i: Integer;
+begin
+  if FListBlockchain = nil then Exit;
+
+  FListBlockchain.Items.Clear;
+
+  Bloques := FSistema.ObtenerListaBloques; // Implementar en EstructurasDatos
+
+  if Bloques <> nil then
+  begin
+    try
+      for i := 0 to Bloques.Count - 1 do
+        FListBlockchain.Items.AddObject(Bloques[i], Bloques.Objects[i]);
+    finally
+      Bloques.Free;
+    end;
+  end;
+end;
+
+procedure TInterfazEDDMail.Blockchain_OnSeleccion(Sender: TObject);
+var
+  IndiceBloque: Integer;
+  DetallesBloque: String;
+begin
+  if (FListBlockchain = nil) or (FMemoBlockchain = nil) then Exit;
+  if FListBlockchain.ItemIndex < 0 then Exit;
+
+  IndiceBloque := Integer(PtrInt(FListBlockchain.Items.Objects[FListBlockchain.ItemIndex]));
+
+  DetallesBloque := FSistema.ObtenerDetallesBloque(IndiceBloque); // Implementar en EstructurasDatos
+
+  FMemoBlockchain.Lines.Text := DetallesBloque;
+end;
+
+procedure TInterfazEDDMail.Blockchain_OnCerrarClick(Sender: TObject);
+begin
+  if Assigned(FFormBlockchain) then
+    FFormBlockchain.Close;
+end;
+// ═══════════════════════════════════════════════════════
+// REPORTES FASE 3
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnReporteGrafoClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteGrafoContactos('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Grafo generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- grafo_contactos.dot (código Graphviz)' + LineEnding +
+      '- grafo_contactos.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de grafo: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteBlockchainClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteBlockchain('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Blockchain generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- blockchain.dot (código Graphviz)' + LineEnding +
+      '- blockchain.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de blockchain: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteMerkleClick(Sender: TObject);
+var
+  Usuario: PUsuario;
+  CarpetaReportes: String;
+begin
+  Usuario := FSistema.GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  CarpetaReportes := Usuario^.Usuario + '-Reportes';
+
+  try
+    // ✅ Solo pasar la carpeta, no el usuario
+    FSistema.GenerarReporteMerkle(CarpetaReportes);
+
+    MostrarMensaje('Éxito',
+      'Reporte de Árbol de Merkle generado en: ' + CarpetaReportes + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- merkle_tree.dot (código Graphviz)' + LineEnding +
+      '- merkle_tree.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de Merkle: ' + E.Message);
+  end;
+end;
+
+procedure TInterfazEDDMail.OnReporteLogueoClick(Sender: TObject);
+begin
+  try
+    FSistema.GenerarReporteLogueo('Root-Reportes'); // Implementar en EstructurasDatos
+    MostrarMensaje('Éxito',
+      'Reporte de Control de Logueo generado en: Root-Reportes/' + LineEnding +
+      'Archivos generados:' + LineEnding +
+      '- logueo.dot (código Graphviz)' + LineEnding +
+      '- logueo.png (imagen)');
+  except
+    on E: Exception do
+      MostrarMensaje('Error', 'Error al generar reporte de logueo: ' + E.Message);
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// CARGA MASIVA DE CONTACTOS (FASE 3 - INTEGRACIÓN GRUPAL)
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnCargaMasivaContactosClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(nil);
+  try
+    with OpenDialog do
+    begin
+      Title := 'Seleccionar JSON de Contactos';
+      Filter := 'Archivos JSON|*.json|Todos los archivos|*.*';
+      DefaultExt := 'json';
+
+      if Execute then
+      begin
+        try
+          FSistema.CargarContactosDesdeJSON(FileName); // Implementar en EstructurasDatos
+          MostrarMensaje('Éxito',
+            'Contactos cargados masivamente desde:' + LineEnding +
+            ExtractFileName(FileName) + LineEnding +
+            'Se han creado las relaciones en el grafo');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al cargar contactos: ' + E.Message);
+        end;
+      end;
+    end;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════
+// MÉTODOS PENDIENTES DE IMPLEMENTAR
+// ═══════════════════════════════════════════════════════
+
+procedure TInterfazEDDMail.OnControlLogueoClick(Sender: TObject);
+begin
+  OnVisualizarLogueoClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.OnExportarLogueoJSONClick(Sender: TObject);
+begin
+  OnExportarLogueoClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.CargarContactosDesdeJSON(RutaArchivo: String);
+begin
+  FSistema.CargarContactosDesdeJSON(RutaArchivo);
+end;
+
+procedure TInterfazEDDMail.Merkle_ConvertirDeArbolB;
+begin
+  // TODO: Implementar conversión de Árbol B a Merkle
+  WriteLn('Conversión a Merkle pendiente de implementar');
+end;
+
+procedure TInterfazEDDMail.OnReporteGrafosContactosClick(Sender: TObject);
+begin
+  OnReporteGrafoClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.OnDescargarCorreoClick(Sender: TObject);
+begin
+  Inbox_OnDescargarClick(Sender); // Redirigir al método existente
+end;
+
+procedure TInterfazEDDMail.DescargarCorreoComprimido(CorreoId: Integer);
+begin
+  // TODO: Implementar descarga específica por ID
+  WriteLn('Descarga por ID pendiente: ', CorreoId);
+end;
+
+procedure TInterfazEDDMail.OnReaccionarMensajeClick(Sender: TObject);
+begin
+  // TODO: Implementar reacciones a mensajes
+  MostrarMensaje('Información', 'Funcionalidad de reacciones pendiente de implementar');
+end;
+
+procedure TInterfazEDDMail.MostrarReaccionesDeComunidad(NombreComunidad: String);
+begin
+  // TODO: Implementar visualización de reacciones
+  WriteLn('Mostrando reacciones de: ', NombreComunidad);
 end;
   end.
 

@@ -303,6 +303,35 @@ type
       function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
         NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
 
+
+    // ═══════════════════════════════════════════════════════
+    // MÉTODOS FASE 3
+    // ═══════════════════════════════════════════════════════
+
+    // Logueo
+    function ObtenerLogsDeLogueo: TStringList;
+    function FiltrarLogsPorUsuario(Usuario: String): TStringList;
+    function ExportarLogueoJSON(RutaArchivo: String): Boolean;
+    procedure GenerarReporteLogueo(RutaSalida: String);
+
+    // Compresión LZW
+    function ComprimirLZW(Texto: String): String;
+    function GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
+
+    // Blockchain
+    function ObtenerListaBloques: TStringList;
+    function ObtenerDetallesBloque(NumBloque: Integer): String;
+    procedure GenerarReporteBlockchain(RutaSalida: String);
+
+    // Merkle Tree
+    procedure GenerarReporteMerkle(RutaSalida: String);
+
+    // Grafo de contactos
+    procedure GenerarReporteGrafoContactos(RutaSalida: String);
+
+    // Importación
+    procedure CargarContactosDesdeJSON(RutaArchivo: String);
+
     end;
 implementation
 
@@ -3154,5 +3183,95 @@ begin
   except
     Result := False;
   end;
+end;
+
+// ═══════════════════════════════════════════════════════
+// IMPLEMENTACIONES FASE 3
+// ═══════════════════════════════════════════════════════
+
+function TEDDMailSystem.ObtenerLogsDeLogueo: TStringList;
+begin
+  Result := TStringList.Create;
+  // TODO: Implementar cuando tengas la estructura de logueo
+  Result.Add('Sistema de logueo pendiente de implementar');
+end;
+
+function TEDDMailSystem.FiltrarLogsPorUsuario(Usuario: String): TStringList;
+begin
+  Result := TStringList.Create;
+  // TODO: Implementar filtrado
+  Result.Add('Filtrado pendiente de implementar para: ' + Usuario);
+end;
+
+function TEDDMailSystem.ExportarLogueoJSON(RutaArchivo: String): Boolean;
+begin
+  Result := False;
+  // TODO: Implementar exportación JSON
+  WriteLn('Exportación de logueo pendiente');
+end;
+
+procedure TEDDMailSystem.GenerarReporteLogueo(RutaSalida: String);
+begin
+  // TODO: Implementar reporte
+  WriteLn('Reporte de logueo pendiente: ', RutaSalida);
+end;
+
+function TEDDMailSystem.ComprimirLZW(Texto: String): String;
+begin
+  // Por ahora retorna el texto sin comprimir
+  Result := Texto;
+  // TODO: Implementar algoritmo LZW real
+end;
+
+function TEDDMailSystem.GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
+var
+  F: TextFile;
+begin
+  try
+    AssignFile(F, Ruta);
+    Rewrite(F);
+    Write(F, Contenido);
+    CloseFile(F);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function TEDDMailSystem.ObtenerListaBloques: TStringList;
+begin
+  Result := TStringList.Create;
+  // TODO: Implementar blockchain
+  Result.Add('Blockchain pendiente de implementar');
+end;
+
+function TEDDMailSystem.ObtenerDetallesBloque(NumBloque: Integer): String;
+begin
+  Result := Format('Detalles del bloque %d pendientes', [NumBloque]);
+  // TODO: Implementar
+end;
+
+procedure TEDDMailSystem.GenerarReporteBlockchain(RutaSalida: String);
+begin
+  WriteLn('Reporte blockchain pendiente: ', RutaSalida);
+  // TODO: Implementar
+end;
+
+procedure TEDDMailSystem.GenerarReporteMerkle(RutaSalida: String);
+begin
+  WriteLn('Reporte Merkle pendiente: ', RutaSalida);
+  // TODO: Implementar
+end;
+
+procedure TEDDMailSystem.GenerarReporteGrafoContactos(RutaSalida: String);
+begin
+  WriteLn('Reporte grafo contactos pendiente: ', RutaSalida);
+  // TODO: Implementar
+end;
+
+procedure TEDDMailSystem.CargarContactosDesdeJSON(RutaArchivo: String);
+begin
+  WriteLn('Carga de contactos JSON pendiente: ', RutaArchivo);
+  // TODO: Implementar
 end;
  end.
