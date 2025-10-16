@@ -3675,7 +3675,6 @@ begin
     // Agregar después de BtnBorradores en el procedimiento OnGenerarReportesClick:
 
 // NUEVOS REPORTES FASE 3
-Inc(YPos, 60); // Separador visual
 
 LabelFase3 := TLabel.Create(Panel);
 with LabelFase3 do
@@ -5769,9 +5768,165 @@ end;
 // MÉTODOS PENDIENTES DE IMPLEMENTAR
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+// VENTANA DE CONTROL DE LOGUEO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
 procedure TInterfazEDDMail.OnControlLogueoClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo, LabelBuscar: TLabel;
+  BtnBuscar, BtnExportar, BtnReporte, BtnCerrar: TButton;
 begin
-  OnVisualizarLogueoClick(Sender); // Redirigir al método existente
+  // Validar que solo root pueda acceder
+  if FSistema.GetUsuarioActual = nil then Exit;
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado', 'Solo el usuario root puede acceder al control de logueo');
+    Exit;
+  end;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormLogueo) then
+  begin
+    FFormLogueo.Show;
+    FFormLogueo.BringToFront;
+    Exit;
+  end;
+
+  // Crear la ventana
+  FFormLogueo := TForm.Create(nil);
+  with FFormLogueo do
+  begin
+    Caption := 'Control de Logueo del Sistema';
+    Width := 800;
+    Height := 550;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormLogueoClose;
+    Color := $00ED618E;
+  end;
+
+  // Panel principal
+  Panel := TPanel.Create(FFormLogueo);
+  with Panel do
+  begin
+    Parent := FFormLogueo;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  // Título
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Control de Logueo 🕐';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Campo de búsqueda
+  LabelBuscar := TLabel.Create(Panel);
+  with LabelBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar usuario:';
+    Left := 10;
+    Top := 45;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+  end;
+
+  FEditBuscarUsuarioLog := TEdit.Create(Panel);
+  with FEditBuscarUsuarioLog do
+  begin
+    Parent := Panel;
+    Left := 130;
+    Top := 42;
+    Width := 300;
+    Hint := 'Ingrese email del usuario para filtrar';
+    ShowHint := True;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := '🔍 Buscar';
+    Left := 440;
+    Top := 40;
+    Width := 100;
+    Height := 28;
+    OnClick := @Logueo_OnBuscarClick;
+    Color := clWhite;
+  end;
+
+  // Lista de logs
+  FListLogueo := TListBox.Create(Panel);
+  with FListLogueo do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 80;
+    Width := 760;
+    Height := 350;
+    ItemHeight := 18;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  // Botones de acción
+  BtnExportar := TButton.Create(Panel);
+  with BtnExportar do
+  begin
+    Parent := Panel;
+    Caption := '💾 Exportar JSON';
+    Left := 10;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnExportarLogueoClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📊 Generar Reporte';
+    Left := 170;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnReporteLogueoClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 620;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @Logueo_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos iniciales
+  Logueo_RellenarLista;
+
+  FFormLogueo.Show;
 end;
 
 procedure TInterfazEDDMail.OnExportarLogueoJSONClick(Sender: TObject);

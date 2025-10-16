@@ -9,7 +9,7 @@
         <IsPartOfProject Value="True"/>
         <TopLine Value="51"/>
         <CursorPos X="58" Y="13"/>
-        <UsageCount Value="173"/>
+        <UsageCount Value="174"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -18,7 +18,7 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="173"/>
+        <UsageCount Value="174"/>
       </Unit>
       <Unit>
         <Filename Value="correomanager.pas"/>
@@ -27,7 +27,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="860"/>
         <CursorPos X="77" Y="878"/>
-        <UsageCount Value="159"/>
+        <UsageCount Value="160"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -36,14 +36,14 @@
         <UnitName Value="GestorFase2"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="31" Y="6"/>
-        <UsageCount Value="129"/>
+        <UsageCount Value="130"/>
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="835"/>
-        <CursorPos X="18" Y="848"/>
+        <TopLine Value="3695"/>
+        <CursorPos X="40" Y="3705"/>
         <UsageCount Value="84"/>
         <Loaded Value="True"/>
       </Unit>
@@ -82,10 +82,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="2615" Column="59" TopLine="2605"/>
-      </Position>
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="5674" Column="54" TopLine="5671"/>
@@ -202,6 +198,10 @@
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="5801" Column="53" TopLine="5789"/>
       </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="849" Column="47" TopLine="835"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -215,7 +215,7 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="InterfazGTK.pas"/>
-        <Line Value="6698"/>
+        <Line Value="6697"/>
       </Item>
       <Item>
         <Kind Value="bpkSource"/>

@@ -5504,10 +5504,19 @@ end;
 
 procedure TInterfazEDDMail.OnVerBlockchainClick(Sender: TObject);
 var
-  Panel: TPanel;
-  LabelTitulo: TLabel;
+  Panel, PanelDetalles: TPanel;
+  LabelTitulo, LabelDetalles: TLabel;
   BtnReporte, BtnCerrar: TButton;
 begin
+  // Validar que solo root pueda acceder
+  if FSistema.GetUsuarioActual = nil then Exit;
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado', 'Solo el usuario root puede acceder al blockchain');
+    Exit;
+  end;
+
+  // Si ya existe la ventana, solo mostrarla
   if Assigned(FFormBlockchain) then
   begin
     FFormBlockchain.Show;
@@ -5515,10 +5524,11 @@ begin
     Exit;
   end;
 
+  // Crear la ventana
   FFormBlockchain := TForm.Create(nil);
   with FFormBlockchain do
   begin
-    Caption := 'Blockchain - Cadena de Bloques';
+    Caption := 'Blockchain - Registro de Correos';
     Width := 900;
     Height := 600;
     Position := poOwnerFormCenter;
@@ -5527,6 +5537,7 @@ begin
     Color := $00ED618E;
   end;
 
+  // Panel principal
   Panel := TPanel.Create(FFormBlockchain);
   with Panel do
   begin
@@ -5537,13 +5548,15 @@ begin
     Color := $00ED618E;
   end;
 
+  // Título
   LabelTitulo := TLabel.Create(Panel);
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'Blockchain ⛓️ - Registro Seguro de Correos';
+    Caption := 'Blockchain - Cadena de Bloques 🔗';
     Font.Size := 14;
     Font.Style := [fsBold];
+    Font.Color := clWhite;
     Left := 10;
     Top := 10;
   end;
@@ -5556,39 +5569,64 @@ begin
     Left := 10;
     Top := 45;
     Width := 860;
-    Height := 200;
+    Height := 250;
     OnClick := @Blockchain_OnSeleccion;
-    ItemHeight := 16;
+    ItemHeight := 18;
     Font.Name := 'Courier New';
+    Font.Size := 9;
   end;
 
-  // Memo detalles del bloque
-  FMemoBlockchain := TMemo.Create(Panel);
-  with FMemoBlockchain do
+  // Panel de detalles del bloque
+  PanelDetalles := TPanel.Create(Panel);
+  with PanelDetalles do
   begin
     Parent := Panel;
     Left := 10;
-    Top := 255;
+    Top := 305;
     Width := 860;
-    Height := 250;
+    Height := 200;
+    BevelOuter := bvRaised;
+    Color := clWhite;
+  end;
+
+  LabelDetalles := TLabel.Create(PanelDetalles);
+  with LabelDetalles do
+  begin
+    Parent := PanelDetalles;
+    Caption := 'Detalles del Bloque Seleccionado:';
+    Font.Style := [fsBold];
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Memo para detalles del bloque
+  FMemoBlockchain := TMemo.Create(PanelDetalles);
+  with FMemoBlockchain do
+  begin
+    Parent := PanelDetalles;
+    Left := 10;
+    Top := 35;
+    Width := 840;
+    Height := 155;
     ReadOnly := True;
     ScrollBars := ssVertical;
     Font.Name := 'Courier New';
     Font.Size := 9;
   end;
 
+  // Botones de acción
   BtnReporte := TButton.Create(Panel);
   with BtnReporte do
   begin
     Parent := Panel;
-    Caption := '📄 Generar Reporte';
+    Caption := '📊 Generar Reporte Graphviz';
     Left := 10;
-    Top := 515;
-    Width := 150;
+    Top := 520;
+    Width := 200;
     Height := 35;
     OnClick := @OnReporteBlockchainClick;
     Font.Style := [fsBold];
-    Color := clLime;
+    Color := clSkyBlue;
   end;
 
   BtnCerrar := TButton.Create(Panel);
@@ -5596,14 +5634,17 @@ begin
   begin
     Parent := Panel;
     Caption := 'Cerrar';
-    Left := 720;
-    Top := 515;
-    Width := 150;
+    Left := 670;
+    Top := 520;
+    Width := 200;
     Height := 35;
     OnClick := @Blockchain_OnCerrarClick;
+    Cancel := True;
   end;
 
+  // Cargar datos iniciales
   Blockchain_RellenarLista;
+
   FFormBlockchain.Show;
 end;
 
@@ -5768,9 +5809,165 @@ end;
 // MÉTODOS PENDIENTES DE IMPLEMENTAR
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+// VENTANA DE CONTROL DE LOGUEO (FASE 3)
+// ═══════════════════════════════════════════════════════
+
 procedure TInterfazEDDMail.OnControlLogueoClick(Sender: TObject);
+var
+  Panel: TPanel;
+  LabelTitulo, LabelBuscar: TLabel;
+  BtnBuscar, BtnExportar, BtnReporte, BtnCerrar: TButton;
 begin
-  OnVisualizarLogueoClick(Sender); // Redirigir al método existente
+  // Validar que solo root pueda acceder
+  if FSistema.GetUsuarioActual = nil then Exit;
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado', 'Solo el usuario root puede acceder al control de logueo');
+    Exit;
+  end;
+
+  // Si ya existe la ventana, solo mostrarla
+  if Assigned(FFormLogueo) then
+  begin
+    FFormLogueo.Show;
+    FFormLogueo.BringToFront;
+    Exit;
+  end;
+
+  // Crear la ventana
+  FFormLogueo := TForm.Create(nil);
+  with FFormLogueo do
+  begin
+    Caption := 'Control de Logueo del Sistema';
+    Width := 800;
+    Height := 550;
+    Position := poOwnerFormCenter;
+    BorderStyle := bsSizeable;
+    OnClose := @OnFormLogueoClose;
+    Color := $00ED618E;
+  end;
+
+  // Panel principal
+  Panel := TPanel.Create(FFormLogueo);
+  with Panel do
+  begin
+    Parent := FFormLogueo;
+    Align := alClient;
+    BevelOuter := bvNone;
+    BorderWidth := 10;
+    Color := $00ED618E;
+  end;
+
+  // Título
+  LabelTitulo := TLabel.Create(Panel);
+  with LabelTitulo do
+  begin
+    Parent := Panel;
+    Caption := 'Control de Logueo 🕐';
+    Font.Size := 14;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+    Left := 10;
+    Top := 10;
+  end;
+
+  // Campo de búsqueda
+  LabelBuscar := TLabel.Create(Panel);
+  with LabelBuscar do
+  begin
+    Parent := Panel;
+    Caption := 'Buscar usuario:';
+    Left := 10;
+    Top := 45;
+    Font.Style := [fsBold];
+    Font.Color := clWhite;
+  end;
+
+  FEditBuscarUsuarioLog := TEdit.Create(Panel);
+  with FEditBuscarUsuarioLog do
+  begin
+    Parent := Panel;
+    Left := 130;
+    Top := 42;
+    Width := 300;
+    Hint := 'Ingrese email del usuario para filtrar';
+    ShowHint := True;
+  end;
+
+  BtnBuscar := TButton.Create(Panel);
+  with BtnBuscar do
+  begin
+    Parent := Panel;
+    Caption := '🔍 Buscar';
+    Left := 440;
+    Top := 40;
+    Width := 100;
+    Height := 28;
+    OnClick := @Logueo_OnBuscarClick;
+    Color := clWhite;
+  end;
+
+  // Lista de logs
+  FListLogueo := TListBox.Create(Panel);
+  with FListLogueo do
+  begin
+    Parent := Panel;
+    Left := 10;
+    Top := 80;
+    Width := 760;
+    Height := 350;
+    ItemHeight := 18;
+    Font.Name := 'Courier New';
+    Font.Size := 9;
+  end;
+
+  // Botones de acción
+  BtnExportar := TButton.Create(Panel);
+  with BtnExportar do
+  begin
+    Parent := Panel;
+    Caption := '💾 Exportar JSON';
+    Left := 10;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnExportarLogueoClick;
+    Font.Style := [fsBold];
+    Color := clLime;
+  end;
+
+  BtnReporte := TButton.Create(Panel);
+  with BtnReporte do
+  begin
+    Parent := Panel;
+    Caption := '📊 Generar Reporte';
+    Left := 170;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @OnReporteLogueoClick;
+    Font.Style := [fsBold];
+    Color := clSkyBlue;
+  end;
+
+  BtnCerrar := TButton.Create(Panel);
+  with BtnCerrar do
+  begin
+    Parent := Panel;
+    Caption := 'Cerrar';
+    Left := 620;
+    Top := 445;
+    Width := 150;
+    Height := 35;
+    OnClick := @Logueo_OnCerrarClick;
+    Cancel := True;
+  end;
+
+  // Cargar datos iniciales
+  Logueo_RellenarLista;
+
+  FFormLogueo.Show;
 end;
 
 procedure TInterfazEDDMail.OnExportarLogueoJSONClick(Sender: TObject);
