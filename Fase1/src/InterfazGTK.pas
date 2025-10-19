@@ -3823,7 +3823,8 @@ begin
   ListaFavoritos := TStringList.Create;
   try
     // función RecorrerArbolB
-    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, ListaFavoritos);
+        FSistema.RecorrerFavoritosMerkle(Usuario, ListaFavoritos);
+
 
     // Agregar todos los favoritos a la interfaz
     for i := 0 to ListaFavoritos.Count - 1 do
@@ -4102,7 +4103,8 @@ begin
   CorreoId := Integer(PtrInt(FListFavoritos.Items.Objects[FListFavoritos.ItemIndex]));
 
   // Buscar en árbol B de favoritos
-  Correo := FSistema.BuscarB(Usuario^.ArbolFavoritos, CorreoId);
+    Correo := FSistema.BuscarEnFavoritos(Usuario, CorreoId);
+
   if Correo <> nil then
   begin
     FMemoFavorito.Lines.Clear;
@@ -5391,14 +5393,12 @@ end;
 procedure TInterfazEDDMail.Favoritos_OnBuscarClick(Sender: TObject);
 var
   Usuario: PUsuario;
-  Termino: String;
+  Termino, TerminoLower, ItemLower: String;
   Resultados: TStringList;
   i: Integer;
-  TerminoLower, ItemLower: String;
 begin
   Usuario := FSistema.GetUsuarioActual;
   if Usuario = nil then Exit;
-
   if FEditBuscarFavoritos = nil then Exit;
 
   Termino := Trim(FEditBuscarFavoritos.Text);
@@ -5411,14 +5411,13 @@ begin
 
   FListFavoritos.Items.Clear;
 
-  // Obtener todos los favoritos y filtrar por término
   Resultados := TStringList.Create;
   try
-    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, Resultados);
+    // ✅ USAR MERKLE:
+    FSistema.RecorrerFavoritosMerkle(Usuario, Resultados);
 
     TerminoLower := LowerCase(Termino);
 
-    // Filtrar resultados que contengan el término en el asunto
     for i := 0 to Resultados.Count - 1 do
     begin
       ItemLower := LowerCase(Resultados[i]);

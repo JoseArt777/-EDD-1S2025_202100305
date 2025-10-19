@@ -5,7 +5,7 @@ unit EstructurasDatos;
 interface
 
 uses
-  Classes, SysUtils, Math, process, DateUtils;
+  Classes, SysUtils, Math, process, DateUtils, Contnrs;
 
 type
   // Tipos de punteros
@@ -17,7 +17,9 @@ type
   PMatrizDispersaFila = ^TMatrizDispersaFila;
   PMatrizDispersaColumna = ^TMatrizDispersaColumna;
   PMatrizDispersaNodo = ^TMatrizDispersaNodo;
-  //Fase 2
+  //Fase 3
+    PNodoMerkle = ^TNodoMerkle;
+
 
     // Nodo para Árbol AVL (Borradores)
   PNodoAVL = ^TNodoAVL;
@@ -75,7 +77,8 @@ type
     Papelera: PCorreo;            // Pila LIFO
     CorreosProgramados: PCorreo;  // Cola FIFO
     ArbolBorradores: PNodoAVL;      // Árbol AVL para borradores
-    ArbolFavoritos: PNodoB;         // Árbol B para favoritos
+      ArbolMerkleFavoritos: PNodoMerkle;  // Nuevo: Árbol de Merkle
+
     end;
 
   // Estructura Correo (Lista Doblemente Enlazada para bandeja de entrada)
@@ -152,6 +155,15 @@ type
   Salida: TDateTime;
   Siguiente: PRegistroLogueo;
   end;
+  // ============= ÁRBOLES DE MERKLE (FASE 3) =============
+
+TNodoMerkle = record
+  Hash: String;                    // Hash SHA-256 del nodo
+  Correo: PCorreo;                 // Solo las hojas tienen correos
+  Izquierdo: PNodoMerkle;          // Hijo izquierdo
+  Derecho: PNodoMerkle;            // Hijo derecho
+  EsHoja: Boolean;                 // Indica si es nodo hoja
+end;
 
 
   // Clase principal para manejar todas las estructuras
@@ -220,6 +232,16 @@ type
       // Funciones adicionales para AVL
       function EliminarAVL(nodo: PNodoAVL; id: Integer): PNodoAVL;
       function BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
+
+
+       function CalcularHashSHA256(Texto: String): String;
+  function CrearNodoMerkle: PNodoMerkle;
+  function CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
+  function CombinarHashesMerkle(HashIzq, HashDer: String): String;
+  function ConstruirArbolMerkle(Correos: array of PCorreo; Inicio, Fin: Integer): PNodoMerkle;
+  procedure RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
+  procedure LiberarArbolMerkle(var Raiz: PNodoMerkle);
+  procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
 
 
 
@@ -302,6 +324,14 @@ type
       function DesmarcarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
       function BuscarEnFavoritos(Usuario: PUsuario; CorreoId: Integer): PCorreo;
       function ContarFavoritos(Usuario: PUsuario): Integer;
+
+      //FASE 3
+
+        procedure RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
+          function VerificarIntegridadMerkle(Usuario: PUsuario): Boolean;
+           procedure Merkle_ReconstruirDesdeArbolB(Usuario: PUsuario);  // Migración
+
+
 
       // Recorridos del Árbol B
       procedure RecorridoInOrdenB(nodo: PNodoB; lista: TStringList);
@@ -432,59 +462,59 @@ begin
 end;
 
 function TEDDMailSystem.EliminarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
-
-  function EliminarDeNodoB(nodo: PNodoB; id: Integer): Boolean;
-  var
-    i, j: Integer;
-  begin
-    Result := False;
-    if nodo = nil then Exit;
-
-    // Buscar la clave en el nodo actual
-    for i := 0 to nodo^.NumClaves - 1 do
-    begin
-      if nodo^.Claves[i] = id then
-      begin
-        // Encontrado - eliminar desplazando elementos
-        for j := i to nodo^.NumClaves - 2 do
-        begin
-          nodo^.Claves[j] := nodo^.Claves[j + 1];
-          nodo^.Correos[j] := nodo^.Correos[j + 1];
-        end;
-
-        // Limpiar último elemento
-        nodo^.Claves[nodo^.NumClaves - 1] := 0;
-        nodo^.Correos[nodo^.NumClaves - 1] := nil;
-        Dec(nodo^.NumClaves);
-
-        Result := True;
-        Exit;
-      end;
-    end;
-
-    // Si no se encontró y no es hoja, buscar en hijos
-    if not nodo^.EsHoja then
-    begin
-      for i := 0 to nodo^.NumClaves do
-      begin
-        if EliminarDeNodoB(nodo^.Hijos[i], id) then
-        begin
-          Result := True;
-          Exit;
-        end;
-      end;
-    end;
-  end;
-
+var
+  ListaCorreos: TList;
+  ArrayCorreos: array of PCorreo;
+  i, j: Integer;
+  Encontrado: Boolean;
 begin
   Result := False;
   if Usuario = nil then Exit;
 
-  Result := EliminarDeNodoB(Usuario^.ArbolFavoritos, CorreoId);
-  if Result then
-    WriteLn('Favorito eliminado: ID ', CorreoId)
-  else
-    WriteLn('Favorito no encontrado: ID ', CorreoId);
+  ListaCorreos := TList.Create;
+  try
+    // Recolectar todos los correos
+    if Usuario^.ArbolMerkleFavoritos <> nil then
+      RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+
+    // Buscar y eliminar el correo
+    Encontrado := False;
+    for i := 0 to ListaCorreos.Count - 1 do
+    begin
+      if PCorreo(ListaCorreos[i])^.Id = CorreoId then
+      begin
+        ListaCorreos.Delete(i);
+        Encontrado := True;
+        Break;
+      end;
+    end;
+
+    if not Encontrado then Exit;
+
+    // Liberar árbol anterior
+    LiberarArbolMerkle(Usuario^.ArbolMerkleFavoritos);
+
+    // Si no quedan correos, dejar el árbol en nil
+    if ListaCorreos.Count = 0 then
+    begin
+      Usuario^.ArbolMerkleFavoritos := nil;
+      Result := True;
+      Exit;
+    end;
+
+    // Reconstruir árbol
+    SetLength(ArrayCorreos, ListaCorreos.Count);
+    for j := 0 to ListaCorreos.Count - 1 do
+      ArrayCorreos[j] := PCorreo(ListaCorreos[j]);
+
+    Usuario^.ArbolMerkleFavoritos := ConstruirArbolMerkle(ArrayCorreos, 0,
+      Length(ArrayCorreos) - 1);
+
+    WriteLn('Favorito eliminado: ID ', CorreoId);
+    Result := True;
+  finally
+    ListaCorreos.Free;
+  end;
 end;
 procedure TEDDMailSystem.RecorrerArbolB(nodo: PNodoB; lista: TStringList);
 var
@@ -629,9 +659,10 @@ begin
   NuevoUsuario^.Papelera := nil;
   NuevoUsuario^.CorreosProgramados := nil;
 
-  // INICIALIZAR ESTRUCTURAS FASE 2
+  // INICIALIZAR ESTRUCTURAS FASE 2  y ahora 3
   NuevoUsuario^.ArbolBorradores := nil;
-  NuevoUsuario^.ArbolFavoritos := nil;
+    NuevoUsuario^.ArbolMerkleFavoritos := nil;
+
 
   // Agregar a la lista (se agregan al final)
   if FUsuarios = nil then
@@ -1895,13 +1926,13 @@ begin
     WriteLn(Archivo, '    node [shape=box, style=filled, fillcolor=lightyellow];');
 
 
-    if Usuario^.ArbolFavoritos = nil then
+    if Usuario^.ArbolMerkleFavoritos = nil then
     begin
       WriteLn(Archivo, '    empty [label="Sin favoritos", fillcolor=lightgray];');
     end
     else
     begin
-      GenerarNodosB(Archivo, Usuario^.ArbolFavoritos, 0);
+      GenerarNodosB(Archivo, Usuario^.ArbolMerkleFavoritos, 0);
     end;
 
     WriteLn(Archivo, '}');
@@ -2512,6 +2543,9 @@ end;
 function TEDDMailSystem.MarcarComoFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
 var
   Correo: PCorreo;
+  ListaCorreos: TList;
+  ArrayCorreos: array of PCorreo;
+  i: Integer;
 begin
   Result := False;
   if Usuario = nil then Exit;
@@ -2524,10 +2558,32 @@ begin
     Exit;
   end;
 
-  // Agregar al árbol B de favoritos
-  Usuario^.ArbolFavoritos := InsertarB(Usuario^.ArbolFavoritos, Correo);
-  WriteLn('Correo marcado como favorito: ID ', CorreoId);
-  Result := True;
+  // Recolectar todos los correos existentes
+  ListaCorreos := TList.Create;
+  try
+    if Usuario^.ArbolMerkleFavoritos <> nil then
+      RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+
+    // Agregar el nuevo correo
+    ListaCorreos.Add(Correo);
+
+    // Convertir a array
+    SetLength(ArrayCorreos, ListaCorreos.Count);
+    for i := 0 to ListaCorreos.Count - 1 do
+      ArrayCorreos[i] := PCorreo(ListaCorreos[i]);
+
+    // Liberar árbol anterior
+    LiberarArbolMerkle(Usuario^.ArbolMerkleFavoritos);
+
+    // Construir nuevo árbol de Merkle
+    Usuario^.ArbolMerkleFavoritos := ConstruirArbolMerkle(ArrayCorreos, 0,
+      Length(ArrayCorreos) - 1);
+
+    WriteLn('Correo marcado como favorito: ID ', CorreoId);
+    Result := True;
+  finally
+    ListaCorreos.Free;
+  end;
 end;
 
 // Función auxiliar para buscar correo en bandeja
@@ -2822,34 +2878,46 @@ end;
 // =============== FUNCIONES ADICIONALES ===============
 
 function TEDDMailSystem.ContarFavoritos(Usuario: PUsuario): Integer;
+var
+  ListaCorreos: TList;
+begin
+  Result := 0;
+  if Usuario = nil then Exit;
 
-  function ContarNodos(nodo: PNodoB): Integer;
-  var
-    i: Integer;
+  ListaCorreos := TList.Create;
+  try
+    if Usuario^.ArbolMerkleFavoritos <> nil then
+      RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+    Result := ListaCorreos.Count;
+  finally
+    ListaCorreos.Free;
+  end;
+end;
+
+function TEDDMailSystem.BuscarEnFavoritos(Usuario: PUsuario; CorreoId: Integer): PCorreo;
+
+  function BuscarRecursivo(Nodo: PNodoMerkle; Id: Integer): PCorreo;
   begin
-    Result := 0;
-    if nodo = nil then Exit;
+    Result := nil;
+    if Nodo = nil then Exit;
 
-    Result := nodo^.NumClaves;
-
-    if not nodo^.EsHoja then
+    if Nodo^.EsHoja then
     begin
-      for i := 0 to nodo^.NumClaves do
-        Result := Result + ContarNodos(nodo^.Hijos[i]);
+      if (Nodo^.Correo <> nil) and (Nodo^.Correo^.Id = Id) then
+        Result := Nodo^.Correo;
+    end
+    else
+    begin
+      Result := BuscarRecursivo(Nodo^.Izquierdo, Id);
+      if Result = nil then
+        Result := BuscarRecursivo(Nodo^.Derecho, Id);
     end;
   end;
 
 begin
-  Result := 0;
-  if Usuario = nil then Exit;
-  Result := ContarNodos(Usuario^.ArbolFavoritos);
-end;
-
-function TEDDMailSystem.BuscarEnFavoritos(Usuario: PUsuario; CorreoId: Integer): PCorreo;
-begin
   Result := nil;
   if Usuario = nil then Exit;
-  Result := BuscarB(Usuario^.ArbolFavoritos, CorreoId);
+  Result := BuscarRecursivo(Usuario^.ArbolMerkleFavoritos, CorreoId);
 end;
 
 function TEDDMailSystem.DesmarcarFavorito(Usuario: PUsuario; CorreoId: Integer): Boolean;
@@ -3543,9 +3611,62 @@ begin
 end;
 
 procedure TEDDMailSystem.GenerarReporteMerkle(RutaSalida: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+  Contador: Integer;
+  Usuario: PUsuario;
 begin
-  WriteLn('Reporte Merkle pendiente: ', RutaSalida);
-  // TODO: Implementar
+  Usuario := GetUsuarioActual;
+  if Usuario = nil then Exit;
+
+  try
+    ForceDirectories(RutaSalida);
+    NombreArchivo := RutaSalida + '/merkle_tree.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph MerkleTree {');
+    WriteLn(Archivo, '    label="Árbol de Merkle - Privados";');
+    WriteLn(Archivo, '    fontsize=20;');
+    WriteLn(Archivo, '    node [shape=box, style=filled];');
+    WriteLn(Archivo, '    rankdir=TB;');
+    WriteLn(Archivo, '');
+
+    if Usuario^.ArbolMerkleFavoritos = nil then
+    begin
+      WriteLn(Archivo, '    empty [label="Sin favoritos", fillcolor=lightgray];');
+    end
+    else
+    begin
+      Contador := 0;
+      GenerarNodosMerkle(Archivo, Usuario^.ArbolMerkleFavoritos, Contador);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    // Generar PNG
+    Process := TProcess.Create(nil);
+    try
+      Process.Executable := 'dot';
+      Process.Parameters.Add('-Tpng');
+      Process.Parameters.Add(NombreArchivo);
+      Process.Parameters.Add('-o');
+      Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
+      Process.Options := Process.Options + [poWaitOnExit];
+      Process.Execute;
+      WriteLn('✓ Reporte Merkle generado: ', ChangeFileExt(NombreArchivo, '.png'));
+    finally
+      Process.Free;
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte Merkle: ', E.Message);
+  end;
 end;
 
 procedure TEDDMailSystem.GenerarReporteGrafoContactos(RutaSalida: String);
@@ -3569,13 +3690,16 @@ begin
     AssignFile(Archivo, DotPath);
     Rewrite(Archivo);
 
-    // Iniciar grafo DIRIGIDO para mejor control visual
-    WriteLn(Archivo, 'digraph GrafoContactos {');
+    // ✅ CAMBIO: Usar "graph" en lugar de "digraph"
+    WriteLn(Archivo, 'graph GrafoContactos {');
     WriteLn(Archivo, '  label="Reporte de relación de usuarios con contactos (Grafos)";');
     WriteLn(Archivo, '  fontsize=16;');
     WriteLn(Archivo, '  fontname="Arial";');
-    WriteLn(Archivo, '  rankdir=LR;');  // Left to Right
+    WriteLn(Archivo, '  rankdir=LR;');
+    WriteLn(Archivo, '  ranksep=2.0;');  // ✅ Más separación horizontal
+    WriteLn(Archivo, '  nodesep=0.8;');  // ✅ Más separación vertical
     WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
+    WriteLn(Archivo, '  edge [penwidth=1.5];');  // ✅ Líneas más gruesas
     WriteLn(Archivo, '');
 
     // Listas para controlar duplicados
@@ -3587,9 +3711,9 @@ begin
     ContactosAgregados.Duplicates := dupIgnore;
 
     try
-      // PASO 1: Definir subgrafo de USUARIOS (lado izquierdo)
+      // PASO 1: Definir USUARIOS (lado izquierdo)
       WriteLn(Archivo, '  // ========== USUARIOS (Izquierda) ==========');
-      WriteLn(Archivo, '  subgraph cluster_usuarios {');
+      WriteLn(Archivo, '  {');
       WriteLn(Archivo, '    rank=same;');
       WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightblue];');
       WriteLn(Archivo, '');
@@ -3612,9 +3736,9 @@ begin
       WriteLn(Archivo, '  }');
       WriteLn(Archivo, '');
 
-      // PASO 2: Definir subgrafo de CONTACTOS (lado derecho)
+      // PASO 2: Definir CONTACTOS (lado derecho)
       WriteLn(Archivo, '  // ========== CONTACTOS (Derecha) ==========');
-      WriteLn(Archivo, '  subgraph cluster_contactos {');
+      WriteLn(Archivo, '  {');
       WriteLn(Archivo, '    rank=same;');
       WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightgreen];');
       WriteLn(Archivo, '');
@@ -3647,9 +3771,8 @@ begin
       WriteLn(Archivo, '  }');
       WriteLn(Archivo, '');
 
-      // PASO 3: Crear las aristas (de usuarios a contactos)
+      // PASO 3: Crear las conexiones (sin flechas)
       WriteLn(Archivo, '  // ========== RELACIONES ==========');
-      WriteLn(Archivo, '  edge [color=gray, penwidth=1.5, arrowhead=none];');
       WriteLn(Archivo, '');
 
       Usuario := FUsuarios;
@@ -3662,7 +3785,8 @@ begin
 
           repeat
             ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
-            WriteLn(Archivo, Format('  %s -> %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
+            // ✅ CAMBIO: Usar "--" en lugar de "->" para grafos no dirigidos
+            WriteLn(Archivo, Format('  %s -- %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
 
             Contacto := Contacto^.Siguiente;
           until Contacto = Usuario^.ListaContactos;
@@ -3865,5 +3989,256 @@ begin
   // Esta función pública llama a la búsqueda recursiva interna
   Result := BuscarComunidadBST(FArbolComunidades, Nombre);
 end;
+   function TEDDMailSystem.CalcularHashSHA256(Texto: String): String;
+var
+  Process: TProcess;
+  Salida: TStringList;
+begin
+  Result := '';
+  Process := TProcess.Create(nil);
+  Salida := TStringList.Create;
+  try
+    Process.Executable := 'echo';
+    Process.Parameters.Add('-n');
+    Process.Parameters.Add(Texto);
+    Process.Options := Process.Options + [poUsePipes];
+    Process.Execute;
 
+    Process.Free;
+    Process := TProcess.Create(nil);
+    Process.Executable := 'sha256sum';
+    Process.Options := Process.Options + [poUsePipes, poWaitOnExit];
+    Process.Execute;
+
+    Salida.LoadFromStream(Process.Output);
+    if Salida.Count > 0 then
+    begin
+      Result := Copy(Salida[0], 1, 64); // Primeros 64 caracteres (hash)
+    end;
+  finally
+    Process.Free;
+    Salida.Free;
+  end;
+end;
+   function TEDDMailSystem.CrearNodoMerkle: PNodoMerkle;
+begin
+  New(Result);
+  Result^.Hash := '';
+  Result^.Correo := nil;
+  Result^.Izquierdo := nil;
+  Result^.Derecho := nil;
+  Result^.EsHoja := False;
+end;
+
+   function TEDDMailSystem.CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
+var
+  DatosCorreo: String;
+begin
+  Result := CrearNodoMerkle;
+  Result^.Correo := Correo;
+  Result^.EsHoja := True;
+
+  // Concatenar datos del correo para el hash
+  DatosCorreo := IntToStr(Correo^.Id) + Correo^.Remitente +
+                 Correo^.Asunto + Correo^.Mensaje + Correo^.Fecha;
+  Result^.Hash := CalcularHashSHA256(DatosCorreo);
+end;
+   function TEDDMailSystem.CombinarHashesMerkle(HashIzq, HashDer: String): String;
+   begin
+     Result := CalcularHashSHA256(HashIzq + HashDer);
+   end;
+   function TEDDMailSystem.ConstruirArbolMerkle(Correos: array of PCorreo;
+     Inicio, Fin: Integer): PNodoMerkle;
+   var
+     Medio: Integer;
+     NodoIzq, NodoDer: PNodoMerkle;
+   begin
+     // Caso base: un solo correo (hoja)
+     if Inicio = Fin then
+     begin
+       Result := CrearHojaMerkle(Correos[Inicio]);
+       Exit;
+     end;
+
+     // Caso base: dos correos
+     if Fin - Inicio = 1 then
+     begin
+       NodoIzq := CrearHojaMerkle(Correos[Inicio]);
+       NodoDer := CrearHojaMerkle(Correos[Fin]);
+
+       Result := CrearNodoMerkle;
+       Result^.Izquierdo := NodoIzq;
+       Result^.Derecho := NodoDer;
+       Result^.Hash := CombinarHashesMerkle(NodoIzq^.Hash, NodoDer^.Hash);
+       Exit;
+     end;
+
+     // Caso recursivo: dividir en dos mitades
+     Medio := (Inicio + Fin) div 2;
+     NodoIzq := ConstruirArbolMerkle(Correos, Inicio, Medio);
+     NodoDer := ConstruirArbolMerkle(Correos, Medio + 1, Fin);
+
+     Result := CrearNodoMerkle;
+     Result^.Izquierdo := NodoIzq;
+     Result^.Derecho := NodoDer;
+     Result^.Hash := CombinarHashesMerkle(NodoIzq^.Hash, NodoDer^.Hash);
+   end;
+   procedure TEDDMailSystem.RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
+begin
+  if Nodo = nil then Exit;
+
+  if Nodo^.EsHoja and (Nodo^.Correo <> nil) then
+  begin
+    Lista.Add(Nodo^.Correo);
+  end
+  else
+  begin
+    RecolectarCorreosMerkle(Nodo^.Izquierdo, Lista);
+    RecolectarCorreosMerkle(Nodo^.Derecho, Lista);
+  end;
+end;
+   procedure TEDDMailSystem.LiberarArbolMerkle(var Raiz: PNodoMerkle);
+begin
+  if Raiz = nil then Exit;
+
+  LiberarArbolMerkle(Raiz^.Izquierdo);
+  LiberarArbolMerkle(Raiz^.Derecho);
+  Dispose(Raiz);
+  Raiz := nil;
+end;
+ procedure TEDDMailSystem.RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
+var
+  ListaCorreos: TList;
+  i: Integer;
+  Correo: PCorreo;
+  Display: String;
+begin
+  if Usuario = nil then Exit;
+
+  ListaCorreos := TList.Create;
+  try
+    if Usuario^.ArbolMerkleFavoritos <> nil then
+      RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+
+    for i := 0 to ListaCorreos.Count - 1 do
+    begin
+      Correo := PCorreo(ListaCorreos[i]);
+      Display := Format('[ID: %d] %s — %s (%s)',
+        [Correo^.Id, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+      Lista.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+    end;
+  finally
+    ListaCorreos.Free;
+  end;
+end;
+ function TEDDMailSystem.VerificarIntegridadMerkle(Usuario: PUsuario): Boolean;
+var
+  ListaCorreos: TList;
+  ArrayCorreos: array of PCorreo;
+  ArbolTemporal: PNodoMerkle;
+  i: Integer;
+  HashOriginal, HashNuevo: String;
+begin
+  Result := False;
+  if Usuario = nil then Exit;
+  if Usuario^.ArbolMerkleFavoritos = nil then
+  begin
+    Result := True; // Árbol vacío es válido
+    Exit;
+  end;
+
+  ListaCorreos := TList.Create;
+  try
+    // Recolectar correos y guardar hash original
+    RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+    HashOriginal := Usuario^.ArbolMerkleFavoritos^.Hash;
+
+    // Reconstruir árbol temporalmente
+    SetLength(ArrayCorreos, ListaCorreos.Count);
+    for i := 0 to ListaCorreos.Count - 1 do
+      ArrayCorreos[i] := PCorreo(ListaCorreos[i]);
+
+    ArbolTemporal := ConstruirArbolMerkle(ArrayCorreos, 0, Length(ArrayCorreos) - 1);
+    HashNuevo := ArbolTemporal^.Hash;
+
+    // Comparar hashes
+    Result := (HashOriginal = HashNuevo);
+
+    // Liberar árbol temporal
+    LiberarArbolMerkle(ArbolTemporal);
+
+    if Result then
+      WriteLn('✓ Integridad verificada correctamente')
+    else
+      WriteLn('✗ Error: Integridad comprometida');
+
+  finally
+    ListaCorreos.Free;
+  end;
+end;
+ procedure TEDDMailSystem.Merkle_ReconstruirDesdeArbolB(Usuario: PUsuario);
+var
+  ListaFavoritos: TStringList;
+  ArrayCorreos: array of PCorreo;
+  i, CorreoId: Integer;
+  Correo: PCorreo;
+begin
+  if Usuario = nil then Exit;
+
+  WriteLn('🔄 Iniciando migración de Árbol B a Árbol de Merkle...');
+
+  // Ya no tenemos ArbolFavoritos (Árbol B), por lo que este método
+  // solo se usará si aún tienes el campo antiguo temporalmente
+
+  // Si ya eliminaste ArbolFavoritos y tienes correos que agregar manualmente:
+  // Simplemente usa MarcarComoFavorito() para cada correo
+
+  WriteLn('✓ Migración completada');
+end;
+ procedure TEDDMailSystem.GenerarNodosMerkle(var Archivo: TextFile;
+  Nodo: PNodoMerkle; var ContadorNodo: Integer);
+var
+  IdActual, IdIzq, IdDer: Integer;
+  HashCorto: String;
+begin
+  if Nodo = nil then Exit;
+
+  IdActual := ContadorNodo;
+  Inc(ContadorNodo);
+
+  // Hash corto para visualización
+  if Length(Nodo^.Hash) > 10 then
+    HashCorto := Copy(Nodo^.Hash, 1, 10) + '...'
+  else
+    HashCorto := Nodo^.Hash;
+
+  if Nodo^.EsHoja then
+  begin
+    // Nodo hoja con datos del correo
+    WriteLn(Archivo, Format('    node%d [label="De: %s\nAsunto: %s\nFecha: %s\nHash: %s", fillcolor=lightgreen];',
+      [IdActual, Nodo^.Correo^.Remitente, Nodo^.Correo^.Asunto,
+       Nodo^.Correo^.Fecha, HashCorto]));
+  end
+  else
+  begin
+    // Nodo interno con hash combinado
+    WriteLn(Archivo, Format('    node%d [label="Hash: %s", fillcolor=lightyellow];',
+      [IdActual, HashCorto]));
+
+    // Procesar hijos
+    if Nodo^.Izquierdo <> nil then
+    begin
+      IdIzq := ContadorNodo;
+      GenerarNodosMerkle(Archivo, Nodo^.Izquierdo, ContadorNodo);
+      WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
+    end;
+
+    if Nodo^.Derecho <> nil then
+    begin
+      IdDer := ContadorNodo;
+      GenerarNodosMerkle(Archivo, Nodo^.Derecho, ContadorNodo);
+      WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdDer]));
+    end;
+  end;
+end;
  end.

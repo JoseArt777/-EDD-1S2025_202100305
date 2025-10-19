@@ -3823,7 +3823,8 @@ begin
   ListaFavoritos := TStringList.Create;
   try
     // función RecorrerArbolB
-    FSistema.RecorrerArbolB(Usuario^.ArbolFavoritos, ListaFavoritos);
+        FSistema.RecorrerFavoritosMerkle(Usuario, ListaFavoritos);
+
 
     // Agregar todos los favoritos a la interfaz
     for i := 0 to ListaFavoritos.Count - 1 do
@@ -4102,7 +4103,8 @@ begin
   CorreoId := Integer(PtrInt(FListFavoritos.Items.Objects[FListFavoritos.ItemIndex]));
 
   // Buscar en árbol B de favoritos
-  Correo := FSistema.BuscarB(Usuario^.ArbolFavoritos, CorreoId);
+    Correo := FSistema.BuscarEnFavoritos(Usuario, CorreoId);
+
   if Correo <> nil then
   begin
     FMemoFavorito.Lines.Clear;
@@ -5639,8 +5641,18 @@ end;
 
 procedure TInterfazEDDMail.OnReporteGrafoClick(Sender: TObject);
 begin
+  // Validar que solo root pueda generar este reporte
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado',
+      'Solo el usuario ROOT puede generar el reporte de grafo de contactos');
+    Exit;
+  end;
+
   try
-    FSistema.GenerarReporteGrafoContactos('Root-Reportes'); // Implementar en EstructurasDatos
+    FSistema.GenerarReporteGrafoContactos('Root-Reportes');
     MostrarMensaje('Éxito',
       'Reporte de Grafo generado en: Root-Reportes/' + LineEnding +
       'Archivos generados:' + LineEnding +
