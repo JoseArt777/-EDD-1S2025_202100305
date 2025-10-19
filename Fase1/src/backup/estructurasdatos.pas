@@ -28,6 +28,7 @@ type
     Derecho: PNodoAVL;
   end;
 
+
   // Nodo para BST (Comunidades)
   PNodoBST = ^TNodoBST;
   PMensajeComunidad = ^TMensajeComunidad;
@@ -144,6 +145,15 @@ type
     Siguiente: PMatrizDispersaColumna;
   end;
 
+  PRegistroLogueo = ^TRegistroLogueo;
+  TRegistroLogueo = record
+  Usuario: String;
+  Entrada: TDateTime;
+  Salida: TDateTime;
+  Siguiente: PRegistroLogueo;
+  end;
+
+
   // Clase principal para manejar todas las estructuras
     TEDDMailSystem = class
     private
@@ -154,6 +164,8 @@ type
       FMatrizColumnas: PMatrizDispersaColumna;
       FUsuarioActual: PUsuario;
       FArbolComunidades: PNodoBST;    // Árbol BST de comunidades
+        FListaLogueo: PRegistroLogueo;  // ← ESTA ES LA LÍNEA QUE FALTA
+
 
       // Funciones auxiliares para correos
       function CrearCorreo(Remitente, Destinatario, Asunto, Mensaje, Fecha: String; Programado: Boolean = False; IdFijo: Integer = -1): PCorreo;
@@ -357,7 +369,9 @@ begin
   FMatrizFilas := nil;
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
-    FArbolComunidades := nil;  // se inicializa árbol de comunidades
+  FArbolComunidades := nil;  // se inicializa árbol de comunidades
+  FListaLogueo := nil;  // ← AGREGAR ESTA LÍNEA
+
 
 
   // Crear usuario root por defecto (Id fijo = 0)
@@ -681,13 +695,44 @@ begin
 end;
 
 function TEDDMailSystem.IniciarSesion(Email, Password: String): Boolean;
+var
+  NuevoLog: PRegistroLogueo;
 begin
   FUsuarioActual := ValidarCredenciales(Email, Password);
   Result := FUsuarioActual <> nil;
+
+  // ✅ REGISTRAR ENTRADA
+  if Result then
+  begin
+    New(NuevoLog);
+    NuevoLog^.Usuario := Email;
+    NuevoLog^.Entrada := Now;
+    NuevoLog^.Salida := 0; // Sin salida aún
+    NuevoLog^.Siguiente := FListaLogueo;
+    FListaLogueo := NuevoLog; // Insertar al inicio
+  end;
 end;
 
 procedure TEDDMailSystem.CerrarSesion;
+var
+  Log: PRegistroLogueo;
 begin
+  // ✅ REGISTRAR SALIDA
+  if FUsuarioActual <> nil then
+  begin
+    Log := FListaLogueo;
+    // Buscar el registro más reciente de este usuario sin salida
+    while Log <> nil do
+    begin
+      if (Log^.Usuario = FUsuarioActual^.Email) and (Log^.Salida = 0) then
+      begin
+        Log^.Salida := Now;
+        Break;
+      end;
+      Log := Log^.Siguiente;
+    end;
+  end;
+
   FUsuarioActual := nil;
 end;
 
@@ -3206,30 +3251,199 @@ end;
 // ═══════════════════════════════════════════════════════
 
 function TEDDMailSystem.ObtenerLogsDeLogueo: TStringList;
+var
+  Log: PRegistroLogueo;
+  FechaEntrada, FechaSalida: String;
 begin
   Result := TStringList.Create;
-  // TODO: Implementar cuando tengas la estructura de logueo
-  Result.Add('Sistema de logueo pendiente de implementar');
+
+  Log := FListaLogueo;
+  while Log <> nil do
+  begin
+    FechaEntrada := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Entrada);
+
+    if Log^.Salida > 0 then
+      FechaSalida := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Salida)
+    else
+      FechaSalida := 'Sesión activa';
+
+    Result.Add(Format('%s | Entrada: %s | Salida: %s',
+      [Log^.Usuario, FechaEntrada, FechaSalida]));
+
+    Log := Log^.Siguiente;
+  end;
+
+  if Result.Count = 0 then
+    Result.Add('No hay registros de logueo');
 end;
 
 function TEDDMailSystem.FiltrarLogsPorUsuario(Usuario: String): TStringList;
+var
+  Log: PRegistroLogueo;
+  FechaEntrada, FechaSalida: String;
 begin
   Result := TStringList.Create;
-  // TODO: Implementar filtrado
-  Result.Add('Filtrado pendiente de implementar para: ' + Usuario);
+
+  Log := FListaLogueo;
+  while Log <> nil do
+  begin
+    if Pos(LowerCase(Usuario), LowerCase(Log^.Usuario)) > 0 then
+    begin
+      FechaEntrada := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Entrada);
+
+      if Log^.Salida > 0 then
+        FechaSalida := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Salida)
+      else
+        FechaSalida := 'Sesión activa';
+
+      Result.Add(Format('%s | Entrada: %s | Salida: %s',
+        [Log^.Usuario, FechaEntrada, FechaSalida]));
+    end;
+
+    Log := Log^.Siguiente;
+  end;
+
+  if Result.Count = 0 then
+    Result.Add(Format('No hay registros para el usuario: %s', [Usuario]));
 end;
 
 function TEDDMailSystem.ExportarLogueoJSON(RutaArchivo: String): Boolean;
+var
+  F: TextFile;
+  Log: PRegistroLogueo;
+  FechaEntrada, FechaSalida: String;
+  IsFirst: Boolean;
 begin
   Result := False;
-  // TODO: Implementar exportación JSON
-  WriteLn('Exportación de logueo pendiente');
+
+  try
+    AssignFile(F, RutaArchivo);
+    Rewrite(F);
+
+    WriteLn(F, '[');  // ← Inicio del array JSON
+
+    Log := FListaLogueo;
+    IsFirst := True;
+
+    while Log <> nil do
+    begin
+      if not IsFirst then
+        WriteLn(F, ',');  // ← Coma entre objetos
+
+      FechaEntrada := FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Log^.Entrada);
+
+      if Log^.Salida > 0 then
+        FechaSalida := FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Log^.Salida)
+      else
+        FechaSalida := '';
+
+      // ✅ CORRECCIÓN: Agregar llaves y formato correcto
+      Write(F, '  {');
+      Write(F, ' "usuario": "' + Log^.Usuario + '",');
+      Write(F, ' "entrada": "' + FechaEntrada + '",');
+      Write(F, ' "salida": "' + FechaSalida + '"');
+      Write(F, ' }');  // ← Cerrar objeto
+
+      IsFirst := False;
+      Log := Log^.Siguiente;
+    end;
+
+    WriteLn(F, '');  // ← Nueva línea antes del cierre
+    WriteLn(F, ']');  // ← Cierre del array JSON
+
+    CloseFile(F);
+    Result := True;
+  except
+    on E: Exception do
+    begin
+      WriteLn('Error al exportar JSON: ', E.Message);
+      Result := False;
+    end;
+  end;
 end;
 
 procedure TEDDMailSystem.GenerarReporteLogueo(RutaSalida: String);
+var
+  Archivo: TextFile;
+  DotPath, PngPath, Comando: String;
+  Log: PRegistroLogueo;
+  FechaEntrada, FechaSalida: String;
+  Contador: Integer;
+  Proceso: TProcess;
 begin
-  // TODO: Implementar reporte
-  WriteLn('Reporte de logueo pendiente: ', RutaSalida);
+  try
+    // Crear carpeta si no existe
+    if not DirectoryExists(RutaSalida) then
+      CreateDir(RutaSalida);
+
+    DotPath := RutaSalida + '/logueo.dot';
+    PngPath := RutaSalida + '/logueo.png';
+
+    AssignFile(Archivo, DotPath);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph ControlLogueo {');
+    WriteLn(Archivo, '  rankdir=TB;');
+    WriteLn(Archivo, '  node [shape=box, style=filled];');
+    WriteLn(Archivo, '');
+    WriteLn(Archivo, '  Titulo [label="Control de Logueo", fillcolor=lightblue, shape=ellipse, fontsize=16];');
+    WriteLn(Archivo, '');
+
+    Log := FListaLogueo;
+    Contador := 0;
+
+    while Log <> nil do
+    begin
+      FechaEntrada := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Entrada);
+
+      if Log^.Salida > 0 then
+        FechaSalida := FormatDateTime('yyyy-mm-dd hh:nn:ss', Log^.Salida)
+      else
+        FechaSalida := 'Activo';
+
+      WriteLn(Archivo, Format('  Log%d [label="Usuario: %s\nEntrada: %s\nSalida: %s", fillcolor=lightgreen];',
+        [Contador, Log^.Usuario, FechaEntrada, FechaSalida]));
+
+      if Contador > 0 then
+        WriteLn(Archivo, Format('  Log%d -> Log%d;', [Contador - 1, Contador]));
+
+      Inc(Contador);
+      Log := Log^.Siguiente;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    WriteLn('✅ Archivo .dot generado en: ', DotPath);
+
+    // ✅ GENERAR PNG usando TProcess
+    try
+      Proceso := TProcess.Create(nil);
+      try
+        Proceso.Executable := 'dot';
+        Proceso.Parameters.Add('-Tpng');
+        Proceso.Parameters.Add(DotPath);
+        Proceso.Parameters.Add('-o');
+        Proceso.Parameters.Add(PngPath);
+        Proceso.Options := [poWaitOnExit, poNoConsole];
+        Proceso.Execute;
+
+        if FileExists(PngPath) then
+          WriteLn('✅ Reporte PNG generado en: ', PngPath)
+        else
+          WriteLn('⚠️  No se pudo generar el PNG. Verifique que Graphviz esté instalado.');
+      finally
+        Proceso.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('⚠️  Error al ejecutar Graphviz: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('❌ Error al generar reporte de logueo: ', E.Message);
+  end;
 end;
 
 function TEDDMailSystem.ComprimirLZW(Texto: String): String;
@@ -3237,7 +3451,7 @@ var
   Dict: TStringList;
   W, WC: String;
   i, Code: Integer;
-  Output: String;
+  Output: TStringList;
 begin
   if Length(Texto) = 0 then
   begin
@@ -3246,39 +3460,51 @@ begin
   end;
 
   Dict := TStringList.Create;
+  Output := TStringList.Create;
   try
-    // Inicializar diccionario con caracteres ASCII
+    // Inicializar diccionario con caracteres ASCII (0-255)
     for i := 0 to 255 do
       Dict.Add(Chr(i));
 
-    Output := '';
     W := Texto[1];
 
+    // Algoritmo LZW
     for i := 2 to Length(Texto) do
     begin
       WC := W + Texto[i];
 
       if Dict.IndexOf(WC) >= 0 then
-        W := WC
+      begin
+        // La secuencia ya existe en el diccionario
+        W := WC;
+      end
       else
       begin
+        // Emitir el código de W
         Code := Dict.IndexOf(W);
-        Output := Output + Chr(Code div 256) + Chr(Code mod 256);
+        Output.Add(IntToStr(Code));
 
+        // Agregar nueva secuencia al diccionario (límite 4096)
         if Dict.Count < 4096 then
           Dict.Add(WC);
 
+        // Reiniciar W con el carácter actual
         W := Texto[i];
       end;
     end;
 
-    // Último código
+    // Emitir el último código
     Code := Dict.IndexOf(W);
-    Output := Output + Chr(Code div 256) + Chr(Code mod 256);
+    Output.Add(IntToStr(Code));
 
-    Result := Output;
+    // Resultado: códigos separados por comas
+    Output.Delimiter := ',';
+    Output.StrictDelimiter := True;
+    Result := Output.DelimitedText;
+
   finally
     Dict.Free;
+    Output.Free;
   end;
 end;
 

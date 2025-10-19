@@ -1,0 +1,94 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "contactos": [
+        "mitzep@edd.com",
+        "gkroah-hartman@edd.com",
+        "mshuttleworth@edd.com",
+        "smejia@edd.com"
+      ]
+    },
+    {
+      "id": 2,
+      "contactos": [
+        "root@edd.com",
+        "lgarcia@edd.com",
+        "bfox@edd.com",
+        "jcorbet@edd.com"
+      ]
+    },
+    {
+      "id": 3,
+      "contactos": [
+        "lgarcia@edd.com",
+        "mshuttleworth@edd.com",
+        "ksandler@edd.com",
+        "mbaker@edd.com"
+      ]
+    },
+    {
+      "id": 4,
+      "contactos": [
+        "root@edd.com",
+        "gkroah-hartman@edd.com",
+        "smejia@edd.com",
+        "imurdock@edd.com"
+      ]
+    },
+    {
+      "id": 5,
+      "contactos": [
+        "lgarcia@edd.com",
+        "mitzep@edd.com",
+        "mshuttleworth@edd.com",
+        "bfox@edd.com"
+      ]
+    },
+    {
+      "id": 6,
+      "contactos": [
+        "root@edd.com",
+        "smejia@edd.com",
+        "jcorbet@edd.com",
+        "ksandler@edd.com"
+      ]
+    },
+    {
+      "id": 7,
+      "contactos": [
+        "mitzep@edd.com",
+        "bfox@edd.com",
+        "gkroah-hartman@edd.com",
+        "mbaker@edd.com"
+      ]
+    },
+    {
+      "id": 8,
+      "contactos": [
+        "root@edd.com",
+        "lgarcia@edd.com",
+        "gkroah-hartman@edd.com",
+        "imurdock@edd.com"
+      ]
+    },
+    {
+      "id": 9,
+      "contactos": [
+        "mitzep@edd.com",
+        "jcorbet@edd.com",
+        "ksandler@edd.com",
+        "bfox@edd.com"
+      ]
+    },
+    {
+      "id": 10,
+      "contactos": [
+        "root@edd.com",
+        "mshuttleworth@edd.com",
+        "smejia@edd.com",
+        "mbaker@edd.com"
+      ]
+    }
+  ]
+}

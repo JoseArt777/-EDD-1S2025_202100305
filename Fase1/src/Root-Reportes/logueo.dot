@@ -1,0 +1,16 @@
+digraph ControlLogueo {
+  rankdir=TB;
+  node [shape=box, style=filled];
+
+  Titulo [label="Control de Logueo", fillcolor=lightblue, shape=ellipse, fontsize=16];
+
+  Log0 [label="Usuario: root@edd.com\nEntrada: 2025-10-18 23:43:31\nSalida: Activo", fillcolor=lightgreen];
+  Log1 [label="Usuario: mitzep@edd.com\nEntrada: 2025-10-18 23:43:16\nSalida: 2025-10-18 23:43:18", fillcolor=lightgreen];
+  Log0 -> Log1;
+  Log2 [label="Usuario: lgarcia@edd.com\nEntrada: 2025-10-18 23:43:06\nSalida: 2025-10-18 23:43:08", fillcolor=lightgreen];
+  Log1 -> Log2;
+  Log3 [label="Usuario: root@edd.com\nEntrada: 2025-10-18 23:42:30\nSalida: 2025-10-18 23:42:49", fillcolor=lightgreen];
+  Log2 -> Log3;
+  Log4 [label="Usuario: root@edd.com\nEntrada: 2025-10-18 23:42:01\nSalida: 2025-10-18 23:42:21", fillcolor=lightgreen];
+  Log3 -> Log4;
+}

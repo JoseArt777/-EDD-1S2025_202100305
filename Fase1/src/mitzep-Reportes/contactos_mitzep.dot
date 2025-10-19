@@ -1,0 +1,9 @@
+digraph G {
+    label="Lista Circular de Contactos - Marcos Itzep";
+    fontsize=16;
+    rankdir=LR;
+    node [shape=record, style=filled, fillcolor=lightblue];
+    contact_root_at_edd_com [label="ID: 5928|Nombre: Root Admin|Usuario: root|Email: root@edd.com|Tel: 00000000"];
+    contact_root_at_edd_com -> contact_root_at_edd_com;
+    edge [color=red, style=dashed];
+}
