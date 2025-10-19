@@ -5639,8 +5639,18 @@ end;
 
 procedure TInterfazEDDMail.OnReporteGrafoClick(Sender: TObject);
 begin
+  // Validar que solo root pueda generar este reporte
+  if FSistema.GetUsuarioActual = nil then Exit;
+
+  if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
+  begin
+    MostrarMensaje('Acceso Denegado',
+      'Solo el usuario ROOT puede generar el reporte de grafo de contactos');
+    Exit;
+  end;
+
   try
-    FSistema.GenerarReporteGrafoContactos('Root-Reportes'); // Implementar en EstructurasDatos
+    FSistema.GenerarReporteGrafoContactos('Root-Reportes');
     MostrarMensaje('Éxito',
       'Reporte de Grafo generado en: Root-Reportes/' + LineEnding +
       'Archivos generados:' + LineEnding +

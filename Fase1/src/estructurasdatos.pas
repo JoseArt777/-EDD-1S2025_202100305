@@ -3549,11 +3549,170 @@ begin
 end;
 
 procedure TEDDMailSystem.GenerarReporteGrafoContactos(RutaSalida: String);
+var
+  Archivo: TextFile;
+  DotPath, PngPath: String;
+  Usuario: PUsuario;
+  Contacto: PContacto;
+  Proceso: TProcess;
+  UsuarioIdLimpio, ContactoIdLimpio: String;
+  UsuariosAgregados, ContactosAgregados: TStringList;
 begin
-  WriteLn('Reporte grafo contactos pendiente: ', RutaSalida);
-  // TODO: Implementar
-end;
+  try
+    // Crear carpeta si no existe
+    if not DirectoryExists(RutaSalida) then
+      CreateDir(RutaSalida);
 
+    DotPath := RutaSalida + '/grafo_contactos.dot';
+    PngPath := RutaSalida + '/grafo_contactos.png';
+
+    AssignFile(Archivo, DotPath);
+    Rewrite(Archivo);
+
+    // ✅ CAMBIO: Usar "graph" en lugar de "digraph"
+    WriteLn(Archivo, 'graph GrafoContactos {');
+    WriteLn(Archivo, '  label="Reporte de relación de usuarios con contactos (Grafos)";');
+    WriteLn(Archivo, '  fontsize=16;');
+    WriteLn(Archivo, '  fontname="Arial";');
+    WriteLn(Archivo, '  rankdir=LR;');
+    WriteLn(Archivo, '  ranksep=2.0;');  // ✅ Más separación horizontal
+    WriteLn(Archivo, '  nodesep=0.8;');  // ✅ Más separación vertical
+    WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
+    WriteLn(Archivo, '  edge [penwidth=1.5];');  // ✅ Líneas más gruesas
+    WriteLn(Archivo, '');
+
+    // Listas para controlar duplicados
+    UsuariosAgregados := TStringList.Create;
+    ContactosAgregados := TStringList.Create;
+    UsuariosAgregados.Sorted := True;
+    ContactosAgregados.Sorted := True;
+    UsuariosAgregados.Duplicates := dupIgnore;
+    ContactosAgregados.Duplicates := dupIgnore;
+
+    try
+      // PASO 1: Definir USUARIOS (lado izquierdo)
+      WriteLn(Archivo, '  // ========== USUARIOS (Izquierda) ==========');
+      WriteLn(Archivo, '  {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightblue];');
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+
+        if UsuariosAgregados.IndexOf(UsuarioIdLimpio) = -1 then
+        begin
+          WriteLn(Archivo, Format('    %s [label="ID: %d\nUsuario: %s"];',
+            [UsuarioIdLimpio, Usuario^.Id, Usuario^.Usuario]));
+          UsuariosAgregados.Add(UsuarioIdLimpio);
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // PASO 2: Definir CONTACTOS (lado derecho)
+      WriteLn(Archivo, '  // ========== CONTACTOS (Derecha) ==========');
+      WriteLn(Archivo, '  {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightgreen];');
+      WriteLn(Archivo, '');
+
+      // Recorrer todos los usuarios y sus contactos
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
+
+            if ContactosAgregados.IndexOf(ContactoIdLimpio) = -1 then
+            begin
+              WriteLn(Archivo, Format('    %s [label="ID: %d\nContacto: %s"];',
+                [ContactoIdLimpio, Contacto^.Id, Contacto^.Usuario]));
+              ContactosAgregados.Add(ContactoIdLimpio);
+            end;
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // PASO 3: Crear las conexiones (sin flechas)
+      WriteLn(Archivo, '  // ========== RELACIONES ==========');
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
+            // ✅ CAMBIO: Usar "--" en lugar de "->" para grafos no dirigidos
+            WriteLn(Archivo, Format('  %s -- %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+    finally
+      UsuariosAgregados.Free;
+      ContactosAgregados.Free;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    WriteLn('✅ Archivo .dot generado en: ', DotPath);
+
+    // Generar PNG con Graphviz
+    try
+      Proceso := TProcess.Create(nil);
+      try
+        Proceso.Executable := 'dot';
+        Proceso.Parameters.Add('-Tpng');
+        Proceso.Parameters.Add(DotPath);
+        Proceso.Parameters.Add('-o');
+        Proceso.Parameters.Add(PngPath);
+        Proceso.Options := [poWaitOnExit, poNoConsole];
+        Proceso.Execute;
+
+        if FileExists(PngPath) then
+          WriteLn('✅ Reporte de Grafo de Contactos generado en: ', PngPath)
+        else
+          WriteLn('⚠️  No se pudo generar el PNG.');
+      finally
+        Proceso.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('⚠️  Error al ejecutar Graphviz: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('❌ Error al generar reporte de grafo de contactos: ', E.Message);
+  end;
+end;
 procedure TEDDMailSystem.CargarContactosDesdeJSON(RutaArchivo: String);
 var
   JsonData: TJSONData;

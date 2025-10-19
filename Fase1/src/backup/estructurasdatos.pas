@@ -3549,15 +3549,274 @@ begin
 end;
 
 procedure TEDDMailSystem.GenerarReporteGrafoContactos(RutaSalida: String);
+var
+  Archivo: TextFile;
+  DotPath, PngPath: String;
+  Usuario: PUsuario;
+  Contacto: PContacto;
+  Proceso: TProcess;
+  UsuarioIdLimpio, ContactoIdLimpio: String;
+  UsuariosAgregados, ContactosAgregados: TStringList;
 begin
-  WriteLn('Reporte grafo contactos pendiente: ', RutaSalida);
-  // TODO: Implementar
-end;
+  try
+    // Crear carpeta si no existe
+    if not DirectoryExists(RutaSalida) then
+      CreateDir(RutaSalida);
 
+    DotPath := RutaSalida + '/grafo_contactos.dot';
+    PngPath := RutaSalida + '/grafo_contactos.png';
+
+    AssignFile(Archivo, DotPath);
+    Rewrite(Archivo);
+
+    // Iniciar grafo DIRIGIDO para mejor control visual
+    WriteLn(Archivo, 'digraph GrafoContactos {');
+    WriteLn(Archivo, '  label="Reporte de relación de usuarios con contactos (Grafos)";');
+    WriteLn(Archivo, '  fontsize=16;');
+    WriteLn(Archivo, '  fontname="Arial";');
+    WriteLn(Archivo, '  rankdir=LR;');  // Left to Right
+    WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
+    WriteLn(Archivo, '');
+
+    // Listas para controlar duplicados
+    UsuariosAgregados := TStringList.Create;
+    ContactosAgregados := TStringList.Create;
+    UsuariosAgregados.Sorted := True;
+    ContactosAgregados.Sorted := True;
+    UsuariosAgregados.Duplicates := dupIgnore;
+    ContactosAgregados.Duplicates := dupIgnore;
+
+    try
+      // PASO 1: Definir subgrafo de USUARIOS (lado izquierdo)
+      WriteLn(Archivo, '  // ========== USUARIOS (Izquierda) ==========');
+      WriteLn(Archivo, '  subgraph cluster_usuarios {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightblue];');
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+
+        if UsuariosAgregados.IndexOf(UsuarioIdLimpio) = -1 then
+        begin
+          WriteLn(Archivo, Format('    %s [label="ID: %d\nUsuario: %s"];',
+            [UsuarioIdLimpio, Usuario^.Id, Usuario^.Usuario]));
+          UsuariosAgregados.Add(UsuarioIdLimpio);
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // PASO 2: Definir subgrafo de CONTACTOS (lado derecho)
+      WriteLn(Archivo, '  // ========== CONTACTOS (Derecha) ==========');
+      WriteLn(Archivo, '  subgraph cluster_contactos {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightgreen];');
+      WriteLn(Archivo, '');
+
+      // Recorrer todos los usuarios y sus contactos
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
+
+            if ContactosAgregados.IndexOf(ContactoIdLimpio) = -1 then
+            begin
+              WriteLn(Archivo, Format('    %s [label="ID: %d\nContacto: %s"];',
+                [ContactoIdLimpio, Contacto^.Id, Contacto^.Usuario]));
+              ContactosAgregados.Add(ContactoIdLimpio);
+            end;
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // PASO 3: Crear las aristas (de usuarios a contactos)
+      WriteLn(Archivo, '  // ========== RELACIONES ==========');
+      WriteLn(Archivo, '  edge [color=gray, penwidth=1.5, arrowhead=none];');
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
+            WriteLn(Archivo, Format('  %s -> %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+    finally
+      UsuariosAgregados.Free;
+      ContactosAgregados.Free;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    WriteLn('✅ Archivo .dot generado en: ', DotPath);
+
+    // Generar PNG con Graphviz
+    try
+      Proceso := TProcess.Create(nil);
+      try
+        Proceso.Executable := 'dot';
+        Proceso.Parameters.Add('-Tpng');
+        Proceso.Parameters.Add(DotPath);
+        Proceso.Parameters.Add('-o');
+        Proceso.Parameters.Add(PngPath);
+        Proceso.Options := [poWaitOnExit, poNoConsole];
+        Proceso.Execute;
+
+        if FileExists(PngPath) then
+          WriteLn('✅ Reporte de Grafo de Contactos generado en: ', PngPath)
+        else
+          WriteLn('⚠️  No se pudo generar el PNG.');
+      finally
+        Proceso.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('⚠️  Error al ejecutar Graphviz: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('❌ Error al generar reporte de grafo de contactos: ', E.Message);
+  end;
+end;
 procedure TEDDMailSystem.CargarContactosDesdeJSON(RutaArchivo: String);
+var
+  JsonData: TJSONData;
+  Root: TJSONObject;
+  UsuariosArray: TJSONArray;
+  UsuarioObj: TJSONObject;
+  ContactosArray: TJSONArray;
+  i, j, UsuarioId: Integer;
+  EmailContacto: String;
+  Usuario: PUsuario;
+  FileStream: TFileStream;
+  JsonString: String;
+  ContactosAgregados, ContactosOmitidos: Integer;
 begin
-  WriteLn('Carga de contactos JSON pendiente: ', RutaArchivo);
-  // TODO: Implementar
+  ContactosAgregados := 0;
+  ContactosOmitidos := 0;
+
+  if not FileExists(RutaArchivo) then
+  begin
+    WriteLn('Error: Archivo JSON de contactos no existe: ', RutaArchivo);
+    Exit;
+  end;
+
+  // Leer archivo JSON
+  FileStream := TFileStream.Create(RutaArchivo, fmOpenRead);
+  try
+    SetLength(JsonString, FileStream.Size);
+    if FileStream.Size > 0 then
+      FileStream.ReadBuffer(JsonString[1], FileStream.Size);
+  finally
+    FileStream.Free;
+  end;
+
+  if JsonString = '' then
+  begin
+    WriteLn('Error: Archivo de contactos vacío');
+    Exit;
+  end;
+
+  // Parsear JSON
+  try
+    JsonData := GetJSON(JsonString);
+    try
+      Root := JsonData as TJSONObject;
+      UsuariosArray := Root.Arrays['usuarios'];
+
+      WriteLn('=== Iniciando carga masiva de contactos ===');
+
+      for i := 0 to UsuariosArray.Count - 1 do
+      begin
+        UsuarioObj := UsuariosArray.Objects[i];
+        UsuarioId := UsuarioObj.Get('id', -1);
+
+        if UsuarioId = -1 then
+        begin
+          WriteLn('Aviso: Usuario sin ID en posición ', i);
+          Continue;
+        end;
+
+        // Buscar el usuario por ID
+        Usuario := BuscarUsuarioPorId(UsuarioId);
+        if Usuario = nil then
+        begin
+          WriteLn('Aviso: Usuario con ID ', UsuarioId, ' no existe en el sistema');
+          Continue;
+        end;
+
+        WriteLn('Procesando contactos para usuario: ', Usuario^.Email);
+
+        // Verificar si tiene array de contactos
+        if UsuarioObj.Find('contactos') = nil then
+        begin
+          WriteLn('  Sin contactos en el JSON');
+          Continue;
+        end;
+
+        ContactosArray := UsuarioObj.Arrays['contactos'];
+
+        for j := 0 to ContactosArray.Count - 1 do
+        begin
+          EmailContacto := ContactosArray.Strings[j];
+
+          // Intentar agregar el contacto
+          if AgregarContacto(Usuario, EmailContacto) then
+          begin
+            WriteLn('  ✅ Contacto agregado: ', EmailContacto);
+            Inc(ContactosAgregados);
+          end
+          else
+          begin
+            WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', EmailContacto);
+            Inc(ContactosOmitidos);
+          end;
+        end;
+      end;
+
+      WriteLn('=== Carga masiva completada ===');
+      WriteLn('Contactos agregados: ', ContactosAgregados);
+      WriteLn('Contactos omitidos: ', ContactosOmitidos);
+
+    finally
+      JsonData.Free;
+    end;
+  except
+    on E: Exception do
+      WriteLn('Error al procesar JSON de contactos: ', E.Message);
+  end;
 end;
 function TEDDMailSystem.ReaccionarAMensaje(nombreComunidad: String; idMensaje: Integer): Boolean;
 var
