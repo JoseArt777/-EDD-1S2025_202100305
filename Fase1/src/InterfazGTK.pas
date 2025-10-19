@@ -2679,7 +2679,8 @@ end;
   begin
     Parent := Panel;
     Caption := 'Eliminar';
-    Left := 400; Top := 420; Width := 120; Height := 30;
+      Left := 530; Top := 420; Width := 100; Height := 30;  // <- CAMBIAR AQUÍ
+
     OnClick := @Inbox_OnEliminarClick;
   end;
 
@@ -2688,7 +2689,8 @@ end;
   begin
     Parent := Panel;
     Caption := 'Cerrar';
-    Left := 530; Top := 420; Width := 140; Height := 30;
+      Left := 640; Top := 420; Width := 100; Height := 30;  // <- CAMBIAR AQUÍ
+
     OnClick := @Inbox_OnCerrarClick;
     Cancel := True;
   end;

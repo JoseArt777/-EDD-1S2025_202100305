@@ -3233,10 +3233,65 @@ begin
 end;
 
 function TEDDMailSystem.ComprimirLZW(Texto: String): String;
+var
+  Dict: TStringList;
+  W, WC: String;
+  i, Code: Integer;
+  Output: TStringList;
 begin
-  // Por ahora retorna el texto sin comprimir
-  Result := Texto;
-  // TODO: Implementar algoritmo LZW real
+  if Length(Texto) = 0 then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  Dict := TStringList.Create;
+  Output := TStringList.Create;
+  try
+    // Inicializar diccionario con caracteres ASCII (0-255)
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    W := Texto[1];
+
+    // Algoritmo LZW
+    for i := 2 to Length(Texto) do
+    begin
+      WC := W + Texto[i];
+
+      if Dict.IndexOf(WC) >= 0 then
+      begin
+        // La secuencia ya existe en el diccionario
+        W := WC;
+      end
+      else
+      begin
+        // Emitir el código de W
+        Code := Dict.IndexOf(W);
+        Output.Add(IntToStr(Code));
+
+        // Agregar nueva secuencia al diccionario (límite 4096)
+        if Dict.Count < 4096 then
+          Dict.Add(WC);
+
+        // Reiniciar W con el carácter actual
+        W := Texto[i];
+      end;
+    end;
+
+    // Emitir el último código
+    Code := Dict.IndexOf(W);
+    Output.Add(IntToStr(Code));
+
+    // Resultado: códigos separados por comas
+    Output.Delimiter := ',';
+    Output.StrictDelimiter := True;
+    Result := Output.DelimitedText;
+
+  finally
+    Dict.Free;
+    Output.Free;
+  end;
 end;
 
 function TEDDMailSystem.GuardarArchivoTexto(Ruta, Contenido: String): Boolean;

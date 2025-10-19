@@ -6785,7 +6785,7 @@ begin
     begin
       Parent := PanelReacciones;
       Caption := '😮';
-      Left := 290; Top := 60; Width := 80; Height :- 80;
+      Left := 290; Top := 60; Width := 80; Height := 80;
       Font.Size := 30;
       Color := clSkyBlue;
       ModalResult := mrYes;

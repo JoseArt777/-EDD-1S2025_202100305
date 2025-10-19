@@ -3233,10 +3233,53 @@ begin
 end;
 
 function TEDDMailSystem.ComprimirLZW(Texto: String): String;
+var
+  Dict: TStringList;
+  W, WC: String;
+  i, Code: Integer;
+  Output: String;
 begin
-  // Por ahora retorna el texto sin comprimir
-  Result := Texto;
-  // TODO: Implementar algoritmo LZW real
+  if Length(Texto) = 0 then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  Dict := TStringList.Create;
+  try
+    // Inicializar diccionario con caracteres ASCII
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    Output := '';
+    W := Texto[1];
+
+    for i := 2 to Length(Texto) do
+    begin
+      WC := W + Texto[i];
+
+      if Dict.IndexOf(WC) >= 0 then
+        W := WC
+      else
+      begin
+        Code := Dict.IndexOf(W);
+        Output := Output + Chr(Code div 256) + Chr(Code mod 256);
+
+        if Dict.Count < 4096 then
+          Dict.Add(WC);
+
+        W := Texto[i];
+      end;
+    end;
+
+    // Último código
+    Code := Dict.IndexOf(W);
+    Output := Output + Chr(Code div 256) + Chr(Code mod 256);
+
+    Result := Output;
+  finally
+    Dict.Free;
+  end;
 end;
 
 function TEDDMailSystem.GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
@@ -3332,5 +3375,10 @@ begin
   Result := FArbolComunidades;
 end;
 
+function TEDDMailSystem.BuscarComunidadPorNombre(Nombre: String): PNodoBST;
+begin
+  // Esta función pública llama a la búsqueda recursiva interna
+  Result := BuscarComunidadBST(FArbolComunidades, Nombre);
+end;
 
  end.
