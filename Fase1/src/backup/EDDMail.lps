@@ -8,7 +8,7 @@
         <Filename Value="EDDMail.lpr"/>
         <IsPartOfProject Value="True"/>
         <CursorPos X="5" Y="68"/>
-        <UsageCount Value="191"/>
+        <UsageCount Value="192"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -17,16 +17,16 @@
         <ComponentName Value="Form1"/>
         <ResourceBaseClass Value="Form"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="191"/>
+        <UsageCount Value="192"/>
       </Unit>
       <Unit>
         <Filename Value="correomanager.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="CorreoManager"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="869"/>
-        <CursorPos X="58" Y="878"/>
-        <UsageCount Value="177"/>
+        <TopLine Value="209"/>
+        <CursorPos X="5" Y="233"/>
+        <UsageCount Value="178"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -35,14 +35,14 @@
         <UnitName Value="GestorFase2"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="31" Y="6"/>
-        <UsageCount Value="147"/>
+        <UsageCount Value="148"/>
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="4640"/>
-        <CursorPos X="46" Y="4654"/>
-        <UsageCount Value="93"/>
+        <TopLine Value="54"/>
+        <CursorPos X="34" Y="70"/>
+        <UsageCount Value="94"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -51,9 +51,9 @@
         <UnitName Value="EstructurasDatos"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="4108"/>
-        <CursorPos X="44" Y="4116"/>
-        <UsageCount Value="93"/>
+        <TopLine Value="4802"/>
+        <CursorPos X="5" Y="4826"/>
+        <UsageCount Value="94"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -73,94 +73,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4010" Column="48" TopLine="4001"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4177" Column="53" TopLine="4169"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4030" Column="62" TopLine="4020"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4179" Column="79" TopLine="4169"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="3617" Column="64" TopLine="3604"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4161" Column="68" TopLine="4148"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4190" Column="61" TopLine="4180"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="1613" Column="69" TopLine="1601"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="2571" Column="43" TopLine="2555"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="3593" Column="56" TopLine="3575"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4015" Column="61" TopLine="3999"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4204" Column="73" TopLine="4190"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="3665" TopLine="3663"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4035" Column="57" TopLine="4030"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4321" Column="72" TopLine="4302"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4182" Column="72" TopLine="4170"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="2503" Column="57" TopLine="2492"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="394" TopLine="384"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="243" Column="3" TopLine="240"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="2505" Column="44" TopLine="2492"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4059" Column="18" TopLine="4044"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="4325" Column="59" TopLine="4311"/>
-      </Position>
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="2515" Column="61" TopLine="2503"/>
@@ -192,6 +104,94 @@
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="4270" Column="74" TopLine="4259"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4429" Column="82" TopLine="4420"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="429" Column="74" TopLine="412"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="484" Column="51" TopLine="464"/>
+      </Position>
+      <Position>
+        <Filename Value="correomanager.pas"/>
+        <Caret Line="869" Column="77" TopLine="862"/>
+      </Position>
+      <Position>
+        <Filename Value="correomanager.pas"/>
+        <Caret Line="233" Column="5" TopLine="209"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="425" Column="94" TopLine="416"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="470" Column="5" TopLine="455"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="466" Column="3" TopLine="454"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4625" Column="25" TopLine="4612"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4933" Column="5" TopLine="4908"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4878" Column="49" TopLine="4870"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4891" Column="48" TopLine="4872"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="502" Column="60" TopLine="495"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4902" Column="55" TopLine="4887"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4872" Column="66" TopLine="4857"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4537" Column="69" TopLine="4517"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4076" Column="5" TopLine="4051"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4521" Column="73" TopLine="4504"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4519" Column="51" TopLine="4504"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4562" Column="49" TopLine="4548"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4520" Column="57" TopLine="4503"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4578" TopLine="4575"/>
       </Position>
     </JumpHistory>
     <RunParams>

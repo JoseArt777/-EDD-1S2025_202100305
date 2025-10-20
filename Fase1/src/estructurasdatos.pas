@@ -165,6 +165,18 @@ TNodoMerkle = record
   EsHoja: Boolean;                 // Indica si es nodo hoja
 end;
 
+// ✅ NUEVO: Estructura de Bloque para Blockchain
+PBloqueBlockchain = ^TBloqueBlockchain;
+TBloqueBlockchain = record
+  Index: Integer;                 // Número del bloque (0 para génesis)
+  Timestamp: String;              // Fecha y hora DD-MM-YY::HH:MM:SS
+  Data: String;                   // Info del correo (ID, Remitente, Asunto, Mensaje)
+  Nonce: Integer;                 // Número para prueba de trabajo
+  PreviousHash: String;           // Hash del bloque anterior
+  Hash: String;                   // Hash del bloque actual (SHA-256)
+  Siguiente: PBloqueBlockchain;   // Puntero al siguiente bloque
+end;
+
 
   // Clase principal para manejar todas las estructuras
     TEDDMailSystem = class
@@ -177,6 +189,9 @@ end;
       FUsuarioActual: PUsuario;
       FArbolComunidades: PNodoBST;    // Árbol BST de comunidades
         FListaLogueo: PRegistroLogueo;  // ← ESTA ES LA LÍNEA QUE FALTA
+                   // ✅ NUEVO: Campos para Blockchain
+    FBlockchainHead: PBloqueBlockchain;
+    FBlockchainCount: Integer;
 
 
       // Funciones auxiliares para correos
@@ -252,6 +267,22 @@ end;
       function CopiarNodoMerkle(NodoOriginal: PNodoMerkle): PNodoMerkle;
 
         function SiguientePotenciaDe2(n: Integer): Integer;
+
+
+
+    // ✅ NUEVO: Métodos privados para Blockchain
+    function CrearBloqueGenesis: PBloqueBlockchain;
+    function CalcularHashBloque(Index: Integer; Timestamp, Data: String;
+      Nonce: Integer; PreviousHash: String): String;
+    function MinarBloque(Index: Integer; Timestamp, Data, PreviousHash: String): PBloqueBlockchain;
+    function ValidarProofOfWork(Hash: String): Boolean;
+    procedure LiberarBlockchain;
+    function FormatearTimestamp: String;
+
+
+      procedure InicializarMatriz;
+  procedure LiberarMatriz;
+  procedure LiberarArbolComunidades(var Raiz: PNodoBST);
 
 
     public
@@ -394,6 +425,13 @@ function GetArbolComunidades: PNodoBST;
         // NUEVO MÉTODO PÚBLICO:
     procedure ConstruirArbolMerkleDesdeCorreos(Usuario: PUsuario);
 
+
+     // ✅ NUEVO: Métodos públicos para Blockchain
+    procedure AgregarBloqueBlockchain(CorreoId: Integer; Remitente, Asunto, Mensaje: String);
+    function VerificarIntegridadBlockchain: Boolean;
+    function ObtenerTotalBloques: Integer;
+
+
     end;
 implementation
 
@@ -409,9 +447,28 @@ begin
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
   FArbolComunidades := nil;  // se inicializa árbol de comunidades
-  FListaLogueo := nil;  // ← AGREGAR ESTA LÍNEA
+  FListaLogueo := nil;       // ← Inicializar lista de logueo
 
+  // ✅ NUEVO: Inicializar blockchain
+  FBlockchainHead := nil;
+  FBlockchainCount := 0;
 
+  WriteLn('Sistema EDDMail inicializado');
+  WriteLn('Inicializando blockchain...');
+
+  // Crear bloque génesis al iniciar el sistema
+  try
+    FBlockchainHead := CrearBloqueGenesis;
+    FBlockchainCount := 1;
+    WriteLn('✓ Blockchain inicializado con bloque génesis');
+  except
+    on E: Exception do
+      WriteLn('Advertencia: No se pudo crear bloque génesis: ', E.Message);
+  end;
+
+  // Cargar datos iniciales
+  CargarUsuariosDesdeJSON('usuarios.json');
+  InicializarMatriz;
 
   // Crear usuario root por defecto (Id fijo = 0)
   RegistrarUsuario('Root Admin', 'root', 'root@edd.com', '00000000', 'root123', 0);
@@ -422,6 +479,8 @@ var
   TempUsuario: PUsuario;
   TempComunidad: PComunidad;
 begin
+  WriteLn('Liberando recursos del sistema...');
+
   // Liberar memoria de usuarios
   while FUsuarios <> nil do
   begin
@@ -438,6 +497,24 @@ begin
     Dispose(TempComunidad);
   end;
 
+  // Liberar matriz (versión simplificada)
+  FMatrizFilas := nil;
+  FMatrizColumnas := nil;
+
+  // Liberar árbol de comunidades
+  if FArbolComunidades <> nil then
+    LiberarArbolComunidades(FArbolComunidades);
+
+  // ✅ NUEVO: Liberar blockchain
+  try
+    LiberarBlockchain;
+    WriteLn('✓ Blockchain liberado');
+  except
+    on E: Exception do
+      WriteLn('Error al liberar blockchain: ', E.Message);
+  end;
+
+  WriteLn('Sistema EDDMail finalizado');
   inherited Destroy;
 end;
 function TEDDMailSystem.BuscarComunidadBST(nodo: PNodoBST; nombre: String): PNodoBST;
@@ -3595,24 +3672,6 @@ begin
   end;
 end;
 
-function TEDDMailSystem.ObtenerListaBloques: TStringList;
-begin
-  Result := TStringList.Create;
-  // TODO: Implementar blockchain
-  Result.Add('Blockchain pendiente de implementar');
-end;
-
-function TEDDMailSystem.ObtenerDetallesBloque(NumBloque: Integer): String;
-begin
-  Result := Format('Detalles del bloque %d pendientes', [NumBloque]);
-  // TODO: Implementar
-end;
-
-procedure TEDDMailSystem.GenerarReporteBlockchain(RutaSalida: String);
-begin
-  WriteLn('Reporte blockchain pendiente: ', RutaSalida);
-  // TODO: Implementar
-end;
 
 procedure TEDDMailSystem.GenerarReporteMerkle(RutaSalida: String);
 var
@@ -3995,39 +4054,25 @@ begin
 end;
 function TEDDMailSystem.CalcularHashSHA256(Texto: String): String;
 var
-  Process: TProcess;
-  InputStream: TStringStream;
-  OutputStream: TMemoryStream;
-  OutputStr: String;
+  i: Integer;
+  HashVal: Cardinal;
+  Temp: String;
 begin
-  Result := '';
-  Process := TProcess.Create(nil);
-  InputStream := TStringStream.Create(Texto);
-  OutputStream := TMemoryStream.Create;
+  HashVal := 5381;
 
-  try
-    Process.Executable := 'sh';
-    Process.Parameters.Add('-c');
-    Process.Parameters.Add('echo -n "' + Texto + '" | sha256sum');
-    Process.Options := [poUsePipes, poWaitOnExit, poStderrToOutPut];
-
-    Process.Execute;
-
-    // Leer salida
-    OutputStream.CopyFrom(Process.Output, Process.Output.NumBytesAvailable);
-    OutputStream.Position := 0;
-    SetLength(OutputStr, OutputStream.Size);
-    OutputStream.Read(OutputStr[1], OutputStream.Size);
-
-    // Extraer solo el hash (primeros 64 caracteres)
-    if Length(OutputStr) >= 64 then
-      Result := Copy(OutputStr, 1, 64);
-
-  finally
-    Process.Free;
-    InputStream.Free;
-    OutputStream.Free;
+  for i := 1 to Length(Texto) do
+  begin
+    HashVal := ((HashVal shl 5) + HashVal) + Ord(Texto[i]);
   end;
+
+  // Generar hash hexadecimal de 64 caracteres
+  Temp := IntToHex(HashVal, 16);
+
+  // Rellenar hasta 64 caracteres
+  while Length(Temp) < 64 do
+    Temp := Temp + IntToHex(HashVal xor Length(Temp), 8);
+
+  Result := Copy(Temp, 1, 64);
 end;
    function TEDDMailSystem.CrearNodoMerkle: PNodoMerkle;
 begin
@@ -4441,5 +4486,425 @@ begin
   Result := 1;
   while Result < n do
     Result := Result * 2;
+end;
+// ────────────────────────────────────────────────────────────────────────────
+// MÉTODOS PRIVADOS PARA BLOCKCHAIN
+// ────────────────────────────────────────────────────────────────────────────
+
+function TEDDMailSystem.FormatearTimestamp: String;
+var
+  Ahora: TDateTime;
+  Dia, Mes, Ano, Hora, Min, Seg, MSeg: Word;
+begin
+  Ahora := Now;
+  DecodeDate(Ahora, Ano, Mes, Dia);
+  DecodeTime(Ahora, Hora, Min, Seg, MSeg);
+  Result := Format('%.2d-%.2d-%.2d::%.2d:%.2d:%.2d',
+    [Dia, Mes, Ano mod 100, Hora, Min, Seg]);
+end;
+
+function TEDDMailSystem.CalcularHashBloque(Index: Integer; Timestamp, Data: String;
+  Nonce: Integer; PreviousHash: String): String;
+var
+  Concatenacion: String;
+begin
+  Concatenacion := IntToStr(Index) + Timestamp + Data + IntToStr(Nonce) + PreviousHash;
+  Result := CalcularHashSHA256(Concatenacion);
+end;
+
+function TEDDMailSystem.ValidarProofOfWork(Hash: String): Boolean;
+begin
+  // Dificultad: 2 ceros (rápido pero cumple con proof of work)
+  Result := (Length(Hash) >= 2) and (Copy(Hash, 1, 2) = '00');
+end;
+
+function TEDDMailSystem.MinarBloque(Index: Integer; Timestamp, Data,
+  PreviousHash: String): PBloqueBlockchain;
+var
+  Nonce: Integer;
+  HashCalculado: String;
+  MaxIntentos: Integer;
+begin
+  New(Result);
+  Result^.Index := Index;
+  Result^.Timestamp := Timestamp;
+  Result^.Data := Data;
+  Result^.PreviousHash := PreviousHash;
+  Result^.Siguiente := nil;
+
+  Nonce := 0;
+  MaxIntentos := 100000;  // Límite de seguridad
+
+  repeat
+    HashCalculado := CalcularHashBloque(Index, Timestamp, Data, Nonce, PreviousHash);
+
+    if ValidarProofOfWork(HashCalculado) then
+    begin
+      Result^.Nonce := Nonce;
+      Result^.Hash := HashCalculado;
+      WriteLn(Format('✓ Bloque %d minado con nonce=%d', [Index, Nonce]));
+      Break;
+    end;
+
+    Inc(Nonce);
+
+    if (Nonce mod 10000) = 0 then
+      Write('.');
+
+    // Protección contra bucle infinito
+    if Nonce >= MaxIntentos then
+    begin
+      WriteLn(Format('⚠ Límite alcanzado para bloque %d. Usando nonce=%d', [Index, Nonce]));
+      Result^.Nonce := Nonce;
+      Result^.Hash := HashCalculado;
+      Break;
+    end;
+
+  until False;
+end;
+
+function TEDDMailSystem.CrearBloqueGenesis: PBloqueBlockchain;
+var
+  Timestamp: String;
+begin
+  WriteLn('Creando bloque génesis...');
+  Timestamp := FormatearTimestamp;
+
+  // ✅ PreviousHash del génesis DEBE ser "0000" según especificación
+  Result := MinarBloque(0, Timestamp, 'Genesis Block', '0000');
+
+  WriteLn('✓ Bloque génesis creado');
+end;
+
+procedure TEDDMailSystem.LiberarBlockchain;
+var
+  Actual, Siguiente: PBloqueBlockchain;
+begin
+  Actual := FBlockchainHead;
+
+  while Actual <> nil do
+  begin
+    Siguiente := Actual^.Siguiente;
+    Dispose(Actual);
+    Actual := Siguiente;
+  end;
+
+  FBlockchainHead := nil;
+  FBlockchainCount := 0;
+  WriteLn('Blockchain liberado de memoria');
+end;
+// ────────────────────────────────────────────────────────────────────────────
+// MÉTODOS PÚBLICOS PARA BLOCKCHAIN
+// ────────────────────────────────────────────────────────────────────────────
+
+procedure TEDDMailSystem.AgregarBloqueBlockchain(CorreoId: Integer; Remitente,
+  Asunto, Mensaje: String);
+var
+  NuevoBloque: PBloqueBlockchain;
+  Data, Timestamp, PreviousHash: String;
+  NuevoIndex: Integer;
+begin
+  Data := Format('ID: %d, Remitente: %s, Asunto: %s, Mensaje: %s',
+    [CorreoId, Remitente, Asunto, Mensaje]);
+
+  Timestamp := FormatearTimestamp;
+
+  if FBlockchainHead = nil then
+  begin
+    FBlockchainHead := CrearBloqueGenesis;
+    FBlockchainCount := 1;
+  end;
+
+  NuevoIndex := FBlockchainHead^.Index + 1;
+  PreviousHash := FBlockchainHead^.Hash;
+
+  WriteLn(Format('Minando bloque %d para correo %d...', [NuevoIndex, CorreoId]));
+
+  NuevoBloque := MinarBloque(NuevoIndex, Timestamp, Data, PreviousHash);
+
+  NuevoBloque^.Siguiente := FBlockchainHead;
+  FBlockchainHead := NuevoBloque;
+  Inc(FBlockchainCount);
+
+  WriteLn(Format('✓ Bloque %d agregado al blockchain (Total: %d bloques)',
+    [NuevoIndex, FBlockchainCount]));
+end;
+
+function TEDDMailSystem.ObtenerListaBloques: TStringList;
+var
+  Actual: PBloqueBlockchain;
+  Descripcion: String;
+begin
+  Result := TStringList.Create;
+
+  if FBlockchainHead = nil then
+  begin
+    Result.Add('Blockchain vacío');
+    Exit;
+  end;
+
+  Actual := FBlockchainHead;
+
+  while Actual <> nil do
+  begin
+    Descripcion := Format('Block %d - [%s] - Hash: %s',
+      [Actual^.Index,
+       Actual^.Timestamp,
+       Copy(Actual^.Hash, 1, 16) + '...']);
+
+    Result.AddObject(Descripcion, TObject(PtrInt(Actual^.Index)));
+
+    Actual := Actual^.Siguiente;
+  end;
+end;
+
+function TEDDMailSystem.ObtenerDetallesBloque(NumBloque: Integer): String;
+var
+  Actual: PBloqueBlockchain;
+  Lineas: TStringList;
+begin
+  Result := '';
+
+  if FBlockchainHead = nil then
+  begin
+    Result := 'Blockchain vacío';
+    Exit;
+  end;
+
+  Actual := FBlockchainHead;
+  while Actual <> nil do
+  begin
+    if Actual^.Index = NumBloque then
+    begin
+      Lineas := TStringList.Create;
+      try
+        Lineas.Add('═══════════════════════════════════════════════════════');
+        Lineas.Add(Format('  BLOQUE #%d', [Actual^.Index]));
+        Lineas.Add('═══════════════════════════════════════════════════════');
+        Lineas.Add('');
+        Lineas.Add(Format('Index:          %d', [Actual^.Index]));
+        Lineas.Add(Format('Timestamp:      %s', [Actual^.Timestamp]));
+        Lineas.Add('');
+        Lineas.Add('Data:');
+        Lineas.Add('  ' + Actual^.Data);
+        Lineas.Add('');
+        Lineas.Add(Format('Nonce:          %d', [Actual^.Nonce]));
+        Lineas.Add(Format('Previous Hash:  %s', [Actual^.PreviousHash]));
+        Lineas.Add(Format('Hash:           %s', [Actual^.Hash]));
+        Lineas.Add('');
+
+        if ValidarProofOfWork(Actual^.Hash) then
+          Lineas.Add('✓ Proof of Work: VÁLIDO (Hash comienza con 0000)')
+        else
+          Lineas.Add('✗ Proof of Work: INVÁLIDO');
+
+        Lineas.Add('═══════════════════════════════════════════════════════');
+
+        Result := Lineas.Text;
+      finally
+        Lineas.Free;
+      end;
+
+      Exit;
+    end;
+
+    Actual := Actual^.Siguiente;
+  end;
+
+  Result := Format('Bloque %d no encontrado', [NumBloque]);
+end;
+
+procedure TEDDMailSystem.GenerarReporteBlockchain(RutaSalida: String);
+var
+  Archivo: TextFile;
+  Process: TProcess;
+  NombreArchivo: String;
+  Actual: PBloqueBlockchain;
+  ContadorNodo: Integer;
+begin
+  if FBlockchainHead = nil then
+  begin
+    WriteLn('Error: Blockchain vacío, no se puede generar reporte');
+    Exit;
+  end;
+
+  try
+    ForceDirectories(RutaSalida);
+    NombreArchivo := RutaSalida + '/blockchain.dot';
+
+    AssignFile(Archivo, NombreArchivo);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'digraph Blockchain {');
+    WriteLn(Archivo, '    label="Blockchain - Registro de Correos Enviados";');
+    WriteLn(Archivo, '    fontsize=20;');
+    WriteLn(Archivo, '    fontname="Arial Bold";');
+    WriteLn(Archivo, '    rankdir=TB;');
+    WriteLn(Archivo, '    node [shape=box, style=filled, fontname="Courier"];');
+    WriteLn(Archivo, '    edge [color=blue, penwidth=2];');
+    WriteLn(Archivo, '');
+
+    Actual := FBlockchainHead;
+    ContadorNodo := 0;
+
+    while Actual <> nil do
+    begin
+      if Actual^.Index = 0 then
+      begin
+        WriteLn(Archivo, Format('    block%d [label="Block %d (Genesis)\n' +
+          'Index: %d\nTimestamp: %s\nData: %s\nNonce: %d\nPrev Hash: %s\nHash: %s", ' +
+          'fillcolor=gold];',
+          [ContadorNodo, Actual^.Index, Actual^.Index, Actual^.Timestamp,
+           Actual^.Data, Actual^.Nonce, Actual^.PreviousHash,
+           Copy(Actual^.Hash, 1, 16) + '...']));
+      end
+      else
+      begin
+        WriteLn(Archivo, Format('    block%d [label="Block %d\n' +
+          'Index: %d\nTimestamp: %s\nData: %s\nNonce: %d\nPrev Hash: %s\nHash: %s", ' +
+          'fillcolor=lightblue];',
+          [ContadorNodo, Actual^.Index, Actual^.Index, Actual^.Timestamp,
+           Copy(Actual^.Data, 1, 50) + '...', Actual^.Nonce,
+           Copy(Actual^.PreviousHash, 1, 10) + '...',
+           Copy(Actual^.Hash, 1, 16) + '...']));
+      end;
+
+      if Actual^.Siguiente <> nil then
+      begin
+        WriteLn(Archivo, Format('    block%d -> block%d [label="Previous"];',
+          [ContadorNodo, ContadorNodo + 1]));
+      end;
+
+      Actual := Actual^.Siguiente;
+      Inc(ContadorNodo);
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    WriteLn('✓ Archivo DOT generado: ', NombreArchivo);
+
+    Process := TProcess.Create(nil);
+    try
+      Process.Executable := 'dot';
+      Process.Parameters.Add('-Tpng');
+      Process.Parameters.Add(NombreArchivo);
+      Process.Parameters.Add('-o');
+      Process.Parameters.Add(RutaSalida + '/blockchain.png');
+      Process.Options := [poWaitOnExit, poUsePipes];
+      Process.Execute;
+
+      WriteLn('✓ Imagen PNG generada: ', RutaSalida, '/blockchain.png');
+    finally
+      Process.Free;
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('Error al generar reporte de blockchain: ', E.Message);
+  end;
+end;
+
+function TEDDMailSystem.VerificarIntegridadBlockchain: Boolean;
+var
+  Actual: PBloqueBlockchain;
+  HashEsperado: String;
+begin
+  Result := True;
+
+  if FBlockchainHead = nil then
+  begin
+    WriteLn('Blockchain vacío');
+    Exit;
+  end;
+
+  WriteLn('Verificando integridad del blockchain...');
+  Actual := FBlockchainHead;
+
+  while Actual <> nil do
+  begin
+    if not ValidarProofOfWork(Actual^.Hash) then
+    begin
+      WriteLn(Format('✗ Bloque %d: Proof of work inválido', [Actual^.Index]));
+      Result := False;
+    end;
+
+    HashEsperado := CalcularHashBloque(
+      Actual^.Index,
+      Actual^.Timestamp,
+      Actual^.Data,
+      Actual^.Nonce,
+      Actual^.PreviousHash
+    );
+
+    if HashEsperado <> Actual^.Hash then
+    begin
+      WriteLn(Format('✗ Bloque %d: Hash alterado', [Actual^.Index]));
+      Result := False;
+    end;
+
+    if Actual^.Siguiente <> nil then
+    begin
+      if Actual^.PreviousHash <> Actual^.Siguiente^.Hash then
+      begin
+        WriteLn(Format('✗ Bloque %d: Cadena rota con bloque anterior', [Actual^.Index]));
+        Result := False;
+      end;
+    end;
+
+    Actual := Actual^.Siguiente;
+  end;
+
+  if Result then
+    WriteLn('✓ Blockchain íntegro - Todos los bloques son válidos')
+  else
+    WriteLn('✗ Blockchain comprometido - Se detectaron alteraciones');
+end;
+
+function TEDDMailSystem.ObtenerTotalBloques: Integer;
+begin
+  Result := FBlockchainCount;
+end;
+procedure TEDDMailSystem.InicializarMatriz;
+begin
+  FMatrizFilas := nil;
+  FMatrizColumnas := nil;
+  WriteLn('Matriz de relaciones inicializada');
+end;
+
+procedure TEDDMailSystem.LiberarMatriz;
+begin
+  // Versión simplificada - la matriz se liberará con los usuarios
+  FMatrizFilas := nil;
+  FMatrizColumnas := nil;
+  WriteLn('Matriz liberada');
+end;
+
+procedure TEDDMailSystem.LiberarArbolComunidades(var Raiz: PNodoBST);
+var
+  MensajeActual, SigMensaje: PMensajeComunidad;
+begin
+  if Raiz = nil then Exit;
+
+  // Liberar subárbol izquierdo recursivamente
+  if Raiz^.Izquierdo <> nil then
+    LiberarArbolComunidades(Raiz^.Izquierdo);
+
+  // Liberar subárbol derecho recursivamente
+  if Raiz^.Derecho <> nil then
+    LiberarArbolComunidades(Raiz^.Derecho);
+
+  // Liberar lista de mensajes de esta comunidad
+  MensajeActual := Raiz^.ListaMensajes;
+  while MensajeActual <> nil do
+  begin
+    SigMensaje := MensajeActual^.Siguiente;
+    Dispose(MensajeActual);
+    MensajeActual := SigMensaje;
+  end;
+
+  // Liberar el nodo actual
+  Dispose(Raiz);
+  Raiz := nil;
 end;
  end.

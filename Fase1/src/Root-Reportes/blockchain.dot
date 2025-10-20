@@ -1,0 +1,12 @@
+digraph Blockchain {
+    label="Blockchain - Registro de Correos Enviados";
+    fontsize=20;
+    fontname="Arial Bold";
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Courier"];
+    edge [color=blue, penwidth=2];
+
+    block0 [label="Block 1\nIndex: 1\nTimestamp: 20-10-25::14:49:49\nData: ID: 10785, Remitente: mitzep@edd.com, Asunto: hola...\nNonce: 0\nPrev Hash: 000000002D...\nHash: 00000000F3FD9734...", fillcolor=lightblue];
+    block0 -> block1 [label="Previous"];
+    block1 [label="Block 0 (Genesis)\nIndex: 0\nTimestamp: 20-10-25::14:49:20\nData: Genesis Block\nNonce: 0\nPrev Hash: 0000\nHash: 000000002DB552FE...", fillcolor=gold];
+}

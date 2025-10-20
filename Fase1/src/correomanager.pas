@@ -160,14 +160,14 @@ begin
   Result := True;
 end;
 
-function TCorreoManager.EnviarCorreo(Sistema: TEDDMailSystem; RemitenteEmail, Destinatario, Asunto, Mensaje: String): Boolean;
+function TCorreoManager.EnviarCorreo(Sistema: TEDDMailSystem; RemitenteEmail,
+  Destinatario, Asunto, Mensaje: String): Boolean;
 var
   NuevoCorreo: PCorreo;
   UsuarioRemitente, UsuarioDestino: PUsuario;
 begin
   Result := False;
 
-  // Buscar usuario remitente
   UsuarioRemitente := Sistema.BuscarUsuario(RemitenteEmail);
   if UsuarioRemitente = nil then
   begin
@@ -175,7 +175,6 @@ begin
     Exit;
   end;
 
-  // Buscar usuario destinatario
   UsuarioDestino := Sistema.BuscarUsuario(Destinatario);
   if UsuarioDestino = nil then
   begin
@@ -183,7 +182,6 @@ begin
     Exit;
   end;
 
-  // VALIDACIÓN CRÍTICA: Verificar que sea contacto
   if Sistema.BuscarContacto(UsuarioRemitente, Destinatario) = nil then
   begin
     WriteLn('Error: Solo puede enviar correos a usuarios en su lista de contactos');
@@ -191,24 +189,34 @@ begin
     Exit;
   end;
 
-  // Crear el correo
   NuevoCorreo := CrearCorreo(
     RemitenteEmail,
     Destinatario,
     Asunto,
     Mensaje,
     FormatDateTime('dd/mm/yy hh:nn', Now),
-    False // No es programado
+    False
   );
 
-  // Agregar a bandeja del destinatario
   if AgregarABandejaEntrada(UsuarioDestino, NuevoCorreo) then
   begin
-    // Actualizar matriz de relaciones
     try
       Sistema.ActualizarMatrizRelaciones(RemitenteEmail, Destinatario);
     except
-      // Si no está implementada, continuar sin error
+    end;
+
+    // ✅ NUEVO: Registrar el correo en el blockchain
+    try
+      Sistema.AgregarBloqueBlockchain(
+        NuevoCorreo^.Id,
+        RemitenteEmail,
+        Asunto,
+        Mensaje
+      );
+      WriteLn('✓ Correo registrado en blockchain');
+    except
+      on E: Exception do
+        WriteLn('Advertencia: No se pudo registrar en blockchain: ', E.Message);
     end;
 
     WriteLn('✓ Correo enviado exitosamente');
@@ -220,7 +228,7 @@ begin
   else
   begin
     Dispose(NuevoCorreo);
-    WriteLn('Error: No se pudo agregar el correo a la bandeja del destinatario');
+    WriteLn('Error: No se pudo agregar el correo a la bandeja');
   end;
 end;
 
