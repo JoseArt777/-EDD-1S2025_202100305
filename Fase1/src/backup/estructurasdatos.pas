@@ -1905,63 +1905,9 @@ begin
 end;
 // 3. Implementación de GenerarReporteFavoritos
 procedure TEDDMailSystem.GenerarReporteFavoritos(Usuario: PUsuario; RutaCarpeta: String);
-var
-  Archivo: TextFile;
-  Process: TProcess;
-  NombreArchivo: String;
 begin
-  if Usuario = nil then Exit;
-
-  try
-    ForceDirectories(RutaCarpeta);
-    NombreArchivo := RutaCarpeta + '/favoritos_' +
-                   StringReplace(Usuario^.Usuario, ' ', '_', [rfReplaceAll]) + '.dot';
-
-    AssignFile(Archivo, NombreArchivo);
-    Rewrite(Archivo);
-
-    WriteLn(Archivo, 'digraph G {');
-    WriteLn(Archivo, '    label="Árbol B - Favoritos - ' + Usuario^.Nombre + '";');
-    WriteLn(Archivo, '    fontsize=16;');
-    WriteLn(Archivo, '    node [shape=box, style=filled, fillcolor=lightyellow];');
-
-
-    if Usuario^.ArbolMerkleFavoritos = nil then
-    begin
-      WriteLn(Archivo, '    empty [label="Sin favoritos", fillcolor=lightgray];');
-    end
-    else
-    begin
-      GenerarNodosB(Archivo, Usuario^.ArbolMerkleFavoritos, 0);
-    end;
-
-    WriteLn(Archivo, '}');
-    CloseFile(Archivo);
-
-    // Generar imagen PNG
-    try
-      Process := TProcess.Create(nil);
-      try
-        Process.Executable := 'dot';
-        Process.Parameters.Add('-Tpng');
-        Process.Parameters.Add(NombreArchivo);
-        Process.Parameters.Add('-o');
-        Process.Parameters.Add(ChangeFileExt(NombreArchivo, '.png'));
-        Process.Options := Process.Options + [poWaitOnExit];
-        Process.Execute;
-        WriteLn('Reporte favoritos generado: ', ChangeFileExt(NombreArchivo, '.png'));
-      finally
-        Process.Free;
-      end;
-    except
-      on E: Exception do
-        WriteLn('Error al generar imagen: ', E.Message);
-    end;
-
-  except
-    on E: Exception do
-      WriteLn('Error al generar reporte favoritos: ', E.Message);
-  end;
+  // Redirigir a la función de Merkle
+  GenerarReporteMerkle(RutaCarpeta);
 end;
 
 // 4. Implementación de ObtenerMensajesComunidad
@@ -3629,7 +3575,7 @@ begin
     Rewrite(Archivo);
 
     WriteLn(Archivo, 'digraph MerkleTree {');
-    WriteLn(Archivo, '    label="Árbol de Merkle - Privados";');
+    WriteLn(Archivo, '    label="Árbol de Merkle - Favoritos";');
     WriteLn(Archivo, '    fontsize=20;');
     WriteLn(Archivo, '    node [shape=box, style=filled];');
     WriteLn(Archivo, '    rankdir=TB;');
@@ -3989,35 +3935,40 @@ begin
   // Esta función pública llama a la búsqueda recursiva interna
   Result := BuscarComunidadBST(FArbolComunidades, Nombre);
 end;
-   function TEDDMailSystem.CalcularHashSHA256(Texto: String): String;
+function TEDDMailSystem.CalcularHashSHA256(Texto: String): String;
 var
   Process: TProcess;
-  Salida: TStringList;
+  InputStream: TStringStream;
+  OutputStream: TMemoryStream;
+  OutputStr: String;
 begin
   Result := '';
   Process := TProcess.Create(nil);
-  Salida := TStringList.Create;
+  InputStream := TStringStream.Create(Texto);
+  OutputStream := TMemoryStream.Create;
+
   try
-    Process.Executable := 'echo';
-    Process.Parameters.Add('-n');
-    Process.Parameters.Add(Texto);
-    Process.Options := Process.Options + [poUsePipes];
+    Process.Executable := 'sh';
+    Process.Parameters.Add('-c');
+    Process.Parameters.Add('echo -n "' + Texto + '" | sha256sum');
+    Process.Options := [poUsePipes, poWaitOnExit, poStderrToOutPut];
+
     Process.Execute;
 
-    Process.Free;
-    Process := TProcess.Create(nil);
-    Process.Executable := 'sha256sum';
-    Process.Options := Process.Options + [poUsePipes, poWaitOnExit];
-    Process.Execute;
+    // Leer salida
+    OutputStream.CopyFrom(Process.Output, Process.Output.NumBytesAvailable);
+    OutputStream.Position := 0;
+    SetLength(OutputStr, OutputStream.Size);
+    OutputStream.Read(OutputStr[1], OutputStream.Size);
 
-    Salida.LoadFromStream(Process.Output);
-    if Salida.Count > 0 then
-    begin
-      Result := Copy(Salida[0], 1, 64); // Primeros 64 caracteres (hash)
-    end;
+    // Extraer solo el hash (primeros 64 caracteres)
+    if Length(OutputStr) >= 64 then
+      Result := Copy(OutputStr, 1, 64);
+
   finally
     Process.Free;
-    Salida.Free;
+    InputStream.Free;
+    OutputStream.Free;
   end;
 end;
    function TEDDMailSystem.CrearNodoMerkle: PNodoMerkle;
@@ -4052,35 +4003,32 @@ end;
    var
      Medio: Integer;
      NodoIzq, NodoDer: PNodoMerkle;
+     NumElementos: Integer;
    begin
+     NumElementos := Fin - Inicio + 1;
+
      // Caso base: un solo correo (hoja)
-     if Inicio = Fin then
+     if NumElementos = 1 then
      begin
        Result := CrearHojaMerkle(Correos[Inicio]);
        Exit;
      end;
 
-     // Caso base: dos correos
-     if Fin - Inicio = 1 then
-     begin
-       NodoIzq := CrearHojaMerkle(Correos[Inicio]);
-       NodoDer := CrearHojaMerkle(Correos[Fin]);
+     // Para 2 o más elementos, siempre crear nodos internos
+     // Dividir lo más equilibrado posible
+     Medio := Inicio + (NumElementos div 2) - 1;
 
-       Result := CrearNodoMerkle;
-       Result^.Izquierdo := NodoIzq;
-       Result^.Derecho := NodoDer;
-       Result^.Hash := CombinarHashesMerkle(NodoIzq^.Hash, NodoDer^.Hash);
-       Exit;
-     end;
-
-     // Caso recursivo: dividir en dos mitades
-     Medio := (Inicio + Fin) div 2;
+     // Construir subárbol izquierdo
      NodoIzq := ConstruirArbolMerkle(Correos, Inicio, Medio);
+
+     // Construir subárbol derecho
      NodoDer := ConstruirArbolMerkle(Correos, Medio + 1, Fin);
 
+     // Crear nodo interno que combina ambos subárboles
      Result := CrearNodoMerkle;
      Result^.Izquierdo := NodoIzq;
      Result^.Derecho := NodoDer;
+     Result^.EsHoja := False;
      Result^.Hash := CombinarHashesMerkle(NodoIzq^.Hash, NodoDer^.Hash);
    end;
    procedure TEDDMailSystem.RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
@@ -4106,31 +4054,32 @@ begin
   Dispose(Raiz);
   Raiz := nil;
 end;
- procedure TEDDMailSystem.RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
-var
-  ListaCorreos: TList;
-  i: Integer;
-  Correo: PCorreo;
-  Display: String;
-begin
-  if Usuario = nil then Exit;
+   procedure TEDDMailSystem.RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
+   var
+     ListaCorreos: TList;
+     i: Integer;
+     Correo: PCorreo;
+     Display: String;
+   begin
+     if Usuario = nil then Exit;
 
-  ListaCorreos := TList.Create;
-  try
-    if Usuario^.ArbolMerkleFavoritos <> nil then
-      RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
+     ListaCorreos := TList.Create;
+     try
+       if Usuario^.ArbolMerkleFavoritos <> nil then
+         RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
 
-    for i := 0 to ListaCorreos.Count - 1 do
-    begin
-      Correo := PCorreo(ListaCorreos[i]);
-      Display := Format('[ID: %d] %s — %s (%s)',
-        [Correo^.Id, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
-      Lista.AddObject(Display, TObject(PtrInt(Correo^.Id)));
-    end;
-  finally
-    ListaCorreos.Free;
-  end;
-end;
+       for i := 0 to ListaCorreos.Count - 1 do
+       begin
+         Correo := PCorreo(ListaCorreos[i]);
+         Display := Format('[ID: %d] %s — %s (%s)',
+           [Correo^.Id, Correo^.Asunto, Correo^.Remitente, Correo^.Fecha]);
+         Lista.AddObject(Display, TObject(PtrInt(Correo^.Id)));
+       end;
+     finally
+       ListaCorreos.Free;
+     end;
+   end;
+
  function TEDDMailSystem.VerificarIntegridadMerkle(Usuario: PUsuario): Boolean;
 var
   ListaCorreos: TList;
