@@ -8,6 +8,31 @@ uses
   Classes, SysUtils, Math, process, DateUtils, Contnrs;
 
 type
+
+      TBitWriter = class
+  private
+    FStream: TMemoryStream;
+    FBuffer: Byte;
+    FBitsInBuffer: Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure WriteBits(Value: Word; NumBits: Integer);
+    procedure Flush;
+    function GetData: TBytes;
+  end;
+
+  TBitReader = class
+  private
+    FData: TBytes;
+    FPosition: Integer;
+    FBuffer: Byte;
+    FBitsInBuffer: Integer;
+  public
+    constructor Create(const Data: TBytes);
+    function ReadBits(NumBits: Integer): Word;
+    function HasMore: Boolean;
+  end;
   // Tipos de punteros
   PUsuario = ^TUsuario;
   PCorreo = ^TCorreo;
@@ -176,6 +201,8 @@ TBloqueBlockchain = record
   Hash: String;                   // Hash del bloque actual (SHA-256)
   Siguiente: PBloqueBlockchain;   // Puntero al siguiente bloque
 end;
+
+
 
 
   // Clase principal para manejar todas las estructuras
@@ -402,6 +429,12 @@ end;
     function ComprimirLZW(Texto: String): String;
     function GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
 
+    // Nuevas funciones de compresión binaria
+    function ComprimirLZWBinario(const Texto: String): TBytes;
+    function DescomprimirLZWBinario(const Datos: TBytes): String;
+    function GuardarArchivoBinario(const Ruta: String; const Datos: TBytes): Boolean;
+    function CargarArchivoBinario(const Ruta: String): TBytes;
+
     // Blockchain
     function ObtenerListaBloques: TStringList;
     function ObtenerDetallesBloque(NumBloque: Integer): String;
@@ -440,7 +473,100 @@ implementation
 
 uses
   fpjson, jsonparser;
+// ═══════════════════════════════════════════════════════════════
+// IMPLEMENTACIÓN DE TBitWriter
+// ═══════════════════════════════════════════════════════════════
 
+constructor TBitWriter.Create;
+begin
+  inherited Create;
+  FStream := TMemoryStream.Create;
+  FBuffer := 0;
+  FBitsInBuffer := 0;
+end;
+
+destructor TBitWriter.Destroy;
+begin
+  FStream.Free;
+  inherited Destroy;
+end;
+
+procedure TBitWriter.WriteBits(Value: Word; NumBits: Integer);
+var
+  i: Integer;
+begin
+  for i := NumBits - 1 downto 0 do
+  begin
+    FBuffer := (FBuffer shl 1) or ((Value shr i) and 1);
+    Inc(FBitsInBuffer);
+
+    if FBitsInBuffer = 8 then
+    begin
+      FStream.WriteByte(FBuffer);
+      FBuffer := 0;
+      FBitsInBuffer := 0;
+    end;
+  end;
+end;
+
+procedure TBitWriter.Flush;
+begin
+  if FBitsInBuffer > 0 then
+  begin
+    FBuffer := FBuffer shl (8 - FBitsInBuffer);
+    FStream.WriteByte(FBuffer);
+    FBuffer := 0;
+    FBitsInBuffer := 0;
+  end;
+end;
+
+function TBitWriter.GetData: TBytes;
+begin
+  SetLength(Result, FStream.Size);
+  FStream.Position := 0;
+  FStream.Read(Result[0], FStream.Size);
+end;
+
+// ═══════════════════════════════════════════════════════════════
+// IMPLEMENTACIÓN DE TBitReader
+// ═══════════════════════════════════════════════════════════════
+
+constructor TBitReader.Create(const Data: TBytes);
+begin
+  inherited Create;
+  FData := Data;
+  FPosition := 0;
+  FBuffer := 0;
+  FBitsInBuffer := 0;
+end;
+
+function TBitReader.ReadBits(NumBits: Integer): Word;
+var
+  i: Integer;
+begin
+  Result := 0;
+
+  for i := 0 to NumBits - 1 do
+  begin
+    if FBitsInBuffer = 0 then
+    begin
+      if FPosition >= Length(FData) then
+        Exit;
+      FBuffer := FData[FPosition];
+      Inc(FPosition);
+      FBitsInBuffer := 8;
+    end;
+
+    Result := (Result shl 1) or ((FBuffer shr 7) and 1);
+    FBuffer := FBuffer shl 1;
+    Dec(FBitsInBuffer);
+  end;
+end;
+
+function TBitReader.HasMore: Boolean;
+begin
+  Result := (FPosition < Length(FData)) or (FBitsInBuffer > 0);
+end;
 constructor TEDDMailSystem.Create;
 begin
   inherited Create;
@@ -3657,6 +3783,159 @@ begin
   finally
     Dict.Free;
     Output.Free;
+  end;
+end;
+// ═══════════════════════════════════════════════════════════════
+// NUEVA COMPRESIÓN BINARIA LZW
+// ═══════════════════════════════════════════════════════════════
+
+function TEDDMailSystem.ComprimirLZWBinario(const Texto: String): TBytes;
+var
+  Dict: TStringList;
+  W, WC: String;
+  i, Code: Integer;
+  Writer: TBitWriter;
+  MaxDictSize: Integer;
+begin
+  if Length(Texto) = 0 then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+
+  Dict := TStringList.Create;
+  Writer := TBitWriter.Create;
+  try
+    // Inicializar diccionario ASCII (0-255)
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    MaxDictSize := 4096; // 2^12
+    W := Texto[1];
+
+    // Algoritmo LZW con salida binaria
+    for i := 2 to Length(Texto) do
+    begin
+      WC := W + Texto[i];
+
+      if Dict.IndexOf(WC) >= 0 then
+      begin
+        W := WC;
+      end
+      else
+      begin
+        // Escribir código en 12 bits (¡NO COMO TEXTO!)
+        Code := Dict.IndexOf(W);
+        Writer.WriteBits(Code, 12);  // ← CLAVE: 12 bits binarios
+
+        if Dict.Count < MaxDictSize then
+          Dict.Add(WC);
+
+        W := Texto[i];
+      end;
+    end;
+
+    // Escribir último código
+    Code := Dict.IndexOf(W);
+    Writer.WriteBits(Code, 12);
+
+    Writer.Flush;
+    Result := Writer.GetData;
+
+  finally
+    Dict.Free;
+    Writer.Free;
+  end;
+end;
+
+function TEDDMailSystem.DescomprimirLZWBinario(const Datos: TBytes): String;
+var
+  Dict: TStringList;
+  Reader: TBitReader;
+  OldCode, NewCode: Word;
+  S, Entry: String;
+  MaxDictSize: Integer;
+  i: Integer;
+begin
+  Result := '';
+
+  if Length(Datos) = 0 then
+    Exit;
+
+  Dict := TStringList.Create;
+  Reader := TBitReader.Create(Datos);
+  try
+    // Inicializar diccionario
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    MaxDictSize := 4096;
+
+    // Leer primer código
+    OldCode := Reader.ReadBits(12);
+    if OldCode >= Dict.Count then
+      Exit;
+
+    S := Dict[OldCode];
+    Result := S;
+
+    // Descomprimir
+    while Reader.HasMore do
+    begin
+      NewCode := Reader.ReadBits(12);
+
+      if NewCode >= Dict.Count then
+        Entry := S + S[1]
+      else
+        Entry := Dict[NewCode];
+
+      Result := Result + Entry;
+
+      if Dict.Count < MaxDictSize then
+        Dict.Add(S + Entry[1]);
+
+      S := Entry;
+    end;
+
+  finally
+    Dict.Free;
+    Reader.Free;
+  end;
+end;
+
+function TEDDMailSystem.GuardarArchivoBinario(const Ruta: String; const Datos: TBytes): Boolean;
+var
+  FileStream: TFileStream;
+begin
+  try
+    FileStream := TFileStream.Create(Ruta, fmCreate);
+    try
+      if Length(Datos) > 0 then
+        FileStream.WriteBuffer(Datos[0], Length(Datos));
+      Result := True;
+    finally
+      FileStream.Free;
+    end;
+  except
+    Result := False;
+  end;
+end;
+
+function TEDDMailSystem.CargarArchivoBinario(const Ruta: String): TBytes;
+var
+  FileStream: TFileStream;
+begin
+  try
+    FileStream := TFileStream.Create(Ruta, fmOpenRead);
+    try
+      SetLength(Result, FileStream.Size);
+      if FileStream.Size > 0 then
+        FileStream.ReadBuffer(Result[0], FileStream.Size);
+    finally
+      FileStream.Free;
+    end;
+  except
+    SetLength(Result, 0);
   end;
 end;
 

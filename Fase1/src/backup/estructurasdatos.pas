@@ -8,6 +8,31 @@ uses
   Classes, SysUtils, Math, process, DateUtils, Contnrs;
 
 type
+
+      TBitWriter = class
+  private
+    FStream: TMemoryStream;
+    FBuffer: Byte;
+    FBitsInBuffer: Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure WriteBits(Value: Word; NumBits: Integer);
+    procedure Flush;
+    function GetData: TBytes;
+  end;
+
+  TBitReader = class
+  private
+    FData: TBytes;
+    FPosition: Integer;
+    FBuffer: Byte;
+    FBitsInBuffer: Integer;
+  public
+    constructor Create(const Data: TBytes);
+    function ReadBits(NumBits: Integer): Word;
+    function HasMore: Boolean;
+  end;
   // Tipos de punteros
   PUsuario = ^TUsuario;
   PCorreo = ^TCorreo;
@@ -176,6 +201,8 @@ TBloqueBlockchain = record
   Hash: String;                   // Hash del bloque actual (SHA-256)
   Siguiente: PBloqueBlockchain;   // Puntero al siguiente bloque
 end;
+
+
 
 
   // Clase principal para manejar todas las estructuras
@@ -402,6 +429,12 @@ end;
     function ComprimirLZW(Texto: String): String;
     function GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
 
+    // Nuevas funciones de compresión binaria
+    function ComprimirLZWBinario(const Texto: String): TBytes;
+    function DescomprimirLZWBinario(const Datos: TBytes): String;
+    function GuardarArchivoBinario(const Ruta: String; const Datos: TBytes): Boolean;
+    function CargarArchivoBinario(const Ruta: String): TBytes;
+
     // Blockchain
     function ObtenerListaBloques: TStringList;
     function ObtenerDetallesBloque(NumBloque: Integer): String;
@@ -440,7 +473,100 @@ implementation
 
 uses
   fpjson, jsonparser;
+// ═══════════════════════════════════════════════════════════════
+// IMPLEMENTACIÓN DE TBitWriter
+// ═══════════════════════════════════════════════════════════════
 
+constructor TBitWriter.Create;
+begin
+  inherited Create;
+  FStream := TMemoryStream.Create;
+  FBuffer := 0;
+  FBitsInBuffer := 0;
+end;
+
+destructor TBitWriter.Destroy;
+begin
+  FStream.Free;
+  inherited Destroy;
+end;
+
+procedure TBitWriter.WriteBits(Value: Word; NumBits: Integer);
+var
+  i: Integer;
+begin
+  for i := NumBits - 1 downto 0 do
+  begin
+    FBuffer := (FBuffer shl 1) or ((Value shr i) and 1);
+    Inc(FBitsInBuffer);
+
+    if FBitsInBuffer = 8 then
+    begin
+      FStream.WriteByte(FBuffer);
+      FBuffer := 0;
+      FBitsInBuffer := 0;
+    end;
+  end;
+end;
+
+procedure TBitWriter.Flush;
+begin
+  if FBitsInBuffer > 0 then
+  begin
+    FBuffer := FBuffer shl (8 - FBitsInBuffer);
+    FStream.WriteByte(FBuffer);
+    FBuffer := 0;
+    FBitsInBuffer := 0;
+  end;
+end;
+
+function TBitWriter.GetData: TBytes;
+begin
+  SetLength(Result, FStream.Size);
+  FStream.Position := 0;
+  FStream.Read(Result[0], FStream.Size);
+end;
+
+// ═══════════════════════════════════════════════════════════════
+// IMPLEMENTACIÓN DE TBitReader
+// ═══════════════════════════════════════════════════════════════
+
+constructor TBitReader.Create(const Data: TBytes);
+begin
+  inherited Create;
+  FData := Data;
+  FPosition := 0;
+  FBuffer := 0;
+  FBitsInBuffer := 0;
+end;
+
+function TBitReader.ReadBits(NumBits: Integer): Word;
+var
+  i: Integer;
+begin
+  Result := 0;
+
+  for i := 0 to NumBits - 1 do
+  begin
+    if FBitsInBuffer = 0 then
+    begin
+      if FPosition >= Length(FData) then
+        Exit;
+      FBuffer := FData[FPosition];
+      Inc(FPosition);
+      FBitsInBuffer := 8;
+    end;
+
+    Result := (Result shl 1) or ((FBuffer shr 7) and 1);
+    FBuffer := FBuffer shl 1;
+    Dec(FBitsInBuffer);
+  end;
+end;
+
+function TBitReader.HasMore: Boolean;
+begin
+  Result := (FPosition < Length(FData)) or (FBitsInBuffer > 0);
+end;
 constructor TEDDMailSystem.Create;
 begin
   inherited Create;
@@ -3650,7 +3776,7 @@ begin
     Output.Add(IntToStr(Code));
 
     // Resultado: códigos separados por comas
-    Output.Delimiter := ',';
+    Output.Delimiter := ' ';
     Output.StrictDelimiter := True;
     Result := Output.DelimitedText;
 

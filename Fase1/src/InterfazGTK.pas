@@ -5330,8 +5330,12 @@ var
   IdSel: Integer;
   Correo: PCorreo;
   SaveDialog: TSaveDialog;
-  MensajeComprimido: String;
+  DatosComprimidos: TBytes;
+  MensajeTexto: String;
   TamOriginal, TamComprimido: Integer;
+  RatioCompresion, Cambio: Double;
+  Opcion: Integer;
+  CarpetaDescargas: String;  // ← NUEVA VARIABLE
 begin
   if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
   begin
@@ -5344,7 +5348,6 @@ begin
 
   IdSel := Integer(PtrInt(FListBandeja.Items.Objects[FListBandeja.ItemIndex]));
 
-  // Buscar el correo
   Correo := FCorreoManager.GetBandejaEntrada(Usuario);
   while (Correo <> nil) and (Correo^.Id <> IdSel) do
     Correo := Correo^.Siguiente;
@@ -5355,31 +5358,88 @@ begin
     Exit;
   end;
 
+  // ═══════════════════════════════════════════════════════
+  // CREAR CARPETA DE DESCARGAS
+  // ═══════════════════════════════════════════════════════
+  CarpetaDescargas := GetCurrentDir + '/descargas_correos';
+  ForceDirectories(CarpetaDescargas);  // ← CREA LA CARPETA automáticamente
+
+  // ═══════════════════════════════════════════════════════
+  // PREGUNTAR AL USUARIO QUÉ FORMATO QUIERE
+  // ═══════════════════════════════════════════════════════
+  Opcion := MessageDlg('Formato de compresión',
+    '¿Qué formato desea usar?' + LineEnding + LineEnding +
+    '• SÍ = Compresión LZW Real (.lzw) - Reduce tamaño' + LineEnding +
+    '• NO = Formato Texto (.txt) - Según enunciado',
+    mtConfirmation, [mbYes, mbNo, mbCancel], 0);
+
+  if Opcion = mrCancel then
+    Exit;
+
   SaveDialog := TSaveDialog.Create(nil);
   try
-    with SaveDialog do
+    TamOriginal := Length(Correo^.Mensaje);
+
+    if Opcion = mrYes then
     begin
-      Title := 'Guardar Correo Comprimido';
-      Filter := 'Archivos de texto|*.txt';
-      DefaultExt := 'txt';
-      FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.txt';
+      // ═══ FORMATO 1: COMPRESIÓN BINARIA REAL (.lzw) ═══
+      SaveDialog.Title := 'Guardar Correo Comprimido (Formato Binario)';
+      SaveDialog.Filter := 'Archivo LZW Comprimido|*.lzw';
+      SaveDialog.DefaultExt := 'lzw';
+      SaveDialog.InitialDir := CarpetaDescargas;  // ← ABRE EN LA CARPETA
+      SaveDialog.FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.lzw';
 
-      if Execute then
+      if SaveDialog.Execute then
       begin
-        // Comprimir usando LZW
-        TamOriginal := Length(Correo^.Mensaje);
-        MensajeComprimido := FSistema.ComprimirLZW(Correo^.Mensaje);
-        TamComprimido := Length(MensajeComprimido);
+        DatosComprimidos := FSistema.ComprimirLZWBinario(Correo^.Mensaje);
+        TamComprimido := Length(DatosComprimidos);
 
-        if FSistema.GuardarArchivoTexto(FileName, MensajeComprimido) then
+        if FSistema.GuardarArchivoBinario(SaveDialog.FileName, DatosComprimidos) then
+        begin
+          RatioCompresion := (1 - TamComprimido / TamOriginal) * 100;
+
           MostrarMensaje('Éxito',
-            '💾 Correo descargado y comprimido exitosamente' + LineEnding +
-            'Archivo: ' + ExtractFileName(FileName) + LineEnding +
-            'Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
-            'Tamaño comprimido: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
-            'Compresión: ' + FormatFloat('0.0', (1 - TamComprimido/TamOriginal)*100) + '%')
+            '💾 Correo comprimido exitosamente (FORMATO BINARIO LZW)' + LineEnding + LineEnding +
+            '📄 Archivo: ' + ExtractFileName(SaveDialog.FileName) + LineEnding +
+            '📂 Ubicación: ' + ExtractFilePath(SaveDialog.FileName) + LineEnding +
+            '📏 Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
+            '🗜️ Tamaño comprimido: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
+            '📊 Reducción REAL: ' + FormatFloat('0.0', RatioCompresion) + '%' + LineEnding + LineEnding +
+            '✅ Compresión efectiva aplicada');
+        end
         else
-          MostrarMensaje('Error', 'No se pudo guardar el archivo');
+          MostrarMensaje('Error', '❌ No se pudo guardar el archivo');
+      end;
+    end
+    else
+    begin
+      // ═══ FORMATO 2: TEXTO PLANO (.txt) ═══
+      SaveDialog.Title := 'Guardar Correo (Formato Texto)';
+      SaveDialog.Filter := 'Archivos de texto|*.txt';
+      SaveDialog.DefaultExt := 'txt';
+      SaveDialog.InitialDir := CarpetaDescargas;  // ← ABRE EN LA CARPETA
+      SaveDialog.FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.txt';
+
+      if SaveDialog.Execute then
+      begin
+        MensajeTexto := FSistema.ComprimirLZW(Correo^.Mensaje);
+        TamComprimido := Length(MensajeTexto);
+
+        if FSistema.GuardarArchivoTexto(SaveDialog.FileName, MensajeTexto) then
+        begin
+          Cambio := ((TamComprimido / TamOriginal) - 1) * 100;
+
+          MostrarMensaje('Éxito',
+            '💾 Correo guardado (FORMATO TEXTO - Extensión .txt)' + LineEnding + LineEnding +
+            '📄 Archivo: ' + ExtractFileName(SaveDialog.FileName) + LineEnding +
+            '📂 Ubicación: ' + ExtractFilePath(SaveDialog.FileName) + LineEnding +
+            '📏 Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
+            '📝 Tamaño archivo: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
+            '📊 Cambio: ' + FormatFloat('+0.0;-0.0', Cambio) + '%' + LineEnding + LineEnding +
+            '⚠️ Nota: Formato .txt según enunciado');
+        end
+        else
+          MostrarMensaje('Error', '❌ No se pudo guardar el archivo');
       end;
     end;
   finally
