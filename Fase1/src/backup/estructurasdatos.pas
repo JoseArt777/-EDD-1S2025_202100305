@@ -36,11 +36,11 @@ type
   PMensajeComunidad = ^TMensajeComunidad;
 
   TMensajeComunidad = record
-    Id: Integer;                    // ← NUEVO: ID único del mensaje
+    Id: Integer;                    //  ID único del mensaje
     Correo: String;
     Mensaje: String;
     FechaPublicacion: String;
-    Reacciones: Integer;            // ← NUEVO: Contador de reacciones
+    Reacciones: Integer;            // Contador de reacciones
     Siguiente: PMensajeComunidad;
   end;
 
@@ -165,7 +165,7 @@ TNodoMerkle = record
   EsHoja: Boolean;                 // Indica si es nodo hoja
 end;
 
-// ✅ NUEVO: Estructura de Bloque para Blockchain
+// Estructura de Bloque para Blockchain
 PBloqueBlockchain = ^TBloqueBlockchain;
 TBloqueBlockchain = record
   Index: Integer;                 // Número del bloque (0 para génesis)
@@ -188,8 +188,8 @@ end;
       FMatrizColumnas: PMatrizDispersaColumna;
       FUsuarioActual: PUsuario;
       FArbolComunidades: PNodoBST;    // Árbol BST de comunidades
-        FListaLogueo: PRegistroLogueo;  // ← ESTA ES LA LÍNEA QUE FALTA
-                   // ✅ NUEVO: Campos para Blockchain
+      FListaLogueo: PRegistroLogueo;
+    // Campos para Blockchain
     FBlockchainHead: PBloqueBlockchain;
     FBlockchainCount: Integer;
 
@@ -258,7 +258,7 @@ end;
 
   procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
 
-      // NUEVOS MÉTODOS PRIVADOS:
+      // NUEVOS MÉTODOS PRIVADOS para MERKLE:
     function ConstruirArbolMerkleBalanceado(ListaHojas: array of PNodoMerkle): PNodoMerkle;
     procedure LiberarArbolMerkle(Nodo: PNodoMerkle);
         function GenerarHashSHA256(Datos: String): String;
@@ -270,7 +270,7 @@ end;
 
 
 
-    // ✅ NUEVO: Métodos privados para Blockchain
+    // Métodos para Blockchain
     function CrearBloqueGenesis: PBloqueBlockchain;
     function CalcularHashBloque(Index: Integer; Timestamp, Data: String;
       Nonce: Integer; PreviousHash: String): String;
@@ -426,7 +426,7 @@ function GetArbolComunidades: PNodoBST;
     procedure ConstruirArbolMerkleDesdeCorreos(Usuario: PUsuario);
 
 
-     // ✅ NUEVO: Métodos públicos para Blockchain
+     // Métodos para Blockchain
     procedure AgregarBloqueBlockchain(CorreoId: Integer; Remitente, Asunto, Mensaje: String);
     function VerificarIntegridadBlockchain: Boolean;
     function ObtenerTotalBloques: Integer;
@@ -447,16 +447,16 @@ begin
   FMatrizColumnas := nil;
   FUsuarioActual := nil;
   FArbolComunidades := nil;  // se inicializa árbol de comunidades
-  FListaLogueo := nil;       // ← Inicializar lista de logueo
+  FListaLogueo := nil;       // INicializa lista de logueo
 
-  // ✅ NUEVO: Inicializar blockchain
+  // Inicializar blockchain
   FBlockchainHead := nil;
   FBlockchainCount := 0;
 
   WriteLn('Sistema EDDMail inicializado');
   WriteLn('Inicializando blockchain...');
 
-  // Crear bloque génesis al iniciar el sistema
+  // Crea bloque génesis al iniciar el sistema
   try
     FBlockchainHead := CrearBloqueGenesis;
     FBlockchainCount := 1;
@@ -505,7 +505,7 @@ begin
   if FArbolComunidades <> nil then
     LiberarArbolComunidades(FArbolComunidades);
 
-  // ✅ NUEVO: Liberar blockchain
+  // Liberar blockchain
   try
     LiberarBlockchain;
     WriteLn('✓ Blockchain liberado');
@@ -818,7 +818,7 @@ begin
   FUsuarioActual := ValidarCredenciales(Email, Password);
   Result := FUsuarioActual <> nil;
 
-  // ✅ REGISTRAR ENTRADA
+  // REGISTRA ENTRADA
   if Result then
   begin
     New(NuevoLog);
@@ -834,7 +834,7 @@ procedure TEDDMailSystem.CerrarSesion;
 var
   Log: PRegistroLogueo;
 begin
-  // ✅ REGISTRAR SALIDA
+  // REGISTRA SALIDA
   if FUsuarioActual <> nil then
   begin
     Log := FListaLogueo;
@@ -3692,7 +3692,7 @@ begin
     Rewrite(Archivo);
 
     WriteLn(Archivo, 'digraph MerkleTree {');
-    WriteLn(Archivo, '    label="Árbol de Merkle - Favoritos";');
+    WriteLn(Archivo, '    label="Árbol de Merkle - Privados";');
     WriteLn(Archivo, '    fontsize=20;');
     WriteLn(Archivo, '    node [shape=box, style=filled];');
     WriteLn(Archivo, '    rankdir=TB;');
@@ -3700,7 +3700,7 @@ begin
 
     if Usuario^.ArbolMerkleFavoritos = nil then
     begin
-      WriteLn(Archivo, '    empty [label="Sin favoritos", fillcolor=lightgray];');
+      WriteLn(Archivo, '    empty [label="Sin privados", fillcolor=lightgray];');
     end
     else
     begin
@@ -4250,11 +4250,6 @@ begin
 
   WriteLn('🔄 Iniciando migración de Árbol B a Árbol de Merkle...');
 
-  // Ya no tenemos ArbolFavoritos (Árbol B), por lo que este método
-  // solo se usará si aún tienes el campo antiguo temporalmente
-
-  // Si ya eliminaste ArbolFavoritos y tienes correos que agregar manualmente:
-  // Simplemente usa MarcarComoFavorito() para cada correo
 
   WriteLn('✓ Migración completada');
 end;
@@ -4321,7 +4316,7 @@ end;
      Exit;
    end;
 
-   // 🔑 PASO 1: Expandir SOLO las hojas a la siguiente potencia de 2
+   // PASO 1: Expandir SOLO las hojas a la siguiente potencia de 2
    CantidadObjetivo := SiguientePotenciaDe2(Length(ListaHojas));
    SetLength(HojasExpandidas, CantidadObjetivo);
 
@@ -4329,7 +4324,7 @@ end;
    for i := 0 to High(ListaHojas) do
      HojasExpandidas[i] := ListaHojas[i];
 
-   // 🔑 Duplicar la última hoja las veces necesarias
+   // Duplicar la última hoja las veces necesarias
    for i := Length(ListaHojas) to CantidadObjetivo - 1 do
      HojasExpandidas[i] := CopiarNodoMerkle(ListaHojas[High(ListaHojas)]);
 
@@ -4410,7 +4405,7 @@ begin
       CorreoId := StrToIntDef(ListaFavoritos[i], -1);
       if CorreoId = -1 then Continue;
 
-      // ✅ USAR LA FUNCIÓN QUE YA EXISTE EN TU CÓDIGO
+      // SE USA LA FUNCIÓN EXISTENTE
       Correo := BuscarCorreoEnBandeja(Usuario, CorreoId);
       if Correo = nil then Continue;
 
@@ -4570,7 +4565,7 @@ begin
   WriteLn('Creando bloque génesis...');
   Timestamp := FormatearTimestamp;
 
-  // ✅ PreviousHash del génesis DEBE ser "0000" según especificación
+  // PreviousHash del génesis DEBE ser "0000" según especificación
   Result := MinarBloque(0, Timestamp, 'Genesis Block', '0000');
 
   WriteLn('✓ Bloque génesis creado');
@@ -4874,7 +4869,7 @@ end;
 
 procedure TEDDMailSystem.LiberarMatriz;
 begin
-  // Versión simplificada - la matriz se liberará con los usuarios
+  // la matriz se liberará con los usuarios
   FMatrizFilas := nil;
   FMatrizColumnas := nil;
   WriteLn('Matriz liberada');

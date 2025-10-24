@@ -627,7 +627,7 @@ begin
   with BtnFavoritos do
   begin
     Parent := CardFase2;
-    Caption := '⭐ Ver Favoritos';
+    Caption := '🔏 Ver Privados';
     Left := 15;
     Top := YPos2;
     Width := 180;
@@ -657,12 +657,12 @@ begin
   with BtnPublicarComunidad do
   begin
     Parent := CardFase2;
-    Caption := '💥 Comunidades';  // ← CAMBIAR texto
+    Caption := '💥 Comunidades';
     Left := 15;
     Top := YPos2;
     Width := 180;
     Height := 38;
-    OnClick := @OnGestionarComunidadesUsuarioClick;  // ← CAMBIAR evento
+    OnClick := @OnGestionarComunidadesUsuarioClick;
     Font.Style := [fsBold];
     Color := $00CCFFCC;
   end;
@@ -2546,10 +2546,10 @@ var
   LabelTitulo: TLabel;
   BtnOrdenar, BtnMarcarLeido, BtnEliminar, BtnCerrar: TButton;
     BtnMarcarFavorito: TButton;
-      BtnDescargar: TButton;          // ← FALTA ESTA
-  LabelFase3: TLabel;             // ← FALTA ESTA
-  BtnReporteMerkle: TButton;      // ← FALTA ESTA
-  LabelBuscar: TLabel;            // ← FALTA ESTA
+      BtnDescargar: TButton;
+  LabelFase3: TLabel;
+  BtnReporteMerkle: TButton;
+  LabelBuscar: TLabel;
 
 
 begin
@@ -2649,12 +2649,12 @@ begin
     OnClick := @Inbox_OnMarcarLeidoClick;
   end;
 
-  // NUEVO BOTÓN: Marcar como Favorito
+  // Marcar como Favorito
   BtnMarcarFavorito := TButton.Create(Panel);
   with BtnMarcarFavorito do
   begin
     Parent := Panel;
-    Caption := '⭐ Favorito';
+    Caption := '🔏 Privado';
     Left := 270; Top := 420; Width := 120; Height := 30;
     OnClick := @Inbox_OnMarcarFavoritoClick;
     Font.Style := [fsBold];
@@ -2679,7 +2679,7 @@ end;
   begin
     Parent := Panel;
     Caption := 'Eliminar';
-      Left := 530; Top := 420; Width := 100; Height := 30;  // <- CAMBIAR AQUÍ
+      Left := 530; Top := 420; Width := 100; Height := 30;
 
     OnClick := @Inbox_OnEliminarClick;
   end;
@@ -2688,8 +2688,8 @@ end;
   with BtnCerrar do
   begin
     Parent := Panel;
-    Caption := 'Cerrar';
-      Left := 640; Top := 420; Width := 100; Height := 30;  // <- CAMBIAR AQUÍ
+    Caption := '❌';
+      Left := 640; Top := 420; Width := 50; Height := 30;
 
     OnClick := @Inbox_OnCerrarClick;
     Cancel := True;
@@ -3691,11 +3691,11 @@ begin
     with BtnFavoritos do
     begin
       Parent := Panel;
-      Caption := '⭐ Reporte de Favoritos (Árbol B)';
+      Caption := '🔏 Reporte de Privados (Árbol Merkle)';
       Left := 20; Top := YPos; Width := 430; Height := 35;
-      Hint := 'Árbol B orden 5 - Correos favoritos';
+      Hint := 'Árbol de Merkle - Correos Privados';
       ShowHint := True;
-      OnClick := @OnReporteFavoritosClick; // ← Nuevo event handler
+      OnClick := @OnReporteFavoritosClick;
       Font.Style := [fsBold];
       Color := clYellow;
     end;
@@ -3947,7 +3947,7 @@ begin
   FFormFavoritos := TForm.Create(nil);
   with FFormFavoritos do
   begin
-    Caption := 'Correos Favoritos (Árbol B)';
+    Caption := 'Correos Privados (Árbol de Merkle)';
     Width := 700;
     Height := 480;
     Position := poOwnerFormCenter;
@@ -4005,7 +4005,7 @@ end;
   with LabelTitulo do
   begin
     Parent := Panel;
-    Caption := 'Correos Favoritos ⭐';
+    Caption := 'Correos Privados 🔏';
     Font.Size := 14;
     Font.Style := [fsBold];
     Left := 10;
@@ -4053,7 +4053,7 @@ end;
   with BtnEliminar do
   begin
     Parent := Panel;
-    Caption := 'Eliminar de Favoritos';
+    Caption := 'Eliminar de Privados';
     Left := 10;
     Top := 410;
     Width := 150;
@@ -4131,7 +4131,7 @@ begin
 
   if FSistema.EliminarFavorito(Usuario, CorreoId) then
   begin
-    MostrarMensaje('Éxito', 'Correo eliminado de favoritos');
+    MostrarMensaje('Éxito', 'Correo eliminado de privados');
     Favoritos_RellenarLista;
     FMemoFavorito.Clear;
   end
@@ -4678,15 +4678,15 @@ begin
   if FSistema.MarcarComoFavorito(Usuario, IdSel) then
   begin
     MostrarMensaje('Éxito',
-      '✅ Correo marcado como favorito' + LineEnding +
+      '✅ Correo marcado como privado' + LineEnding +
       'Asunto: ' + CorreoSeleccionado^.Asunto + LineEnding +
-      'Puede verlo en "⭐ Ver Favoritos"');
+      'Puede verlo en "🔏 Ver Privados"');
   end
   else
   begin
     MostrarMensaje('Error',
       'No se pudo marcar como favorito' + LineEnding +
-      'Es posible que el correo ya esté en favoritos');
+      'Es posible que el correo ya esté en privados');
   end;
 end;
 // Implementar funcionalidad de Publicar en Comunidad
@@ -6173,42 +6173,11 @@ begin
       Left := 5;
       Top := 5;
       Width := Panel.Width - 10;
-      Height := Panel.Height - 10;  // ← CAMBIO 4: Ajustar altura (de -60 a -10)
+      Height := Panel.Height - 10;
       Anchors := [akLeft, akTop, akRight, akBottom];
       BorderStyle := bsSingle;
       Color := clWhite;
     end;
-
-    // ← CAMBIO 5: ELIMINAR LOS BOTONES INFERIORES (comentar o borrar estas líneas)
-    {
-    BtnPublicar := TButton.Create(FormComunidades);
-    with BtnPublicar do
-    begin
-      Parent := Panel;
-      Caption := '📢 Publicar Mensaje';
-      Left := 10;
-      Top := Panel.Height - 45;
-      Width := 250;
-      Height := 40;
-      Anchors := [akLeft, akBottom];
-      OnClick := @UsuarioComunidades_OnPublicarClick;
-      Font.Style := [fsBold];
-      Color := clLime;
-    end;
-
-    BtnCerrar := TButton.Create(FormComunidades);
-    with BtnCerrar do
-    begin
-      Parent := Panel;
-      Caption := 'Cerrar';
-      Left := Panel.Width - 260;
-      Top := Panel.Height - 45;
-      Width := 250;
-      Height := 40;
-      Anchors := [akRight, akBottom];
-      ModalResult := mrCancel;
-    end;
-    }
 
     FormComunidades.ShowModal;
 
@@ -6327,13 +6296,10 @@ begin
     MostrarMensaje('Éxito',
       '✓ Mensaje publicado correctamente en: ' + NombreComunidad);
 
-    // Actualizar vista automáticamente si el ScrollBox existe
+
     if ScrollBox <> nil then
     begin
-      // Simular clic en el botón "Ver Mensajes" para refrescar
-      // O llamar directamente al procedimiento de actualización
 
-      // Limpiar ScrollBox
       while ScrollBox.ControlCount > 0 do
         ScrollBox.Controls[0].Free;
 
@@ -6474,7 +6440,7 @@ begin
         Exit;
       end;
 
-      // ¡AQUÍ ESTÁ LA DIFERENCIA! Llama a la función real del sistema
+
       if FSistema.ReaccionarAMensaje(NombreComunidad, IdMensaje) then
       begin
         MostrarMensaje('Éxito',

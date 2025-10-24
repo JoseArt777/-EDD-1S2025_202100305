@@ -5,12 +5,16 @@ digraph G {
     node [shape=record, style=filled, fillcolor=lightblue];
     contact_mitzep_at_edd_com [label="ID: 5488|Nombre: Marcos Itzep|Usuario: mitzep|Email: mitzep@edd.com|Tel: 87654321"];
     contact_gkroah_hartman_at_edd_com [label="ID: 5928|Nombre: Greg Kroah-Hartman|Usuario: gkroah-hartman|Email: gkroah-hartman@edd.com|Tel: 31628954"];
-    contact_mshuttleworth_at_edd_com [label="ID: 5449|Nombre: Mark Shuttleworth|Usuario: mshuttleworth|Email: mshuttleworth@edd.com|Tel: 76018423"];
-    contact_smejia_at_edd_com [label="ID: 8472|Nombre: Steven Mejia|Usuario: smejia|Email: smejia@edd.com|Tel: 23419875"];
+    contact_mshuttleworth_at_edd_com [label="ID: 7152|Nombre: Mark Shuttleworth|Usuario: mshuttleworth|Email: mshuttleworth@edd.com|Tel: 76018423"];
+    contact_smejia_at_edd_com [label="ID: 8442|Nombre: Steven Mejia|Usuario: smejia|Email: smejia@edd.com|Tel: 23419875"];
+    contact_EJEMPLO_at_EDD_COM [label="ID: 9786|Nombre: CONTACTO|Usuario: EJEMPLO|Email: EJEMPLO@EDD.COM|Tel: 45454545"];
+    contact_jcorbet_at_edd_com [label="ID: 4736|Nombre: Jon Corbet|Usuario: jcorbet|Email: jcorbet@edd.com|Tel: 75849231"];
     contact_mitzep_at_edd_com -> contact_gkroah_hartman_at_edd_com;
     contact_gkroah_hartman_at_edd_com -> contact_mshuttleworth_at_edd_com;
     contact_mshuttleworth_at_edd_com -> contact_smejia_at_edd_com;
-    contact_smejia_at_edd_com -> contact_mitzep_at_edd_com;
+    contact_smejia_at_edd_com -> contact_EJEMPLO_at_EDD_COM;
+    contact_EJEMPLO_at_EDD_COM -> contact_jcorbet_at_edd_com;
+    contact_jcorbet_at_edd_com -> contact_mitzep_at_edd_com;
     edge [color=red, style=dashed];
-    contact_smejia_at_edd_com -> contact_mitzep_at_edd_com [label="circular"];
+    contact_jcorbet_at_edd_com -> contact_mitzep_at_edd_com [label="circular"];
 }

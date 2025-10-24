@@ -13,7 +13,6 @@ graph GrafoContactos {
     rank=same;
     node [shape=circle, style=filled, fillcolor=lightblue];
 
-    user_0 [label="ID: 0\nUsuario: root"];
     user_1 [label="ID: 1\nUsuario: lgarcia"];
     user_2 [label="ID: 2\nUsuario: mitzep"];
     user_3 [label="ID: 3\nUsuario: gkroah-hartman"];
@@ -24,6 +23,7 @@ graph GrafoContactos {
     user_8 [label="ID: 8\nUsuario: ksandler"];
     user_9 [label="ID: 9\nUsuario: mbaker"];
     user_10 [label="ID: 10\nUsuario: imurdock"];
+    user_0 [label="ID: 0\nUsuario: root"];
     user_11 [label="ID: 11\nUsuario: ltorvalds"];
     user_12 [label="ID: 12\nUsuario: rstallman"];
   }
@@ -33,82 +33,8 @@ graph GrafoContactos {
     rank=same;
     node [shape=circle, style=filled, fillcolor=lightgreen];
 
-    contact_5488 [label="ID: 5488\nContacto: mitzep"];
-    contact_5928 [label="ID: 5928\nContacto: gkroah-hartman"];
-    contact_7152 [label="ID: 7152\nContacto: mshuttleworth"];
-    contact_8442 [label="ID: 8442\nContacto: smejia"];
-    contact_6028 [label="ID: 6028\nContacto: root"];
-    contact_8579 [label="ID: 8579\nContacto: lgarcia"];
-    contact_5449 [label="ID: 5449\nContacto: bfox"];
-    contact_8472 [label="ID: 8472\nContacto: jcorbet"];
-    contact_4237 [label="ID: 4237\nContacto: lgarcia"];
-    contact_6236 [label="ID: 6236\nContacto: mshuttleworth"];
-    contact_6459 [label="ID: 6459\nContacto: ksandler"];
-    contact_3844 [label="ID: 3844\nContacto: root"];
-    contact_4376 [label="ID: 4376\nContacto: gkroah-hartman"];
-    contact_2976 [label="ID: 2976\nContacto: smejia"];
-    contact_8917 [label="ID: 8917\nContacto: imurdock"];
-    contact_568 [label="ID: 568\nContacto: lgarcia"];
-    contact_9636 [label="ID: 9636\nContacto: mitzep"];
-    contact_2727 [label="ID: 2727\nContacto: mshuttleworth"];
-    contact_3835 [label="ID: 3835\nContacto: bfox"];
-    contact_4777 [label="ID: 4777\nContacto: root"];
-    contact_7917 [label="ID: 7917\nContacto: smejia"];
-    contact_8121 [label="ID: 8121\nContacto: jcorbet"];
-    contact_5289 [label="ID: 5289\nContacto: ksandler"];
-    contact_4800 [label="ID: 4800\nContacto: mitzep"];
-    contact_5680 [label="ID: 5680\nContacto: bfox"];
-    contact_3928 [label="ID: 3928\nContacto: gkroah-hartman"];
-    contact_9256 [label="ID: 9256\nContacto: root"];
-    contact_8360 [label="ID: 8360\nContacto: lgarcia"];
-    contact_711 [label="ID: 711\nContacto: gkroah-hartman"];
-    contact_3374 [label="ID: 3374\nContacto: imurdock"];
-    contact_872 [label="ID: 872\nContacto: mitzep"];
-    contact_6482 [label="ID: 6482\nContacto: jcorbet"];
-    contact_203 [label="ID: 203\nContacto: ksandler"];
-    contact_3683 [label="ID: 3683\nContacto: bfox"];
-    contact_8326 [label="ID: 8326\nContacto: root"];
-    contact_9571 [label="ID: 9571\nContacto: mshuttleworth"];
-    contact_7781 [label="ID: 7781\nContacto: smejia"];
   }
 
   // ========== RELACIONES ==========
 
-  user_1 -- contact_5488;
-  user_1 -- contact_5928;
-  user_1 -- contact_7152;
-  user_1 -- contact_8442;
-  user_2 -- contact_6028;
-  user_2 -- contact_8579;
-  user_2 -- contact_5449;
-  user_2 -- contact_8472;
-  user_3 -- contact_4237;
-  user_3 -- contact_6236;
-  user_3 -- contact_6459;
-  user_4 -- contact_3844;
-  user_4 -- contact_4376;
-  user_4 -- contact_2976;
-  user_4 -- contact_8917;
-  user_5 -- contact_568;
-  user_5 -- contact_9636;
-  user_5 -- contact_2727;
-  user_5 -- contact_3835;
-  user_6 -- contact_4777;
-  user_6 -- contact_7917;
-  user_6 -- contact_8121;
-  user_6 -- contact_5289;
-  user_7 -- contact_4800;
-  user_7 -- contact_5680;
-  user_7 -- contact_3928;
-  user_8 -- contact_9256;
-  user_8 -- contact_8360;
-  user_8 -- contact_711;
-  user_8 -- contact_3374;
-  user_9 -- contact_872;
-  user_9 -- contact_6482;
-  user_9 -- contact_203;
-  user_9 -- contact_3683;
-  user_10 -- contact_8326;
-  user_10 -- contact_9571;
-  user_10 -- contact_7781;
 }

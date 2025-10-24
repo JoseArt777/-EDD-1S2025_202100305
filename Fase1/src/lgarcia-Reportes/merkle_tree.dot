@@ -1,20 +1,20 @@
 digraph MerkleTree {
-    label="Árbol de Merkle - Favoritos";
+    label="Árbol de Merkle - Privados";
     fontsize=20;
     node [shape=box, style=filled];
     rankdir=TB;
 
-    node0 [label="Hash: 97290C7F00...", fillcolor=lightyellow];
-    node1 [label="Hash: E18CCC5100...", fillcolor=lightyellow];
-    node2 [label="De: smejia@edd.com\nAsunto: Script de base de datos\nFecha: 19-10-25 20:41\nHash: C1D4913800...", fillcolor=lightgreen];
+    node0 [label="Hash: 39E0D40500...", fillcolor=lightyellow];
+    node1 [label="Hash: 5C2A20D200...", fillcolor=lightyellow];
+    node2 [label="De: bfox@edd.com\nAsunto: Actualización del kernel\nFecha: 23-10-25 12:12\nHash: D3C3859B00...", fillcolor=lightgreen];
     node1 -> node2;
-    node3 [label="De: jcorbet@edd.com\nAsunto: Consulta de seguridad\nFecha: 19-10-25 20:41\nHash: 1BFBF2AB00...", fillcolor=lightgreen];
+    node3 [label="De: smejia@edd.com\nAsunto: Estado del módulo backend\nFecha: 23-10-25 12:12\nHash: 1AC13BD800...", fillcolor=lightgreen];
     node1 -> node3;
     node0 -> node1;
-    node4 [label="Hash: BF2ACB9D00...", fillcolor=lightyellow];
-    node5 [label="De: bfox@edd.com\nAsunto: Actualización de repositorio\nFecha: 19-10-25 20:41\nHash: 99BC8BBE00...", fillcolor=lightgreen];
+    node4 [label="Hash: 8142236F00...", fillcolor=lightyellow];
+    node5 [label="De: smejia@edd.com\nAsunto: Recordatorio de reunión\nFecha: 23-10-25 12:12\nHash: 92A3340600...", fillcolor=lightgreen];
     node4 -> node5;
-    node6 [label="De: bfox@edd.com\nAsunto: Actualización de repositorio\nFecha: 19-10-25 20:41\nHash: 99BC8BBE00...", fillcolor=lightgreen];
+    node6 [label="De: smejia@edd.com\nAsunto: Recordatorio de reunión\nFecha: 23-10-25 12:12\nHash: 92A3340600...", fillcolor=lightgreen];
     node4 -> node6;
     node0 -> node4;
 }
