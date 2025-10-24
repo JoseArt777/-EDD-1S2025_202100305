@@ -285,6 +285,10 @@ end;
   procedure LiberarArbolComunidades(var Raiz: PNodoBST);
 
 
+      function BuscarUsuarioPorNombre(NombreUsuario: String): PUsuario;
+
+
+
     public
       constructor Create;
       destructor Destroy; override;
@@ -3905,11 +3909,12 @@ var
   UsuarioObj: TJSONObject;
   ContactosArray: TJSONArray;
   i, j, UsuarioId: Integer;
-  EmailContacto: String;
-  Usuario: PUsuario;
+  NombreUsuario, EmailContacto: String;
+  Usuario, ContactoUsuario: PUsuario;
   FileStream: TFileStream;
   JsonString: String;
   ContactosAgregados, ContactosOmitidos: Integer;
+  UsaEstructuraNueva: Boolean;
 begin
   ContactosAgregados := 0;
   ContactosOmitidos := 0;
@@ -3941,54 +3946,143 @@ begin
     JsonData := GetJSON(JsonString);
     try
       Root := JsonData as TJSONObject;
-      UsuariosArray := Root.Arrays['usuarios'];
+
+      // Buscar el array de usuarios (puede ser "usuarios" o "Usuarios")
+      if Root.Find('Usuarios') <> nil then
+        UsuariosArray := Root.Arrays['Usuarios']
+      else if Root.Find('usuarios') <> nil then
+        UsuariosArray := Root.Arrays['usuarios']
+      else
+      begin
+        WriteLn('Error: No se encontró el array de usuarios en el JSON');
+        Exit;
+      end;
 
       WriteLn('=== Iniciando carga masiva de contactos ===');
 
+      // Procesar cada usuario
       for i := 0 to UsuariosArray.Count - 1 do
       begin
         UsuarioObj := UsuariosArray.Objects[i];
-        UsuarioId := UsuarioObj.Get('id', -1);
+        Usuario := nil;
 
-        if UsuarioId = -1 then
+        // ======================================================================
+        // DETECTAR ESTRUCTURA Y BUSCAR USUARIO CORRESPONDIENTE
+        // ======================================================================
+
+        if UsuarioObj.Find('Usuario') <> nil then
         begin
-          WriteLn('Aviso: Usuario sin ID en posición ', i);
+          // *** ESTRUCTURA NUEVA: Buscar por nombre de usuario ***
+          UsaEstructuraNueva := True;
+          NombreUsuario := UsuarioObj.Get('Usuario', '');
+
+          if NombreUsuario = '' then
+          begin
+            WriteLn('Aviso: Usuario sin nombre en posición ', i);
+            Continue;
+          end;
+
+          // Buscar el usuario por nombre de usuario
+          Usuario := BuscarUsuarioPorNombre(NombreUsuario);
+          if Usuario = nil then
+          begin
+            WriteLn('Aviso: Usuario "', NombreUsuario, '" no existe en el sistema');
+            Continue;
+          end;
+
+          WriteLn('Procesando contactos para usuario: ', NombreUsuario, ' (', Usuario^.Email, ')');
+        end
+        else if UsuarioObj.Find('id') <> nil then
+        begin
+          // *** ESTRUCTURA ANTIGUA: Buscar por ID ***
+          UsaEstructuraNueva := False;
+          UsuarioId := UsuarioObj.Get('id', -1);
+
+          if UsuarioId = -1 then
+          begin
+            WriteLn('Aviso: Usuario sin ID en posición ', i);
+            Continue;
+          end;
+
+          // Buscar el usuario por ID
+          Usuario := BuscarUsuarioPorId(UsuarioId);
+          if Usuario = nil then
+          begin
+            WriteLn('Aviso: Usuario con ID ', UsuarioId, ' no existe en el sistema');
+            Continue;
+          end;
+
+          WriteLn('Procesando contactos para usuario ID ', UsuarioId, ': ', Usuario^.Email);
+        end
+        else
+        begin
+          WriteLn('Aviso: Usuario en posición ', i, ' no tiene ni "id" ni "Usuario"');
           Continue;
         end;
 
-        // Buscar el usuario por ID
-        Usuario := BuscarUsuarioPorId(UsuarioId);
-        if Usuario = nil then
-        begin
-          WriteLn('Aviso: Usuario con ID ', UsuarioId, ' no existe en el sistema');
-          Continue;
-        end;
+        // ======================================================================
+        // PROCESAR ARRAY DE CONTACTOS
+        // ======================================================================
 
-        WriteLn('Procesando contactos para usuario: ', Usuario^.Email);
-
-        // Verificar si tiene array de contactos
-        if UsuarioObj.Find('contactos') = nil then
+        // Verificar si tiene array de contactos (puede ser "Contactos" o "contactos")
+        if UsuarioObj.Find('Contactos') <> nil then
+          ContactosArray := UsuarioObj.Arrays['Contactos']
+        else if UsuarioObj.Find('contactos') <> nil then
+          ContactosArray := UsuarioObj.Arrays['contactos']
+        else
         begin
           WriteLn('  Sin contactos en el JSON');
           Continue;
         end;
 
-        ContactosArray := UsuarioObj.Arrays['contactos'];
-
+        // Procesar cada contacto
         for j := 0 to ContactosArray.Count - 1 do
         begin
-          EmailContacto := ContactosArray.Strings[j];
-
-          // Intentar agregar el contacto
-          if AgregarContacto(Usuario, EmailContacto) then
+          if UsaEstructuraNueva then
           begin
-            WriteLn('  ✅ Contacto agregado: ', EmailContacto);
-            Inc(ContactosAgregados);
+            // *** ESTRUCTURA NUEVA: Los contactos son nombres de usuario ***
+            NombreUsuario := ContactosArray.Strings[j];
+
+            // Buscar el usuario contacto por su nombre de usuario
+            ContactoUsuario := BuscarUsuarioPorNombre(NombreUsuario);
+
+            if ContactoUsuario = nil then
+            begin
+              WriteLn('  ⚠️  Contacto omitido (usuario no existe): ', NombreUsuario);
+              Inc(ContactosOmitidos);
+              Continue;
+            end;
+
+            EmailContacto := ContactoUsuario^.Email;
+
+            // Intentar agregar el contacto
+            if AgregarContacto(Usuario, EmailContacto) then
+            begin
+              WriteLn('  ✅ Contacto agregado: ', NombreUsuario, ' (', EmailContacto, ')');
+              Inc(ContactosAgregados);
+            end
+            else
+            begin
+              WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', NombreUsuario);
+              Inc(ContactosOmitidos);
+            end;
           end
           else
           begin
-            WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', EmailContacto);
-            Inc(ContactosOmitidos);
+            // *** ESTRUCTURA ANTIGUA: Los contactos son emails directamente ***
+            EmailContacto := ContactosArray.Strings[j];
+
+            // Intentar agregar el contacto
+            if AgregarContacto(Usuario, EmailContacto) then
+            begin
+              WriteLn('  ✅ Contacto agregado: ', EmailContacto);
+              Inc(ContactosAgregados);
+            end
+            else
+            begin
+              WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', EmailContacto);
+              Inc(ContactosOmitidos);
+            end;
           end;
         end;
       end;
@@ -4901,5 +4995,31 @@ begin
   // Liberar el nodo actual
   Dispose(Raiz);
   Raiz := nil;
+end;
+
+function TEDDMailSystem.BuscarUsuarioPorNombre(NombreUsuario: String): PUsuario;
+var
+  Actual: PUsuario;
+  UsuarioEnEmail: String;
+begin
+  Result := nil;
+  Actual := FUsuarios;
+
+  while Actual <> nil do
+  begin
+    // Extraer el nombre de usuario del email (parte antes del @)
+    if Pos('@', Actual^.Email) > 0 then
+    begin
+      UsuarioEnEmail := Copy(Actual^.Email, 1, Pos('@', Actual^.Email) - 1);
+
+      // Comparar sin distinguir mayúsculas/minúsculas
+      if LowerCase(UsuarioEnEmail) = LowerCase(NombreUsuario) then
+      begin
+        Result := Actual;
+        Exit;
+      end;
+    end;
+    Actual := Actual^.Siguiente;
+  end;
 end;
  end.

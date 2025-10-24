@@ -1,93 +1,101 @@
 {
-  "usuarios": [
+  "Usuarios": [
     {
-      "id": 1,
-      "contactos": [
-        "mitzep@edd.com",
-        "gkroah-hartman@edd.com",
-        "mshuttleworth@edd.com",
-        "smejia@edd.com"
+      "Usuario": "lgarcia",
+      "Contactos": [
+        "mitzep",
+        "smejia",
+        "bfox"
       ]
     },
     {
-      "id": 2,
-      "contactos": [
-        "root@edd.com",
-        "lgarcia@edd.com",
-        "bfox@edd.com",
-        "jcorbet@edd.com"
+      "Usuario": "mitzep",
+      "Contactos": [
+        "gkroah-hartman",
+        "mshuttleworth",
+        "smejia",
+        "lgarcia"
       ]
     },
     {
-      "id": 3,
-      "contactos": [
-        "lgarcia@edd.com",
-        "mshuttleworth@edd.com",
-        "ksandler@edd.com",
-        "mbaker@edd.com"
+      "Usuario": "gkroah-hartman",
+      "Contactos": [
+        "mitzep",
+        "mshuttleworth",
+        "ltorvalds"
       ]
     },
     {
-      "id": 4,
-      "contactos": [
-        "root@edd.com",
-        "gkroah-hartman@edd.com",
-        "smejia@edd.com",
-        "imurdock@edd.com"
+      "Usuario": "mshuttleworth",
+      "Contactos": [
+        "mitzep",
+        "gkroah-hartman",
+        "rstallman"
       ]
     },
     {
-      "id": 5,
-      "contactos": [
-        "lgarcia@edd.com",
-        "mitzep@edd.com",
-        "mshuttleworth@edd.com",
-        "bfox@edd.com"
+      "Usuario": "smejia",
+      "Contactos": [
+        "mitzep",
+        "lgarcia",
+        "bfox",
+        "jcorbet"
       ]
     },
     {
-      "id": 6,
-      "contactos": [
-        "root@edd.com",
-        "smejia@edd.com",
-        "jcorbet@edd.com",
-        "ksandler@edd.com"
+      "Usuario": "bfox",
+      "Contactos": [
+        "lgarcia",
+        "jcorbet",
+        "smejia",
+        "rstallman"
       ]
     },
     {
-      "id": 7,
-      "contactos": [
-        "mitzep@edd.com",
-        "bfox@edd.com",
-        "gkroah-hartman@edd.com",
-        "mbaker@edd.com"
+      "Usuario": "jcorbet",
+      "Contactos": [
+        "bfox",
+        "smejia",
+        "ltorvalds"
       ]
     },
     {
-      "id": 8,
-      "contactos": [
-        "root@edd.com",
-        "lgarcia@edd.com",
-        "gkroah-hartman@edd.com",
-        "imurdock@edd.com"
+      "Usuario": "ksandler",
+      "Contactos": [
+        "mbaker",
+        "imurdock"
       ]
     },
     {
-      "id": 9,
-      "contactos": [
-        "mitzep@edd.com",
-        "jcorbet@edd.com",
-        "ksandler@edd.com",
-        "bfox@edd.com"
+      "Usuario": "mbaker",
+      "Contactos": [
+        "ksandler",
+        "imurdock",
+        "mshuttleworth"
       ]
     },
     {
-      "id": 10,
-      "contactos": [
-        "root@edd.com",
-        "mshuttleworth@edd.com",
-        "smejia@edd.com",
-        "mbaker@edd.com"
+      "Usuario": "imurdock",
+      "Contactos": [
+        "mbaker",
+        "ksandler",
+        "gkroah-hartman"
+      ]
+    },
+    {
+      "Usuario": "ltorvalds",
+      "Contactos": [
+        "gkroah-hartman",
+        "jcorbet",
+        "rstallman"
+      ]
+    },
+    {
+      "Usuario": "rstallman",
+      "Contactos": [
+        "mshuttleworth",
+        "bfox",
+        "ltorvalds"
       ]
     }
   ]

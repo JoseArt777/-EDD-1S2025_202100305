@@ -4,17 +4,5 @@ digraph MerkleTree {
     node [shape=box, style=filled];
     rankdir=TB;
 
-    node0 [label="Hash: 39E0D40500...", fillcolor=lightyellow];
-    node1 [label="Hash: 5C2A20D200...", fillcolor=lightyellow];
-    node2 [label="De: bfox@edd.com\nAsunto: Actualización del kernel\nFecha: 23-10-25 12:12\nHash: D3C3859B00...", fillcolor=lightgreen];
-    node1 -> node2;
-    node3 [label="De: smejia@edd.com\nAsunto: Estado del módulo backend\nFecha: 23-10-25 12:12\nHash: 1AC13BD800...", fillcolor=lightgreen];
-    node1 -> node3;
-    node0 -> node1;
-    node4 [label="Hash: 8142236F00...", fillcolor=lightyellow];
-    node5 [label="De: smejia@edd.com\nAsunto: Recordatorio de reunión\nFecha: 23-10-25 12:12\nHash: 92A3340600...", fillcolor=lightgreen];
-    node4 -> node5;
-    node6 [label="De: smejia@edd.com\nAsunto: Recordatorio de reunión\nFecha: 23-10-25 12:12\nHash: 92A3340600...", fillcolor=lightgreen];
-    node4 -> node6;
-    node0 -> node4;
+    node0 [label="De: bfox@edd.com\nAsunto: Felicitaciones\nFecha: 23-10-25 23:43\nHash: 22AC9AEF00...", fillcolor=lightgreen];
 }

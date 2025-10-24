@@ -20,7 +20,7 @@
       "id": 3,
       "nombre": "Greg Kroah-Hartman",
       "usuario": "gkroah-hartman",
-      "password": "gkroah-hartman123",
+      "password": "gkroah123",
       "email": "gkroah-hartman@edd.com",
       "telefono": "31628954"
     },
@@ -79,6 +79,22 @@
       "password": "imurdock123",
       "email": "imurdock@edd.com",
       "telefono": "41235678"
+    },
+    {
+      "id": 11,
+      "nombre": "Linus Torvalds",
+      "usuario": "ltorvalds",
+      "password": "ltorvalds123",
+      "email": "ltorvalds@edd.com",
+      "telefono": "55512345"
+    },
+    {
+      "id": 12,
+      "nombre": "Richard Stallman",
+      "usuario": "rstallman",
+      "password": "rstallman123",
+      "email": "rstallman@edd.com",
+      "telefono": "99887766"
     }
   ]
 }

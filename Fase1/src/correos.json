@@ -4,22 +4,31 @@
       "usuario_id": 1,
       "bandeja_entrada": [
         {
-          "id": 101,
-          "remitente": "soporte@edd.com",
-          "estado": "no leído",
-          "programado": "no",
-          "asunto": "Bienvenido Luis",
-          "fecha": "2025-08-20",
-          "mensaje": "Hola Luis, tu cuenta ha sido creada exitosamente."
+          "id": 1001,
+          "remitente": "mitzep@edd.com",
+          "destinatario": "lgarcia@edd.com",
+          "estado": "NL",
+          "asunto": "Reunión de equipo",
+          "mensaje": "Hola Luis, necesitamos coordinar la reunión de equipo para la próxima semana. ¿Tienes disponibilidad el martes?",
+          "fecha": "15/10/24 09:30"
         },
         {
-          "id": 102,
-          "remitente": "ventas@edd.com",
-          "estado": "leído",
-          "programado": "no",
-          "asunto": "Promociones del mes",
-          "fecha": "2025-08-18",
-          "mensaje": "Estimado Luis, revisa nuestras promociones de agosto."
+          "id": 1002,
+          "remitente": "smejia@edd.com",
+          "destinatario": "lgarcia@edd.com",
+          "estado": "NL",
+          "asunto": "Documentación del proyecto",
+          "mensaje": "Luis, adjunto la documentación actualizada del proyecto. Por favor revísala cuando puedas.",
+          "fecha": "15/10/24 14:20"
+        },
+        {
+          "id": 1003,
+          "remitente": "bfox@edd.com",
+          "destinatario": "lgarcia@edd.com",
+          "estado": "L",
+          "asunto": "Consulta técnica",
+          "mensaje": "Tengo una duda sobre la implementación de la fase 2. ¿Podrías ayudarme?",
+          "fecha": "16/10/24 10:15"
         }
       ]
     },
@@ -27,31 +36,31 @@
       "usuario_id": 2,
       "bandeja_entrada": [
         {
-          "id": 201,
-          "remitente": "noticias@edd.com",
-          "estado": "no leído",
-          "programado": "sí",
-          "asunto": "Resumen semanal",
-          "fecha": "2025-08-21",
-          "mensaje": "Hola Marcos, este es tu resumen semanal de actividad."
+          "id": 2001,
+          "remitente": "lgarcia@edd.com",
+          "destinatario": "mitzep@edd.com",
+          "estado": "L",
+          "asunto": "Re: Reunión de equipo",
+          "mensaje": "Sí, el martes me viene bien. ¿A qué hora te parece?",
+          "fecha": "15/10/24 11:45"
         },
         {
-          "id": 202,
-          "remitente": "soporte@edd.com",
-          "estado": "leído",
-          "programado": "no",
-          "asunto": "Actualización de seguridad",
-          "fecha": "2025-08-19",
-          "mensaje": "Por favor actualiza tu contraseña antes del 25 de agosto."
+          "id": 2002,
+          "remitente": "gkroah-hartman@edd.com",
+          "destinatario": "mitzep@edd.com",
+          "estado": "NL",
+          "asunto": "Actualización de kernel",
+          "mensaje": "Marcos, hay cambios importantes en la última versión del kernel que deberíamos revisar.",
+          "fecha": "16/10/24 08:30"
         },
         {
-          "id": 203,
-          "remitente": "eventos@edd.com",
-          "estado": "no leído",
-          "programado": "no",
-          "asunto": "Invitación a webinar",
-          "fecha": "2025-08-20",
-          "mensaje": "Participa en nuestro próximo webinar sobre nuevas tecnologías."
+          "id": 2003,
+          "remitente": "mshuttleworth@edd.com",
+          "destinatario": "mitzep@edd.com",
+          "estado": "NL",
+          "asunto": "Propuesta de colaboración",
+          "mensaje": "Me gustaría discutir una posible colaboración entre nuestros proyectos.",
+          "fecha": "17/10/24 16:00"
         }
       ]
     },
@@ -59,22 +68,229 @@
       "usuario_id": 3,
       "bandeja_entrada": [
         {
-          "id": 301,
-          "remitente": "gkroah-hartman@linuxfoundation.org",
-          "estado": "leído",
-          "programado": "no",
-          "asunto": "Revisión de Kernel",
-          "fecha": "2025-08-17",
-          "mensaje": "Greg, se adjunta la revisión del kernel para tu análisis."
+          "id": 3001,
+          "remitente": "ltorvalds@edd.com",
+          "destinatario": "gkroah-hartman@edd.com",
+          "estado": "L",
+          "asunto": "Revisión de código",
+          "mensaje": "Greg, por favor revisa los últimos commits. Hay algunos cambios importantes.",
+          "fecha": "14/10/24 07:15"
         },
         {
-          "id": 302,
-          "remitente": "soporte@edd.com",
-          "estado": "no leído",
-          "programado": "no",
-          "asunto": "Verificación de cuenta",
-          "fecha": "2025-08-18",
-          "mensaje": "Confirma tu dirección de correo para activar funciones avanzadas."
+          "id": 3002,
+          "remitente": "mitzep@edd.com",
+          "destinatario": "gkroah-hartman@edd.com",
+          "estado": "NL",
+          "asunto": "Re: Actualización de kernel",
+          "mensaje": "Perfecto, revisemos los cambios juntos mañana.",
+          "fecha": "16/10/24 09:00"
+        }
+      ]
+    },
+    {
+      "usuario_id": 4,
+      "bandeja_entrada": [
+        {
+          "id": 4001,
+          "remitente": "rstallman@edd.com",
+          "destinatario": "mshuttleworth@edd.com",
+          "estado": "L",
+          "asunto": "Licencias de software libre",
+          "mensaje": "Mark, necesitamos hablar sobre las licencias del nuevo proyecto.",
+          "fecha": "13/10/24 15:30"
+        },
+        {
+          "id": 4002,
+          "remitente": "mbaker@edd.com",
+          "destinatario": "mshuttleworth@edd.com",
+          "estado": "NL",
+          "asunto": "Mozilla y Ubuntu",
+          "mensaje": "Tenemos una gran oportunidad de colaboración entre Mozilla y Ubuntu.",
+          "fecha": "17/10/24 13:45"
+        }
+      ]
+    },
+    {
+      "usuario_id": 5,
+      "bandeja_entrada": [
+        {
+          "id": 5001,
+          "remitente": "lgarcia@edd.com",
+          "destinatario": "smejia@edd.com",
+          "estado": "L",
+          "asunto": "Re: Documentación del proyecto",
+          "mensaje": "Gracias Steven, ya la revisé y está excelente.",
+          "fecha": "16/10/24 08:00"
+        },
+        {
+          "id": 5002,
+          "remitente": "jcorbet@edd.com",
+          "destinatario": "smejia@edd.com",
+          "estado": "NL",
+          "asunto": "Artículo para LWN",
+          "mensaje": "Steven, ¿te gustaría escribir un artículo sobre tu experiencia con el proyecto?",
+          "fecha": "17/10/24 11:20"
+        }
+      ]
+    },
+    {
+      "usuario_id": 6,
+      "bandeja_entrada": [
+        {
+          "id": 6001,
+          "remitente": "rstallman@edd.com",
+          "destinatario": "bfox@edd.com",
+          "estado": "L",
+          "asunto": "GNU Bash",
+          "mensaje": "Brian, necesito tu opinión sobre algunas mejoras propuestas para Bash.",
+          "fecha": "14/10/24 10:45"
+        },
+        {
+          "id": 6002,
+          "remitente": "lgarcia@edd.com",
+          "destinatario": "bfox@edd.com",
+          "estado": "NL",
+          "asunto": "Re: Consulta técnica",
+          "mensaje": "Claro Brian, con gusto te ayudo. ¿Cuándo podemos reunirnos?",
+          "fecha": "16/10/24 11:30"
+        }
+      ]
+    },
+    {
+      "usuario_id": 7,
+      "bandeja_entrada": [
+        {
+          "id": 7001,
+          "remitente": "ltorvalds@edd.com",
+          "destinatario": "jcorbet@edd.com",
+          "estado": "L",
+          "asunto": "Kernel Summit",
+          "mensaje": "Jon, ¿vas a asistir al próximo Kernel Summit? Sería bueno coordinar.",
+          "fecha": "15/10/24 16:45"
+        },
+        {
+          "id": 7002,
+          "remitente": "smejia@edd.com",
+          "destinatario": "jcorbet@edd.com",
+          "estado": "NL",
+          "asunto": "Re: Artículo para LWN",
+          "mensaje": "Me encantaría Jon. Dame unos días para preparar el borrador.",
+          "fecha": "17/10/24 12:00"
+        }
+      ]
+    },
+    {
+      "usuario_id": 8,
+      "bandeja_entrada": [
+        {
+          "id": 8001,
+          "remitente": "mbaker@edd.com",
+          "destinatario": "ksandler@edd.com",
+          "estado": "L",
+          "asunto": "Software Freedom Conservancy",
+          "mensaje": "Karen, necesitamos discutir el presupuesto del próximo año.",
+          "fecha": "13/10/24 09:15"
+        },
+        {
+          "id": 8002,
+          "remitente": "imurdock@edd.com",
+          "destinatario": "ksandler@edd.com",
+          "estado": "NL",
+          "asunto": "Debian y licencias",
+          "mensaje": "Tengo algunas preguntas sobre licencias para el proyecto Debian.",
+          "fecha": "16/10/24 14:30"
+        }
+      ]
+    },
+    {
+      "usuario_id": 9,
+      "bandeja_entrada": [
+        {
+          "id": 9001,
+          "remitente": "ksandler@edd.com",
+          "destinatario": "mbaker@edd.com",
+          "estado": "L",
+          "asunto": "Re: Software Freedom Conservancy",
+          "mensaje": "Perfecto Mitchell, preparé un documento con la proyección financiera.",
+          "fecha": "14/10/24 11:00"
+        },
+        {
+          "id": 9002,
+          "remitente": "mshuttleworth@edd.com",
+          "destinatario": "mbaker@edd.com",
+          "estado": "NL",
+          "asunto": "Re: Mozilla y Ubuntu",
+          "mensaje": "Excelente idea. Programemos una videollamada para discutirlo en detalle.",
+          "fecha": "18/10/24 09:30"
+        }
+      ]
+    },
+    {
+      "usuario_id": 10,
+      "bandeja_entrada": [
+        {
+          "id": 10001,
+          "remitente": "gkroah-hartman@edd.com",
+          "destinatario": "imurdock@edd.com",
+          "estado": "L",
+          "asunto": "Legado de Debian",
+          "mensaje": "Ian, tu trabajo en Debian ha sido inspirador para muchos de nosotros.",
+          "fecha": "12/10/24 18:20"
+        },
+        {
+          "id": 10002,
+          "remitente": "ksandler@edd.com",
+          "destinatario": "imurdock@edd.com",
+          "estado": "NL",
+          "asunto": "Re: Debian y licencias",
+          "mensaje": "Con gusto te ayudo Ian. Envíame los detalles específicos.",
+          "fecha": "16/10/24 15:45"
+        }
+      ]
+    },
+    {
+      "usuario_id": 11,
+      "bandeja_entrada": [
+        {
+          "id": 11001,
+          "remitente": "gkroah-hartman@edd.com",
+          "destinatario": "ltorvalds@edd.com",
+          "estado": "L",
+          "asunto": "Re: Revisión de código",
+          "mensaje": "Linus, ya revisé los commits. Todo se ve bien.",
+          "fecha": "14/10/24 12:30"
+        },
+        {
+          "id": 11002,
+          "remitente": "rstallman@edd.com",
+          "destinatario": "ltorvalds@edd.com",
+          "estado": "NL",
+          "asunto": "Linux y GNU",
+          "mensaje": "Deberíamos discutir sobre la nomenclatura GNU/Linux una vez más.",
+          "fecha": "17/10/24 19:00"
+        }
+      ]
+    },
+    {
+      "usuario_id": 12,
+      "bandeja_entrada": [
+        {
+          "id": 12001,
+          "remitente": "mshuttleworth@edd.com",
+          "destinatario": "rstallman@edd.com",
+          "estado": "L",
+          "asunto": "Re: Licencias de software libre",
+          "mensaje": "Richard, estoy completamente de acuerdo contigo. Usemos GPL v3.",
+          "fecha": "14/10/24 08:45"
+        },
+        {
+          "id": 12002,
+          "remitente": "bfox@edd.com",
+          "destinatario": "rstallman@edd.com",
+          "estado": "NL",
+          "asunto": "Re: GNU Bash",
+          "mensaje": "Por supuesto Richard, mándame los detalles y lo revisamos juntos.",
+          "fecha": "15/10/24 13:15"
         }
       ]
     }

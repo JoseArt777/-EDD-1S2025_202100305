@@ -285,6 +285,10 @@ end;
   procedure LiberarArbolComunidades(var Raiz: PNodoBST);
 
 
+      function BuscarUsuarioPorNombre(NombreUsuario: String): PUsuario;
+
+
+
     public
       constructor Create;
       destructor Destroy; override;
@@ -4390,7 +4394,7 @@ begin
     Usuario^.ArbolMerkleFavoritos := nil;
   end;
 
-  // Obtener lista de IDs de favoritos
+  // Obtener lista de IDs de privados
   ListaFavoritos := TStringList.Create;
   try
     RecorrerFavoritosMerkle(Usuario, ListaFavoritos);
@@ -4901,5 +4905,31 @@ begin
   // Liberar el nodo actual
   Dispose(Raiz);
   Raiz := nil;
+end;
+
+function TEDDMailSystem.BuscarUsuarioPorNombre(NombreUsuario: String): PUsuario;
+var
+  Actual: PUsuario;
+  UsuarioEnEmail: String;
+begin
+  Result := nil;
+  Actual := FUsuarios;
+
+  while Actual <> nil do
+  begin
+    // Extraer el nombre de usuario del email (parte antes del @)
+    if Pos('@', Actual^.Email) > 0 then
+    begin
+      UsuarioEnEmail := Copy(Actual^.Email, 1, Pos('@', Actual^.Email) - 1);
+
+      // Comparar sin distinguir mayúsculas/minúsculas
+      if LowerCase(UsuarioEnEmail) = LowerCase(NombreUsuario) then
+      begin
+        Result := Actual;
+        Exit;
+      end;
+    end;
+    Actual := Actual^.Siguiente;
+  end;
 end;
  end.
