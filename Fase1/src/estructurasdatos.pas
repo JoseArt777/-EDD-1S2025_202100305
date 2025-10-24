@@ -3650,7 +3650,7 @@ begin
     Output.Add(IntToStr(Code));
 
     // Resultado: códigos separados por comas
-    Output.Delimiter := ',';
+    Output.Delimiter := ' ';
     Output.StrictDelimiter := True;
     Result := Output.DelimitedText;
 

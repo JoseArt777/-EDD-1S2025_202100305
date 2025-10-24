@@ -4347,51 +4347,57 @@ begin
   WriteLn('✓ Migración completada');
 end;
  procedure TEDDMailSystem.GenerarNodosMerkle(var Archivo: TextFile;
-  Nodo: PNodoMerkle; var ContadorNodo: Integer);
-var
-  IdActual, IdIzq, IdDer: Integer;
-  HashCorto: String;
-begin
-  if Nodo = nil then Exit;
+   Nodo: PNodoMerkle; var ContadorNodo: Integer);
+ var
+   IdActual, IdIzq, IdDer: Integer;
+   HashCorto: String;
+ begin
+   if Nodo = nil then Exit;
 
-  IdActual := ContadorNodo;
-  Inc(ContadorNodo);
+   IdActual := ContadorNodo;
+   Inc(ContadorNodo);
 
-  // Hash corto para visualización
-  if Length(Nodo^.Hash) > 10 then
-    HashCorto := Copy(Nodo^.Hash, 1, 10) + '...'
-  else
-    HashCorto := Nodo^.Hash;
+   // Hash corto para visualización
+   if Length(Nodo^.Hash) > 10 then
+     HashCorto := Copy(Nodo^.Hash, 1, 10) + '...'
+   else
+     HashCorto := Nodo^.Hash;
 
-  if Nodo^.EsHoja then
-  begin
-    // Nodo hoja con datos del correo
-    WriteLn(Archivo, Format('    node%d [label="De: %s\nAsunto: %s\nFecha: %s\nHash: %s", fillcolor=lightgreen];',
-      [IdActual, Nodo^.Correo^.Remitente, Nodo^.Correo^.Asunto,
-       Nodo^.Correo^.Fecha, HashCorto]));
-  end
-  else
-  begin
-    // Nodo interno con hash combinado
-    WriteLn(Archivo, Format('    node%d [label="Hash: %s", fillcolor=lightyellow];',
-      [IdActual, HashCorto]));
+   if Nodo^.EsHoja then
+   begin
+     // Nodo hoja con datos del correo
+     WriteLn(Archivo, Format('    node%d [label="De: %s\nAsunto: %s\nFecha: %s\nHash: %s", fillcolor=lightgreen];',
+       [IdActual, Nodo^.Correo^.Remitente, Nodo^.Correo^.Asunto,
+        Nodo^.Correo^.Fecha, HashCorto]));
+   end
+   else
+   begin
+     // Nodo interno con hash combinado
+     WriteLn(Archivo, Format('    node%d [label="Hash: %s", fillcolor=lightyellow];',
+       [IdActual, HashCorto]));
 
-    // Procesar hijos
-    if Nodo^.Izquierdo <> nil then
-    begin
-      IdIzq := ContadorNodo;
-      GenerarNodosMerkle(Archivo, Nodo^.Izquierdo, ContadorNodo);
-      WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
-    end;
+     // Procesar hijo izquierdo
+     if Nodo^.Izquierdo <> nil then
+     begin
+       IdIzq := ContadorNodo;
+       GenerarNodosMerkle(Archivo, Nodo^.Izquierdo, ContadorNodo);
+       WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
+     end;
 
-    if Nodo^.Derecho <> nil then
-    begin
-      IdDer := ContadorNodo;
-      GenerarNodosMerkle(Archivo, Nodo^.Derecho, ContadorNodo);
-      WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdDer]));
-    end;
-  end;
-end;
+     // ✅ CRÍTICO: Solo procesar hijo derecho si es DIFERENTE del izquierdo
+     if (Nodo^.Derecho <> nil) and (Nodo^.Derecho <> Nodo^.Izquierdo) then
+     begin
+       IdDer := ContadorNodo;
+       GenerarNodosMerkle(Archivo, Nodo^.Derecho, ContadorNodo);
+       WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdDer]));
+     end
+     else if (Nodo^.Derecho <> nil) and (Nodo^.Derecho = Nodo^.Izquierdo) then
+     begin
+       // ✅ Si es el mismo nodo, reutilizar el ID del izquierdo
+       WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
+     end;
+   end;
+ end;
  function TEDDMailSystem.ConstruirArbolMerkleBalanceado(
    ListaHojas: array of PNodoMerkle): PNodoMerkle;
  var
