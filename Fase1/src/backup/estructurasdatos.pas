@@ -4428,26 +4428,32 @@ end;
      // Emparejar nodos de dos en dos
      for i := 0 to TamSiguiente - 1 do
      begin
+       // ✅ SIEMPRE crear un nodo padre
+       New(NodoPadre);
+       NodoPadre^.EsHoja := False;
+       NodoPadre^.Correo := nil;
+
+       // Asignar hijo izquierdo (siempre existe)
+       NodoPadre^.Izquierdo := NivelActual[i * 2];
+
        // Si hay dos nodos disponibles para emparejar
        if (i * 2 + 1) < TamNivel then
        begin
-         // Crear nodo padre que combina dos hijos
-         New(NodoPadre);
-         NodoPadre^.EsHoja := False;
-         NodoPadre^.Correo := nil;
-         NodoPadre^.Izquierdo := NivelActual[i * 2];
+         // Usar el segundo nodo como hijo derecho
          NodoPadre^.Derecho := NivelActual[i * 2 + 1];
          NodoPadre^.Hash := GenerarHashSHA256(
            NivelActual[i * 2]^.Hash + NivelActual[i * 2 + 1]^.Hash);
-
-         NivelSiguiente[i] := NodoPadre;
        end
        else
        begin
-         // Si queda un nodo impar, promoverlo al siguiente nivel
-         // (no se duplica, simplemente sube)
-         NivelSiguiente[i] := NivelActual[i * 2];
+         // ✅ Si queda un nodo impar, duplicar la REFERENCIA (no el nodo)
+         // Esto es válido para árboles de Merkle
+         NodoPadre^.Derecho := NivelActual[i * 2];
+         NodoPadre^.Hash := GenerarHashSHA256(
+           NivelActual[i * 2]^.Hash + NivelActual[i * 2]^.Hash);
        end;
+
+       NivelSiguiente[i] := NodoPadre;
      end;
 
      // Avanzar al siguiente nivel
@@ -4458,17 +4464,21 @@ end;
    Result := NivelActual[0];
  end;
  procedure TEDDMailSystem.LiberarArbolMerkle(Nodo: PNodoMerkle);
-begin
-  if Nodo = nil then Exit;
+ begin
+   if Nodo = nil then Exit;
 
-  if not Nodo^.EsHoja then
-  begin
-    LiberarArbolMerkle(Nodo^.Izquierdo);
-    LiberarArbolMerkle(Nodo^.Derecho);
-  end;
+   if not Nodo^.EsHoja then
+   begin
+     // ✅ Solo liberar hijo izquierdo
+     LiberarArbolMerkle(Nodo^.Izquierdo);
 
-  Dispose(Nodo);
-end;
+     // ✅ Solo liberar hijo derecho si es DIFERENTE del izquierdo
+     if Nodo^.Derecho <> Nodo^.Izquierdo then
+       LiberarArbolMerkle(Nodo^.Derecho);
+   end;
+
+   Dispose(Nodo);
+ end;
 
  procedure TEDDMailSystem.ConstruirArbolMerkleDesdeCorreos(Usuario: PUsuario);
 var
@@ -4559,27 +4569,7 @@ begin
 
   Result := Copy(Temp, 1, 64);
 end;
-   function TEDDMailSystem.CopiarNodoMerkle(NodoOriginal: PNodoMerkle): PNodoMerkle;
-begin
-  if NodoOriginal = nil then
-  begin
-    Result := nil;
-    Exit;
-  end;
 
-  New(Result);
-  Result^.EsHoja := NodoOriginal^.EsHoja;
-  Result^.Hash := NodoOriginal^.Hash;
-  Result^.Correo := NodoOriginal^.Correo;
-  Result^.Izquierdo := nil;
-  Result^.Derecho := nil;
-end;
-   function TEDDMailSystem.SiguientePotenciaDe2(n: Integer): Integer;
-begin
-  Result := 1;
-  while Result < n do
-    Result := Result * 2;
-end;
 // ────────────────────────────────────────────────────────────────────────────
 // MÉTODOS PRIVADOS PARA BLOCKCHAIN
 // ────────────────────────────────────────────────────────────────────────────

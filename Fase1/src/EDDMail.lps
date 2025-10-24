@@ -51,8 +51,8 @@
         <UnitName Value="EstructurasDatos"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="4567"/>
-        <CursorPos X="41" Y="4588"/>
+        <TopLine Value="4376"/>
+        <CursorPos X="6" Y="4400"/>
         <UsageCount Value="129"/>
         <Loaded Value="True"/>
       </Unit>
@@ -73,30 +73,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="3698" Column="44" TopLine="3682"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="3950" Column="51" TopLine="3936"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="4008" Column="38" TopLine="3991"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="4052" Column="60" TopLine="4036"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="4134" Column="59" TopLine="4116"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="60" Column="16" TopLine="49"/>
-      </Position>
       <Position>
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="61" Column="28" TopLine="49"/>
@@ -192,6 +168,30 @@
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="4402" Column="38" TopLine="4392"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4587" Column="63" TopLine="4567"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="3737" Column="58" TopLine="3726"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4468" Column="6" TopLine="4444"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="2648" Column="59" TopLine="2633"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4454" Column="53" TopLine="4441"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4477" Column="58" TopLine="4461"/>
       </Position>
     </JumpHistory>
     <RunParams>
