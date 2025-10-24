@@ -6440,7 +6440,7 @@ begin
         Exit;
       end;
 
-      // ¡AQUÍ ESTÁ LA DIFERENCIA! Llama a la función real del sistema
+
       if FSistema.ReaccionarAMensaje(NombreComunidad, IdMensaje) then
       begin
         MostrarMensaje('Éxito',

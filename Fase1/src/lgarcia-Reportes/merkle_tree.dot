@@ -4,5 +4,13 @@ digraph MerkleTree {
     node [shape=box, style=filled];
     rankdir=TB;
 
-    node0 [label="De: bfox@edd.com\nAsunto: Felicitaciones\nFecha: 23-10-25 23:43\nHash: 22AC9AEF00...", fillcolor=lightgreen];
+    node0 [label="Hash: 0000000087...", fillcolor=lightyellow];
+    node1 [label="De: bfox@edd.com\nAsunto: Felicitaciones\nFecha: 24-10-25 07:38\nHash: 000000000A...", fillcolor=lightgreen];
+    node0 -> node1;
+    node2 [label="Hash: 0000000053...", fillcolor=lightyellow];
+    node3 [label="De: smejia@edd.com\nAsunto: Recordatorio de reunión\nFecha: 24-10-25 07:38\nHash: 00000000F1...", fillcolor=lightgreen];
+    node2 -> node3;
+    node4 [label="De: smejia@edd.com\nAsunto: Revisión de kernel\nFecha: 24-10-25 07:38\nHash: 0000000038...", fillcolor=lightgreen];
+    node2 -> node4;
+    node0 -> node2;
 }

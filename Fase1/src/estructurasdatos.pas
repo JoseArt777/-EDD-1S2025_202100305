@@ -264,9 +264,8 @@ end;
         function GenerarHashSHA256(Datos: String): String;
 
 
-      function CopiarNodoMerkle(NodoOriginal: PNodoMerkle): PNodoMerkle;
 
-        function SiguientePotenciaDe2(n: Integer): Integer;
+
 
 
 
@@ -4397,60 +4396,65 @@ end;
    ListaHojas: array of PNodoMerkle): PNodoMerkle;
  var
    NivelActual, NivelSiguiente: array of PNodoMerkle;
-   HojasExpandidas: array of PNodoMerkle;
-   i, TamNivel, CantidadObjetivo: Integer;
-   NodoIzq, NodoDer, NodoPadre: PNodoMerkle;
+   i, TamNivel, TamSiguiente: Integer;
+   NodoPadre: PNodoMerkle;
  begin
    Result := nil;
 
+   // Caso base: sin hojas
    if Length(ListaHojas) = 0 then Exit;
+
+   // Caso base: una sola hoja
    if Length(ListaHojas) = 1 then
    begin
      Result := ListaHojas[0];
      Exit;
    end;
 
-   // PASO 1: Expandir SOLO las hojas a la siguiente potencia de 2
-   CantidadObjetivo := SiguientePotenciaDe2(Length(ListaHojas));
-   SetLength(HojasExpandidas, CantidadObjetivo);
-
-   // Copiar las hojas originales
+   // Inicializar el nivel actual con todas las hojas
+   SetLength(NivelActual, Length(ListaHojas));
    for i := 0 to High(ListaHojas) do
-     HojasExpandidas[i] := ListaHojas[i];
+     NivelActual[i] := ListaHojas[i];
 
-   // Duplicar la última hoja las veces necesarias
-   for i := Length(ListaHojas) to CantidadObjetivo - 1 do
-     HojasExpandidas[i] := CopiarNodoMerkle(ListaHojas[High(ListaHojas)]);
-
-   // PASO 2: Construir árbol nivel por nivel (sin más duplicaciones)
-   SetLength(NivelActual, Length(HojasExpandidas));
-   for i := 0 to High(HojasExpandidas) do
-     NivelActual[i] := HojasExpandidas[i];
-
+   // Construir el árbol nivel por nivel de abajo hacia arriba
    while Length(NivelActual) > 1 do
    begin
      TamNivel := Length(NivelActual);
-     SetLength(NivelSiguiente, TamNivel div 2);
 
-     for i := 0 to (TamNivel div 2) - 1 do
+     // El siguiente nivel tendrá la mitad de nodos (redondeado hacia arriba)
+     TamSiguiente := (TamNivel + 1) div 2;
+     SetLength(NivelSiguiente, TamSiguiente);
+
+     // Emparejar nodos de dos en dos
+     for i := 0 to TamSiguiente - 1 do
      begin
-       NodoIzq := NivelActual[i * 2];
-       NodoDer := NivelActual[i * 2 + 1];
+       // Si hay dos nodos disponibles para emparejar
+       if (i * 2 + 1) < TamNivel then
+       begin
+         // Crear nodo padre que combina dos hijos
+         New(NodoPadre);
+         NodoPadre^.EsHoja := False;
+         NodoPadre^.Correo := nil;
+         NodoPadre^.Izquierdo := NivelActual[i * 2];
+         NodoPadre^.Derecho := NivelActual[i * 2 + 1];
+         NodoPadre^.Hash := GenerarHashSHA256(
+           NivelActual[i * 2]^.Hash + NivelActual[i * 2 + 1]^.Hash);
 
-       // Crear nodo padre
-       New(NodoPadre);
-       NodoPadre^.EsHoja := False;
-       NodoPadre^.Correo := nil;
-       NodoPadre^.Izquierdo := NodoIzq;
-       NodoPadre^.Derecho := NodoDer;
-       NodoPadre^.Hash := GenerarHashSHA256(NodoIzq^.Hash + NodoDer^.Hash);
-
-       NivelSiguiente[i] := NodoPadre;
+         NivelSiguiente[i] := NodoPadre;
+       end
+       else
+       begin
+         // Si queda un nodo impar, promoverlo al siguiente nivel
+         // (no se duplica, simplemente sube)
+         NivelSiguiente[i] := NivelActual[i * 2];
+       end;
      end;
 
+     // Avanzar al siguiente nivel
      NivelActual := NivelSiguiente;
    end;
 
+   // El último nodo restante es la raíz del árbol
    Result := NivelActual[0];
  end;
  procedure TEDDMailSystem.LiberarArbolMerkle(Nodo: PNodoMerkle);
@@ -4555,27 +4559,7 @@ begin
 
   Result := Copy(Temp, 1, 64);
 end;
-   function TEDDMailSystem.CopiarNodoMerkle(NodoOriginal: PNodoMerkle): PNodoMerkle;
-begin
-  if NodoOriginal = nil then
-  begin
-    Result := nil;
-    Exit;
-  end;
 
-  New(Result);
-  Result^.EsHoja := NodoOriginal^.EsHoja;
-  Result^.Hash := NodoOriginal^.Hash;
-  Result^.Correo := NodoOriginal^.Correo;
-  Result^.Izquierdo := nil;
-  Result^.Derecho := nil;
-end;
-   function TEDDMailSystem.SiguientePotenciaDe2(n: Integer): Integer;
-begin
-  Result := 1;
-  while Result < n do
-    Result := Result * 2;
-end;
 // ────────────────────────────────────────────────────────────────────────────
 // MÉTODOS PRIVADOS PARA BLOCKCHAIN
 // ────────────────────────────────────────────────────────────────────────────

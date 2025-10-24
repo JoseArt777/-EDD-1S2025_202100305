@@ -264,9 +264,8 @@ end;
         function GenerarHashSHA256(Datos: String): String;
 
 
-      function CopiarNodoMerkle(NodoOriginal: PNodoMerkle): PNodoMerkle;
 
-        function SiguientePotenciaDe2(n: Integer): Integer;
+
 
 
 
@@ -3909,11 +3908,12 @@ var
   UsuarioObj: TJSONObject;
   ContactosArray: TJSONArray;
   i, j, UsuarioId: Integer;
-  EmailContacto: String;
-  Usuario: PUsuario;
+  NombreUsuario, EmailContacto: String;
+  Usuario, ContactoUsuario: PUsuario;
   FileStream: TFileStream;
   JsonString: String;
   ContactosAgregados, ContactosOmitidos: Integer;
+  UsaEstructuraNueva: Boolean;
 begin
   ContactosAgregados := 0;
   ContactosOmitidos := 0;
@@ -3945,54 +3945,143 @@ begin
     JsonData := GetJSON(JsonString);
     try
       Root := JsonData as TJSONObject;
-      UsuariosArray := Root.Arrays['usuarios'];
+
+      // Buscar el array de usuarios (puede ser "usuarios" o "Usuarios")
+      if Root.Find('Usuarios') <> nil then
+        UsuariosArray := Root.Arrays['Usuarios']
+      else if Root.Find('usuarios') <> nil then
+        UsuariosArray := Root.Arrays['usuarios']
+      else
+      begin
+        WriteLn('Error: No se encontró el array de usuarios en el JSON');
+        Exit;
+      end;
 
       WriteLn('=== Iniciando carga masiva de contactos ===');
 
+      // Procesar cada usuario
       for i := 0 to UsuariosArray.Count - 1 do
       begin
         UsuarioObj := UsuariosArray.Objects[i];
-        UsuarioId := UsuarioObj.Get('id', -1);
+        Usuario := nil;
 
-        if UsuarioId = -1 then
+        // ======================================================================
+        // DETECTAR ESTRUCTURA Y BUSCAR USUARIO CORRESPONDIENTE
+        // ======================================================================
+
+        if UsuarioObj.Find('Usuario') <> nil then
         begin
-          WriteLn('Aviso: Usuario sin ID en posición ', i);
+          // *** ESTRUCTURA NUEVA: Buscar por nombre de usuario ***
+          UsaEstructuraNueva := True;
+          NombreUsuario := UsuarioObj.Get('Usuario', '');
+
+          if NombreUsuario = '' then
+          begin
+            WriteLn('Aviso: Usuario sin nombre en posición ', i);
+            Continue;
+          end;
+
+          // Buscar el usuario por nombre de usuario
+          Usuario := BuscarUsuarioPorNombre(NombreUsuario);
+          if Usuario = nil then
+          begin
+            WriteLn('Aviso: Usuario "', NombreUsuario, '" no existe en el sistema');
+            Continue;
+          end;
+
+          WriteLn('Procesando contactos para usuario: ', NombreUsuario, ' (', Usuario^.Email, ')');
+        end
+        else if UsuarioObj.Find('id') <> nil then
+        begin
+          // *** ESTRUCTURA ANTIGUA: Buscar por ID ***
+          UsaEstructuraNueva := False;
+          UsuarioId := UsuarioObj.Get('id', -1);
+
+          if UsuarioId = -1 then
+          begin
+            WriteLn('Aviso: Usuario sin ID en posición ', i);
+            Continue;
+          end;
+
+          // Buscar el usuario por ID
+          Usuario := BuscarUsuarioPorId(UsuarioId);
+          if Usuario = nil then
+          begin
+            WriteLn('Aviso: Usuario con ID ', UsuarioId, ' no existe en el sistema');
+            Continue;
+          end;
+
+          WriteLn('Procesando contactos para usuario ID ', UsuarioId, ': ', Usuario^.Email);
+        end
+        else
+        begin
+          WriteLn('Aviso: Usuario en posición ', i, ' no tiene ni "id" ni "Usuario"');
           Continue;
         end;
 
-        // Buscar el usuario por ID
-        Usuario := BuscarUsuarioPorId(UsuarioId);
-        if Usuario = nil then
-        begin
-          WriteLn('Aviso: Usuario con ID ', UsuarioId, ' no existe en el sistema');
-          Continue;
-        end;
+        // ======================================================================
+        // PROCESAR ARRAY DE CONTACTOS
+        // ======================================================================
 
-        WriteLn('Procesando contactos para usuario: ', Usuario^.Email);
-
-        // Verificar si tiene array de contactos
-        if UsuarioObj.Find('contactos') = nil then
+        // Verificar si tiene array de contactos (puede ser "Contactos" o "contactos")
+        if UsuarioObj.Find('Contactos') <> nil then
+          ContactosArray := UsuarioObj.Arrays['Contactos']
+        else if UsuarioObj.Find('contactos') <> nil then
+          ContactosArray := UsuarioObj.Arrays['contactos']
+        else
         begin
           WriteLn('  Sin contactos en el JSON');
           Continue;
         end;
 
-        ContactosArray := UsuarioObj.Arrays['contactos'];
-
+        // Procesar cada contacto
         for j := 0 to ContactosArray.Count - 1 do
         begin
-          EmailContacto := ContactosArray.Strings[j];
-
-          // Intentar agregar el contacto
-          if AgregarContacto(Usuario, EmailContacto) then
+          if UsaEstructuraNueva then
           begin
-            WriteLn('  ✅ Contacto agregado: ', EmailContacto);
-            Inc(ContactosAgregados);
+            // *** ESTRUCTURA NUEVA: Los contactos son nombres de usuario ***
+            NombreUsuario := ContactosArray.Strings[j];
+
+            // Buscar el usuario contacto por su nombre de usuario
+            ContactoUsuario := BuscarUsuarioPorNombre(NombreUsuario);
+
+            if ContactoUsuario = nil then
+            begin
+              WriteLn('  ⚠️  Contacto omitido (usuario no existe): ', NombreUsuario);
+              Inc(ContactosOmitidos);
+              Continue;
+            end;
+
+            EmailContacto := ContactoUsuario^.Email;
+
+            // Intentar agregar el contacto
+            if AgregarContacto(Usuario, EmailContacto) then
+            begin
+              WriteLn('  ✅ Contacto agregado: ', NombreUsuario, ' (', EmailContacto, ')');
+              Inc(ContactosAgregados);
+            end
+            else
+            begin
+              WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', NombreUsuario);
+              Inc(ContactosOmitidos);
+            end;
           end
           else
           begin
-            WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', EmailContacto);
-            Inc(ContactosOmitidos);
+            // *** ESTRUCTURA ANTIGUA: Los contactos son emails directamente ***
+            EmailContacto := ContactosArray.Strings[j];
+
+            // Intentar agregar el contacto
+            if AgregarContacto(Usuario, EmailContacto) then
+            begin
+              WriteLn('  ✅ Contacto agregado: ', EmailContacto);
+              Inc(ContactosAgregados);
+            end
+            else
+            begin
+              WriteLn('  ⚠️  Contacto omitido (ya existe o es inválido): ', EmailContacto);
+              Inc(ContactosOmitidos);
+            end;
           end;
         end;
       end;
@@ -4307,60 +4396,65 @@ end;
    ListaHojas: array of PNodoMerkle): PNodoMerkle;
  var
    NivelActual, NivelSiguiente: array of PNodoMerkle;
-   HojasExpandidas: array of PNodoMerkle;
-   i, TamNivel, CantidadObjetivo: Integer;
-   NodoIzq, NodoDer, NodoPadre: PNodoMerkle;
+   i, TamNivel, TamSiguiente: Integer;
+   NodoPadre: PNodoMerkle;
  begin
    Result := nil;
 
+   // Caso base: sin hojas
    if Length(ListaHojas) = 0 then Exit;
+
+   // Caso base: una sola hoja
    if Length(ListaHojas) = 1 then
    begin
      Result := ListaHojas[0];
      Exit;
    end;
 
-   // PASO 1: Expandir SOLO las hojas a la siguiente potencia de 2
-   CantidadObjetivo := SiguientePotenciaDe2(Length(ListaHojas));
-   SetLength(HojasExpandidas, CantidadObjetivo);
-
-   // Copiar las hojas originales
+   // Inicializar el nivel actual con todas las hojas
+   SetLength(NivelActual, Length(ListaHojas));
    for i := 0 to High(ListaHojas) do
-     HojasExpandidas[i] := ListaHojas[i];
+     NivelActual[i] := ListaHojas[i];
 
-   // Duplicar la última hoja las veces necesarias
-   for i := Length(ListaHojas) to CantidadObjetivo - 1 do
-     HojasExpandidas[i] := CopiarNodoMerkle(ListaHojas[High(ListaHojas)]);
-
-   // PASO 2: Construir árbol nivel por nivel (sin más duplicaciones)
-   SetLength(NivelActual, Length(HojasExpandidas));
-   for i := 0 to High(HojasExpandidas) do
-     NivelActual[i] := HojasExpandidas[i];
-
+   // Construir el árbol nivel por nivel de abajo hacia arriba
    while Length(NivelActual) > 1 do
    begin
      TamNivel := Length(NivelActual);
-     SetLength(NivelSiguiente, TamNivel div 2);
 
-     for i := 0 to (TamNivel div 2) - 1 do
+     // El siguiente nivel tendrá la mitad de nodos (redondeado hacia arriba)
+     TamSiguiente := (TamNivel + 1) div 2;
+     SetLength(NivelSiguiente, TamSiguiente);
+
+     // Emparejar nodos de dos en dos
+     for i := 0 to TamSiguiente - 1 do
      begin
-       NodoIzq := NivelActual[i * 2];
-       NodoDer := NivelActual[i * 2 + 1];
+       // Si hay dos nodos disponibles para emparejar
+       if (i * 2 + 1) < TamNivel then
+       begin
+         // Crear nodo padre que combina dos hijos
+         New(NodoPadre);
+         NodoPadre^.EsHoja := False;
+         NodoPadre^.Correo := nil;
+         NodoPadre^.Izquierdo := NivelActual[i * 2];
+         NodoPadre^.Derecho := NivelActual[i * 2 + 1];
+         NodoPadre^.Hash := GenerarHashSHA256(
+           NivelActual[i * 2]^.Hash + NivelActual[i * 2 + 1]^.Hash);
 
-       // Crear nodo padre
-       New(NodoPadre);
-       NodoPadre^.EsHoja := False;
-       NodoPadre^.Correo := nil;
-       NodoPadre^.Izquierdo := NodoIzq;
-       NodoPadre^.Derecho := NodoDer;
-       NodoPadre^.Hash := GenerarHashSHA256(NodoIzq^.Hash + NodoDer^.Hash);
-
-       NivelSiguiente[i] := NodoPadre;
+         NivelSiguiente[i] := NodoPadre;
+       end
+       else
+       begin
+         // Si queda un nodo impar, promoverlo al siguiente nivel
+         // (no se duplica, simplemente sube)
+         NivelSiguiente[i] := NivelActual[i * 2];
+       end;
      end;
 
+     // Avanzar al siguiente nivel
      NivelActual := NivelSiguiente;
    end;
 
+   // El último nodo restante es la raíz del árbol
    Result := NivelActual[0];
  end;
  procedure TEDDMailSystem.LiberarArbolMerkle(Nodo: PNodoMerkle);
