@@ -5473,7 +5473,7 @@ begin
 
   Resultados := TStringList.Create;
   try
-    // ✅ USAR MERKLE:
+    // usamos MERKLE:
     FSistema.RecorrerFavoritosMerkle(Usuario, Resultados);
 
     TerminoLower := LowerCase(Termino);
@@ -5747,7 +5747,7 @@ begin
   CarpetaReportes := Usuario^.Usuario + '-Reportes';
 
   try
-    // ✅ Solo pasar la carpeta, no el usuario
+
     FSistema.GenerarReporteMerkle(CarpetaReportes);
 
     MostrarMensaje('Éxito',

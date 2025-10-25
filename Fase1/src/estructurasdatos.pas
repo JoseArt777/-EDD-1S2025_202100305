@@ -442,7 +442,11 @@ end;
     procedure AgregarBloqueBlockchain(CorreoId: Integer; Remitente, Asunto, Mensaje: String);
     function VerificarIntegridadBlockchain: Boolean;
     function ObtenerTotalBloques: Integer;
+
+      procedure GenerarReporteGlobalContactos(RutaCarpeta: String);
+
     end;
+
 implementation
 
 uses
@@ -4017,6 +4021,8 @@ begin
     WriteLn(Archivo, '  rankdir=LR;');
     WriteLn(Archivo, '  ranksep=2.0;');
     WriteLn(Archivo, '  nodesep=0.8;');
+    WriteLn(Archivo, '  splines=false;');  // ← AÑADIR ESTA LÍNEA
+
     WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
     WriteLn(Archivo, '  edge [penwidth=1.5];');
     WriteLn(Archivo, '');
@@ -5273,6 +5279,213 @@ begin
       end;
     end;
     Actual := Actual^.Siguiente;
+  end;
+end;
+procedure TEDDMailSystem.GenerarReporteGlobalContactos(RutaCarpeta: String);
+var
+  Archivo: TextFile;
+  DotPath, PngPath: String;
+  Proceso: TProcess;
+  Usuario: PUsuario;
+  Contacto: PContacto;
+  ContactoUsuario: PUsuario;
+
+  // Listas para controlar duplicados
+  UsuariosAgregados: TStringList;
+  ContactosUnicos: TStringList;
+
+  UsuarioIdLimpio, ContactoIdLimpio: String;
+  EmailContacto: String;
+  i: Integer;
+
+begin
+  try
+    // Crear carpeta si no existe
+    if not DirectoryExists(RutaCarpeta) then
+      ForceDirectories(RutaCarpeta);
+
+    DotPath := RutaCarpeta + '/grafo_global_contactos.dot';
+    PngPath := RutaCarpeta + '/grafo_global_contactos.png';
+
+    AssignFile(Archivo, DotPath);
+    Rewrite(Archivo);
+
+    WriteLn(Archivo, 'graph GrafoGlobalContactos {');
+    WriteLn(Archivo, '  label="Reporte Global de Usuarios y Contactos (Grafo No Dirigido)";');
+    WriteLn(Archivo, '  fontsize=16;');
+    WriteLn(Archivo, '  fontname="Arial";');
+    WriteLn(Archivo, '  rankdir=LR;');
+    WriteLn(Archivo, '  ranksep=2.0;');
+    WriteLn(Archivo, '  nodesep=0.8;');
+    WriteLn(Archivo, '  splines=false;');
+    WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
+    WriteLn(Archivo, '  edge [penwidth=1.5];');
+    WriteLn(Archivo, '');
+
+    // Inicializar listas de control
+    UsuariosAgregados := TStringList.Create;
+    ContactosUnicos := TStringList.Create;
+    UsuariosAgregados.Sorted := True;
+    ContactosUnicos.Sorted := True;
+    UsuariosAgregados.Duplicates := dupIgnore;
+    ContactosUnicos.Duplicates := dupIgnore;
+
+    try
+      // ========================================================
+      // PASO 1: Recolectar CONTACTOS ÚNICOS (hacer esto primero)
+      // ========================================================
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            EmailContacto := Contacto^.Email;
+
+            // Solo agregar si no existe ya en la lista
+            if ContactosUnicos.IndexOf(EmailContacto) = -1 then
+            begin
+              ContactosUnicos.AddObject(EmailContacto, TObject(PtrInt(Contacto^.Id)));
+            end;
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      // ========================================================
+      // PASO 2: Definir NODOS de CONTACTOS (IZQUIERDA - AZUL)
+      // ========================================================
+      WriteLn(Archivo, '  // ========== CONTACTOS (Izquierda) ==========');
+      WriteLn(Archivo, '  {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightblue];');  // ← AZUL
+      WriteLn(Archivo, '');
+
+      for i := 0 to ContactosUnicos.Count - 1 do
+      begin
+        EmailContacto := ContactosUnicos[i];
+
+        // Limpiar el email para usarlo como ID de nodo
+        ContactoIdLimpio := StringReplace(EmailContacto, '@', '_at_', [rfReplaceAll]);
+        ContactoIdLimpio := StringReplace(ContactoIdLimpio, '.', '_', [rfReplaceAll]);
+        ContactoIdLimpio := StringReplace(ContactoIdLimpio, '-', '_', [rfReplaceAll]);
+        ContactoIdLimpio := 'contact_' + ContactoIdLimpio;
+
+        // Obtener usuario correspondiente
+        ContactoUsuario := BuscarUsuario(EmailContacto);
+        if ContactoUsuario <> nil then
+        begin
+          WriteLn(Archivo, Format('    %s [label="ID: %d\nContacto: %s"];',
+            [ContactoIdLimpio, ContactoUsuario^.Id, ContactoUsuario^.Usuario]));
+        end;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // ========================================================
+      // PASO 3: Definir TODOS los USUARIOS (DERECHA - VERDE)
+      // ========================================================
+      WriteLn(Archivo, '  // ========== USUARIOS (Derecha) ==========');
+      WriteLn(Archivo, '  {');
+      WriteLn(Archivo, '    rank=same;');
+      WriteLn(Archivo, '    node [shape=circle, style=filled, fillcolor=lightgreen];');  // ← VERDE
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+
+        if UsuariosAgregados.IndexOf(UsuarioIdLimpio) = -1 then
+        begin
+          WriteLn(Archivo, Format('    %s [label="ID: %d\nUsuario: %s"];',
+            [UsuarioIdLimpio, Usuario^.Id, Usuario^.Usuario]));
+          UsuariosAgregados.Add(UsuarioIdLimpio);
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+      WriteLn(Archivo, '  }');
+      WriteLn(Archivo, '');
+
+      // ========================================================
+      // PASO 4: Crear CONEXIONES entre CONTACTOS y USUARIOS
+      // ========================================================
+      WriteLn(Archivo, '  // ========== RELACIONES ==========');
+      WriteLn(Archivo, '');
+
+      Usuario := FUsuarios;
+      while Usuario <> nil do
+      begin
+        if Usuario^.ListaContactos <> nil then
+        begin
+          UsuarioIdLimpio := 'user_' + IntToStr(Usuario^.Id);
+          Contacto := Usuario^.ListaContactos;
+
+          repeat
+            EmailContacto := Contacto^.Email;
+
+            // Limpiar email del contacto
+            ContactoIdLimpio := StringReplace(EmailContacto, '@', '_at_', [rfReplaceAll]);
+            ContactoIdLimpio := StringReplace(ContactoIdLimpio, '.', '_', [rfReplaceAll]);
+            ContactoIdLimpio := StringReplace(ContactoIdLimpio, '-', '_', [rfReplaceAll]);
+            ContactoIdLimpio := 'contact_' + ContactoIdLimpio;
+
+            // Crear conexión entre contacto y usuario
+            // NOTA: El orden no importa en grafos no dirigidos (-- en vez de ->)
+            WriteLn(Archivo, Format('  %s -- %s;', [ContactoIdLimpio, UsuarioIdLimpio]));
+
+            Contacto := Contacto^.Siguiente;
+          until Contacto = Usuario^.ListaContactos;
+        end;
+
+        Usuario := Usuario^.Siguiente;
+      end;
+
+    finally
+      UsuariosAgregados.Free;
+      ContactosUnicos.Free;
+    end;
+
+    WriteLn(Archivo, '}');
+    CloseFile(Archivo);
+
+    WriteLn('✅ Archivo .dot generado en: ', DotPath);
+
+    // ========== PASO 5: Generar PNG con Graphviz ==========
+    try
+      Proceso := TProcess.Create(nil);
+      try
+        Proceso.Executable := 'dot';
+        Proceso.Parameters.Add('-Tpng');
+        Proceso.Parameters.Add(DotPath);
+        Proceso.Parameters.Add('-o');
+        Proceso.Parameters.Add(PngPath);
+        Proceso.Options := [poWaitOnExit, poNoConsole];
+        Proceso.Execute;
+
+        if FileExists(PngPath) then
+          WriteLn('✅ Reporte Global de Contactos generado en: ', PngPath)
+        else
+          WriteLn('⚠️  No se pudo generar el PNG. Verificar instalación de Graphviz.');
+      finally
+        Proceso.Free;
+      end;
+    except
+      on E: Exception do
+        WriteLn('❌ Error al ejecutar Graphviz: ', E.Message);
+    end;
+
+  except
+    on E: Exception do
+      WriteLn('❌ Error al generar reporte global de contactos: ', E.Message);
   end;
 end;
  end.

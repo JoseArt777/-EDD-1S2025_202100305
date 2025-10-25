@@ -5,6 +5,7 @@ graph GrafoContactos {
   rankdir=LR;
   ranksep=2.0;
   nodesep=0.8;
+  splines=false;
   node [fontsize=11, fontname="Arial"];
   edge [penwidth=1.5];
 

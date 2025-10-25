@@ -7,7 +7,7 @@
       <Unit>
         <Filename Value="EDDMail.lpr"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="43"/>
+        <TopLine Value="36"/>
         <CursorPos X="30" Y="21"/>
         <UsageCount Value="263"/>
         <Loaded Value="True"/>
@@ -40,10 +40,9 @@
       </Unit>
       <Unit>
         <Filename Value="InterfazGTK.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="6883"/>
-        <CursorPos X="27" Y="6895"/>
+        <TopLine Value="5831"/>
+        <CursorPos X="37" Y="5840"/>
         <UsageCount Value="129"/>
         <Loaded Value="True"/>
       </Unit>
@@ -51,9 +50,10 @@
         <Filename Value="estructurasdatos.pas"/>
         <HasResources Value="True"/>
         <UnitName Value="EstructurasDatos"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="5253"/>
-        <CursorPos X="43" Y="5269"/>
+        <TopLine Value="5466"/>
+        <CursorPos X="5" Y="5490"/>
         <UsageCount Value="129"/>
         <Loaded Value="True"/>
       </Unit>
@@ -74,30 +74,6 @@
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="403" TopLine="391"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="5370" Column="40" TopLine="5360"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="5328" Column="50" TopLine="5315"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="401" Column="36" TopLine="391"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="8" Column="64"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="6902" Column="5" TopLine="6877"/>
-      </Position>
       <Position>
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="431" TopLine="411"/>
@@ -194,6 +170,30 @@
         <Filename Value="estructurasdatos.pas"/>
         <Caret Line="90" Column="31" TopLine="76"/>
       </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="6754" Column="60" TopLine="6739"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5332" Column="61" TopLine="5317"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5855" Column="5" TopLine="5831"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="5471" Column="39" TopLine="5460"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="5322" Column="52" TopLine="5305"/>
+      </Position>
+      <Position>
+        <Filename Value="estructurasdatos.pas"/>
+        <Caret Line="4026" Column="66" TopLine="4012"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -207,7 +207,7 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="InterfazGTK.pas"/>
-        <Line Value="6037"/>
+        <Line Value="6170"/>
       </Item>
       <Item>
         <Kind Value="bpkSource"/>

@@ -5697,27 +5697,160 @@ end;
 // ═══════════════════════════════════════════════════════
 
 procedure TInterfazEDDMail.OnReporteGrafoClick(Sender: TObject);
+var
+  FormTipoReporte: TForm;
+  Panel: TPanel;
+  LabelTitulo, LabelInfo: TLabel;
+  BtnReporteIndividual, BtnReporteGlobal, BtnCancelar: TButton;
 begin
-  // Validar que solo root pueda generar este reporte
+  // Validar que solo root pueda generar estos reportes
   if FSistema.GetUsuarioActual = nil then Exit;
 
   if FSistema.GetUsuarioActual^.Email <> 'root@edd.com' then
   begin
     MostrarMensaje('Acceso Denegado',
-      'Solo el usuario ROOT puede generar el reporte de grafo de contactos');
+      'Solo el usuario ROOT puede generar reportes de grafo de contactos');
     Exit;
   end;
 
+  // ========================================
+  // CREAR DIÁLOGO PARA ELEGIR TIPO DE REPORTE
+  // ========================================
+  FormTipoReporte := TForm.Create(nil);
   try
-    FSistema.GenerarReporteGrafoContactos('Root-Reportes');
-    MostrarMensaje('Éxito',
-      'Reporte de Grafo generado en: Root-Reportes/' + LineEnding +
-      'Archivos generados:' + LineEnding +
-      '- grafo_contactos.dot (código Graphviz)' + LineEnding +
-      '- grafo_contactos.png (imagen)');
-  except
-    on E: Exception do
-      MostrarMensaje('Error', 'Error al generar reporte de grafo: ' + E.Message);
+    with FormTipoReporte do
+    begin
+      Caption := 'Tipo de Reporte de Grafos';
+      Width := 500;
+      Height := 320;
+      Position := poOwnerFormCenter;
+      BorderStyle := bsDialog;
+      Color := $00ED618E;
+    end;
+
+    Panel := TPanel.Create(FormTipoReporte);
+    with Panel do
+    begin
+      Parent := FormTipoReporte;
+      Align := alClient;
+      BevelOuter := bvNone;
+      BorderWidth := 15;
+      Color := clMoneyGreen;
+    end;
+
+    LabelTitulo := TLabel.Create(Panel);
+    with LabelTitulo do
+    begin
+      Parent := Panel;
+      Caption := '📊 Seleccione el tipo de reporte de grafos:';
+      Font.Size := 12;
+      Font.Style := [fsBold];
+      Left := 20;
+      Top := 20;
+    end;
+
+    LabelInfo := TLabel.Create(Panel);
+    with LabelInfo do
+    begin
+      Parent := Panel;
+      Caption := 'Ambos reportes muestran relaciones entre usuarios y contactos,' + LineEnding +
+                 'pero con diferente visualización de nodos compartidos.';
+      Left := 20;
+      Top := 55;
+      Font.Color := clMaroon;
+      AutoSize := True;
+    end;
+
+    // Botón para Reporte Individual (el que ya existía)
+    BtnReporteIndividual := TButton.Create(Panel);
+    with BtnReporteIndividual do
+    begin
+      Parent := Panel;
+      Caption := '📊 Reporte Individual' + LineEnding +
+                 '(Contactos duplicados por usuario)';
+      Left := 20;
+      Top := 100;
+      Width := 440;
+      Height := 50;
+      ModalResult := mrYes;
+      Hint := 'Cada usuario tiene su propio grafo de contactos';
+      ShowHint := True;
+      Font.Style := [fsBold];
+    end;
+
+    // Botón para Reporte Global (NUEVO)
+    BtnReporteGlobal := TButton.Create(Panel);
+    with BtnReporteGlobal do
+    begin
+      Parent := Panel;
+      Caption := '🌐 Reporte Global (NUEVO)' + LineEnding +
+                 '(Contactos compartidos como nodos únicos)';
+      Left := 20;
+      Top := 160;
+      Width := 440;
+      Height := 50;
+      ModalResult := mrOk;
+      Font.Style := [fsBold];
+      Color := $0090EE90; // Verde claro
+      Hint := 'Grafo global con contactos compartidos';
+      ShowHint := True;
+    end;
+
+    BtnCancelar := TButton.Create(Panel);
+    with BtnCancelar do
+    begin
+      Parent := Panel;
+      Caption := 'Cancelar';
+      Left := 370;
+      Top := 230;
+      Width := 90;
+      Height := 30;
+      ModalResult := mrCancel;
+    end;
+
+    // ========================================
+    // PROCESAR LA SELECCIÓN
+    // ========================================
+    case FormTipoReporte.ShowModal of
+      mrYes: begin // Reporte Individual (el original)
+        try
+          FSistema.GenerarReporteGrafoContactos('Root-Reportes');
+          MostrarMensaje('Éxito',
+            '📊 Reporte INDIVIDUAL de Grafo generado en: Root-Reportes/' + LineEnding +
+            LineEnding +
+            'Este reporte muestra cada usuario con sus contactos.' + LineEnding +
+            'Los contactos se duplican si están en múltiples usuarios.' + LineEnding +
+            LineEnding +
+            'Archivos generados:' + LineEnding +
+            '- grafo_contactos.dot (código Graphviz)' + LineEnding +
+            '- grafo_contactos.png (imagen)');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al generar reporte individual: ' + E.Message);
+        end;
+      end;
+
+      mrOk: begin // Reporte Global (NUEVO)
+        try
+          FSistema.GenerarReporteGlobalContactos('Root-Reportes');
+          MostrarMensaje('Éxito',
+            '🌐 Reporte GLOBAL de Grafo generado en: Root-Reportes/' + LineEnding +
+            LineEnding +
+            'Este reporte muestra TODOS los usuarios y contactos del sistema.' + LineEnding +
+            '✨ Los contactos compartidos aparecen como UN SOLO nodo.' + LineEnding +
+            LineEnding +
+            'Archivos generados:' + LineEnding +
+            '- grafo_global_contactos.dot (código Graphviz)' + LineEnding +
+            '- grafo_global_contactos.png (imagen)');
+        except
+          on E: Exception do
+            MostrarMensaje('Error', 'Error al generar reporte global: ' + E.Message);
+        end;
+      end;
+    end;
+
+  finally
+    FormTipoReporte.Free;
   end;
 end;
 

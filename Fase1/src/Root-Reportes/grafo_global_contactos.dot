@@ -1,0 +1,70 @@
+graph GrafoGlobalContactos {
+  label="Reporte Global de Usuarios y Contactos (Grafo No Dirigido)";
+  fontsize=16;
+  fontname="Arial";
+  rankdir=LR;
+  ranksep=2.0;
+  nodesep=0.8;
+  splines=false;
+  node [fontsize=11, fontname="Arial"];
+  edge [penwidth=1.5];
+
+  // ========== CONTACTOS (Izquierda) ==========
+  {
+    rank=same;
+    node [shape=circle, style=filled, fillcolor=lightblue];
+
+    contact_bfox_at_edd_com [label="ID: 6\nContacto: bfox"];
+    contact_gkroah_hartman_at_edd_com [label="ID: 3\nContacto: gkroah-hartman"];
+    contact_imurdock_at_edd_com [label="ID: 10\nContacto: imurdock"];
+    contact_jcorbet_at_edd_com [label="ID: 7\nContacto: jcorbet"];
+    contact_ksandler_at_edd_com [label="ID: 8\nContacto: ksandler"];
+    contact_lgarcia_at_edd_com [label="ID: 1\nContacto: lgarcia"];
+    contact_ltorvalds_at_edd_com [label="ID: 11\nContacto: ltorvalds"];
+    contact_mitzep_at_edd_com [label="ID: 2\nContacto: mitzep"];
+    contact_mshuttleworth_at_edd_com [label="ID: 4\nContacto: mshuttleworth"];
+    contact_rstallman_at_edd_com [label="ID: 12\nContacto: rstallman"];
+    contact_smejia_at_edd_com [label="ID: 5\nContacto: smejia"];
+  }
+
+  // ========== USUARIOS (Derecha) ==========
+  {
+    rank=same;
+    node [shape=circle, style=filled, fillcolor=lightgreen];
+
+    user_1 [label="ID: 1\nUsuario: lgarcia"];
+    user_2 [label="ID: 2\nUsuario: mitzep"];
+    user_3 [label="ID: 3\nUsuario: gkroah-hartman"];
+    user_4 [label="ID: 4\nUsuario: mshuttleworth"];
+    user_5 [label="ID: 5\nUsuario: smejia"];
+    user_6 [label="ID: 6\nUsuario: bfox"];
+    user_7 [label="ID: 7\nUsuario: jcorbet"];
+    user_8 [label="ID: 8\nUsuario: ksandler"];
+    user_9 [label="ID: 9\nUsuario: mbaker"];
+    user_10 [label="ID: 10\nUsuario: imurdock"];
+    user_11 [label="ID: 11\nUsuario: ltorvalds"];
+    user_12 [label="ID: 12\nUsuario: rstallman"];
+    user_0 [label="ID: 0\nUsuario: root"];
+  }
+
+  // ========== RELACIONES ==========
+
+  contact_mitzep_at_edd_com -- user_1;
+  contact_gkroah_hartman_at_edd_com -- user_1;
+  contact_smejia_at_edd_com -- user_1;
+  contact_bfox_at_edd_com -- user_1;
+  contact_jcorbet_at_edd_com -- user_1;
+  contact_rstallman_at_edd_com -- user_1;
+  contact_imurdock_at_edd_com -- user_1;
+  contact_lgarcia_at_edd_com -- user_2;
+  contact_gkroah_hartman_at_edd_com -- user_2;
+  contact_mshuttleworth_at_edd_com -- user_2;
+  contact_smejia_at_edd_com -- user_2;
+  contact_bfox_at_edd_com -- user_2;
+  contact_ksandler_at_edd_com -- user_2;
+  contact_ltorvalds_at_edd_com -- user_2;
+  contact_mitzep_at_edd_com -- user_5;
+  contact_lgarcia_at_edd_com -- user_5;
+  contact_ksandler_at_edd_com -- user_5;
+  contact_ltorvalds_at_edd_com -- user_5;
+}
