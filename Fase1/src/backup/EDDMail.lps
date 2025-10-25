@@ -42,8 +42,8 @@
         <Filename Value="InterfazGTK.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="5413"/>
-        <CursorPos X="5" Y="5437"/>
+        <TopLine Value="534"/>
+        <CursorPos X="49" Y="555"/>
         <UsageCount Value="129"/>
         <Loaded Value="True"/>
       </Unit>
@@ -76,15 +76,7 @@
     <JumpHistory HistoryIndex="29">
       <Position>
         <Filename Value="InterfazGTK.pas"/>
-        <Caret Line="6832" Column="41" TopLine="6823"/>
-      </Position>
-      <Position>
-        <Filename Value="InterfazGTK.pas"/>
         <Caret Line="5385" Column="10" TopLine="5364"/>
-      </Position>
-      <Position>
-        <Filename Value="estructurasdatos.pas"/>
-        <Caret Line="3588" Column="25" TopLine="3620"/>
       </Position>
       <Position>
         <Filename Value="estructurasdatos.pas"/>
@@ -194,6 +186,14 @@
         <Filename Value="InterfazGTK.pas"/>
         <Caret Line="5426" Column="5" TopLine="5402"/>
       </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5433" Column="38" TopLine="5424"/>
+      </Position>
+      <Position>
+        <Filename Value="InterfazGTK.pas"/>
+        <Caret Line="5867" Column="27" TopLine="5852"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -207,7 +207,7 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="InterfazGTK.pas"/>
-        <Line Value="6026"/>
+        <Line Value="6037"/>
       </Item>
       <Item>
         <Kind Value="bpkSource"/>

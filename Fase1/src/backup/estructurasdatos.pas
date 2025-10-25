@@ -277,18 +277,18 @@ end;
 
 
        function CalcularHashSHA256(Texto: String): String;
-  function CrearNodoMerkle: PNodoMerkle;
-  function CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
-  function CombinarHashesMerkle(HashIzq, HashDer: String): String;
-  function ConstruirArbolMerkle(Correos: array of PCorreo; Inicio, Fin: Integer): PNodoMerkle;
-  procedure RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
+      function CrearNodoMerkle: PNodoMerkle;
+      function CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
+      function CombinarHashesMerkle(HashIzq, HashDer: String): String;
+      function ConstruirArbolMerkle(Correos: array of PCorreo; Inicio, Fin: Integer): PNodoMerkle;
+      procedure RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
 
-  procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
+      procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
 
-      // NUEVOS MÉTODOS PRIVADOS para MERKLE:
-    function ConstruirArbolMerkleBalanceado(ListaHojas: array of PNodoMerkle): PNodoMerkle;
-    procedure LiberarArbolMerkle(Nodo: PNodoMerkle);
-        function GenerarHashSHA256(Datos: String): String;
+          // NUEVOS MÉTODOS PRIVADOS para MERKLE:
+      function ConstruirArbolMerkleBalanceado(ListaHojas: array of PNodoMerkle): PNodoMerkle;
+      procedure LiberarArbolMerkle(Nodo: PNodoMerkle);
+      function GenerarHashSHA256(Datos: String): String;
 
 
 
@@ -3785,6 +3785,159 @@ begin
     Output.Free;
   end;
 end;
+// ═══════════════════════════════════════════════════════════════
+// NUEVA COMPRESIÓN BINARIA LZW
+// ═══════════════════════════════════════════════════════════════
+
+function TEDDMailSystem.ComprimirLZWBinario(const Texto: String): TBytes;
+var
+  Dict: TStringList;
+  W, WC: String;
+  i, Code: Integer;
+  Writer: TBitWriter;
+  MaxDictSize: Integer;
+begin
+  if Length(Texto) = 0 then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+
+  Dict := TStringList.Create;
+  Writer := TBitWriter.Create;
+  try
+    // Inicializar diccionario ASCII (0-255)
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    MaxDictSize := 4096; // 2^12
+    W := Texto[1];
+
+    // Algoritmo LZW con salida binaria
+    for i := 2 to Length(Texto) do
+    begin
+      WC := W + Texto[i];
+
+      if Dict.IndexOf(WC) >= 0 then
+      begin
+        W := WC;
+      end
+      else
+      begin
+        // Escribir código en 12 bits (¡NO COMO TEXTO!)
+        Code := Dict.IndexOf(W);
+        Writer.WriteBits(Code, 12);  // ← CLAVE: 12 bits binarios
+
+        if Dict.Count < MaxDictSize then
+          Dict.Add(WC);
+
+        W := Texto[i];
+      end;
+    end;
+
+    // Escribir último código
+    Code := Dict.IndexOf(W);
+    Writer.WriteBits(Code, 12);
+
+    Writer.Flush;
+    Result := Writer.GetData;
+
+  finally
+    Dict.Free;
+    Writer.Free;
+  end;
+end;
+
+function TEDDMailSystem.DescomprimirLZWBinario(const Datos: TBytes): String;
+var
+  Dict: TStringList;
+  Reader: TBitReader;
+  OldCode, NewCode: Word;
+  S, Entry: String;
+  MaxDictSize: Integer;
+  i: Integer;
+begin
+  Result := '';
+
+  if Length(Datos) = 0 then
+    Exit;
+
+  Dict := TStringList.Create;
+  Reader := TBitReader.Create(Datos);
+  try
+    // Inicializar diccionario
+    for i := 0 to 255 do
+      Dict.Add(Chr(i));
+
+    MaxDictSize := 4096;
+
+    // Leer primer código
+    OldCode := Reader.ReadBits(12);
+    if OldCode >= Dict.Count then
+      Exit;
+
+    S := Dict[OldCode];
+    Result := S;
+
+    // Descomprimir
+    while Reader.HasMore do
+    begin
+      NewCode := Reader.ReadBits(12);
+
+      if NewCode >= Dict.Count then
+        Entry := S + S[1]
+      else
+        Entry := Dict[NewCode];
+
+      Result := Result + Entry;
+
+      if Dict.Count < MaxDictSize then
+        Dict.Add(S + Entry[1]);
+
+      S := Entry;
+    end;
+
+  finally
+    Dict.Free;
+    Reader.Free;
+  end;
+end;
+
+function TEDDMailSystem.GuardarArchivoBinario(const Ruta: String; const Datos: TBytes): Boolean;
+var
+  FileStream: TFileStream;
+begin
+  try
+    FileStream := TFileStream.Create(Ruta, fmCreate);
+    try
+      if Length(Datos) > 0 then
+        FileStream.WriteBuffer(Datos[0], Length(Datos));
+      Result := True;
+    finally
+      FileStream.Free;
+    end;
+  except
+    Result := False;
+  end;
+end;
+
+function TEDDMailSystem.CargarArchivoBinario(const Ruta: String): TBytes;
+var
+  FileStream: TFileStream;
+begin
+  try
+    FileStream := TFileStream.Create(Ruta, fmOpenRead);
+    try
+      SetLength(Result, FileStream.Size);
+      if FileStream.Size > 0 then
+        FileStream.ReadBuffer(Result[0], FileStream.Size);
+    finally
+      FileStream.Free;
+    end;
+  except
+    SetLength(Result, 0);
+  end;
+end;
 
 function TEDDMailSystem.GuardarArchivoTexto(Ruta, Contenido: String): Boolean;
 var
@@ -3882,16 +4035,16 @@ begin
     AssignFile(Archivo, DotPath);
     Rewrite(Archivo);
 
-    // ✅ CAMBIO: Usar "graph" en lugar de "digraph"
+
     WriteLn(Archivo, 'graph GrafoContactos {');
     WriteLn(Archivo, '  label="Reporte de relación de usuarios con contactos (Grafos)";');
     WriteLn(Archivo, '  fontsize=16;');
     WriteLn(Archivo, '  fontname="Arial";');
     WriteLn(Archivo, '  rankdir=LR;');
-    WriteLn(Archivo, '  ranksep=2.0;');  // ✅ Más separación horizontal
-    WriteLn(Archivo, '  nodesep=0.8;');  // ✅ Más separación vertical
+    WriteLn(Archivo, '  ranksep=2.0;');
+    WriteLn(Archivo, '  nodesep=0.8;');
     WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
-    WriteLn(Archivo, '  edge [penwidth=1.5];');  // ✅ Líneas más gruesas
+    WriteLn(Archivo, '  edge [penwidth=1.5];');
     WriteLn(Archivo, '');
 
     // Listas para controlar duplicados
@@ -3977,7 +4130,7 @@ begin
 
           repeat
             ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
-            // ✅ CAMBIO: Usar "--" en lugar de "->" para grafos no dirigidos
+
             WriteLn(Archivo, Format('  %s -- %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
 
             Contacto := Contacto^.Siguiente;

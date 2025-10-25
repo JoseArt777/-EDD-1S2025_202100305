@@ -3570,12 +3570,12 @@ var
   Usuario: PUsuario;
   CarpetaReportes: String;
 
-    // ↓↓↓ AGREGAR ESTAS VARIABLES ↓↓↓
-  LabelFase3: TLabel;              // ← FALTA ESTA
-  BtnReporteMerkle: TButton;       // ← FALTA ESTA
-  LabelBuscar: TLabel;             // ← FALTA ESTA (si la usas después)
 
-  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA (si la usas después)
+  LabelFase3: TLabel;
+  BtnReporteMerkle: TButton;
+  LabelBuscar: TLabel;
+
+  BtnBuscarFavoritos: TButton;
   YPos: Integer;
 begin
   Usuario := FSistema.GetUsuarioActual;
@@ -3589,7 +3589,7 @@ begin
     begin
       Caption := '📊 Generar Reportes';
       Width := 500;
-      Height := 550; // ← Aumentar altura para nuevos botones
+      Height := 550;
       Position := poOwnerFormCenter;
       BorderStyle := bsDialog;
       Color := $00ED618E;
@@ -3714,7 +3714,7 @@ begin
       Color := clAqua;
     end;
     Inc(YPos, 70);
-    // Agregar después de BtnBorradores en el procedimiento OnGenerarReportesClick:
+
 
 // NUEVOS REPORTES FASE 3
 
@@ -3930,9 +3930,9 @@ var
   Panel: TPanel;
   LabelTitulo: TLabel;
   BtnEliminar, BtnCerrar: TButton;
-    LabelBuscar: TLabel;             // ← FALTA ESTA
+    LabelBuscar: TLabel;
 
-  BtnBuscarFavoritos: TButton;     // ← FALTA ESTA
+  BtnBuscarFavoritos: TButton;
 
 begin
   if FSistema.GetUsuarioActual = nil then Exit;
@@ -5191,13 +5191,13 @@ var
   i: Integer;
 begin
   BtnSender := TButton(Sender);
-  FormPadre := TForm(BtnSender.Owner);  // ← CAMBIO: Buscar en el Form, no en el Panel
+  FormPadre := TForm(BtnSender.Owner);
 
   // Buscar los controles en el formulario
   EditComunidad := nil;
   MemoMensajes := nil;
 
-  for i := 0 to FormPadre.ComponentCount - 1 do  // ← CAMBIO: ComponentCount en lugar de ControlCount
+  for i := 0 to FormPadre.ComponentCount - 1 do
   begin
     if (FormPadre.Components[i] is TEdit) and
        (TEdit(FormPadre.Components[i]).Name = 'EditComunidad') then
@@ -5335,6 +5335,7 @@ var
   TamOriginal, TamComprimido: Integer;
   RatioCompresion, Cambio: Double;
   Opcion: Integer;
+  CarpetaDescargas: String;  // ← NUEVA VARIABLE
 begin
   if (FListBandeja = nil) or (FListBandeja.ItemIndex < 0) then
   begin
@@ -5358,12 +5359,18 @@ begin
   end;
 
   // ═══════════════════════════════════════════════════════
+  // CREAR CARPETA DE DESCARGAS
+  // ═══════════════════════════════════════════════════════
+  CarpetaDescargas := GetCurrentDir + '/descargas_correos';
+  ForceDirectories(CarpetaDescargas);  // CREA LA CARPETA automáticamente
+
+  // ═══════════════════════════════════════════════════════
   // PREGUNTAR AL USUARIO QUÉ FORMATO QUIERE
   // ═══════════════════════════════════════════════════════
   Opcion := MessageDlg('Formato de compresión',
     '¿Qué formato desea usar?' + LineEnding + LineEnding +
-    '• SÍ = Compresión LZW Real (.lzw) - Reduce tamaño' + LineEnding +
-    '• NO = Formato Texto (.txt) - Según enunciado',
+    '• SÍ = Compresión LZW  (.lzw) - Reduce tamaño' + LineEnding +
+    '• NO = Formato LZW (.txt) - Según enunciado',
     mtConfirmation, [mbYes, mbNo, mbCancel], 0);
 
   if Opcion = mrCancel then
@@ -5379,6 +5386,7 @@ begin
       SaveDialog.Title := 'Guardar Correo Comprimido (Formato Binario)';
       SaveDialog.Filter := 'Archivo LZW Comprimido|*.lzw';
       SaveDialog.DefaultExt := 'lzw';
+      SaveDialog.InitialDir := CarpetaDescargas;
       SaveDialog.FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.lzw';
 
       if SaveDialog.Execute then
@@ -5393,10 +5401,11 @@ begin
           MostrarMensaje('Éxito',
             '💾 Correo comprimido exitosamente (FORMATO BINARIO LZW)' + LineEnding + LineEnding +
             '📄 Archivo: ' + ExtractFileName(SaveDialog.FileName) + LineEnding +
+            '📂 Ubicación: ' + ExtractFilePath(SaveDialog.FileName) + LineEnding +
             '📏 Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
             '🗜️ Tamaño comprimido: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
             '📊 Reducción REAL: ' + FormatFloat('0.0', RatioCompresion) + '%' + LineEnding + LineEnding +
-            '✅ Compresión efectiva aplicada');
+            '✅ Compresión  aplicada');
         end
         else
           MostrarMensaje('Error', '❌ No se pudo guardar el archivo');
@@ -5408,6 +5417,7 @@ begin
       SaveDialog.Title := 'Guardar Correo (Formato Texto)';
       SaveDialog.Filter := 'Archivos de texto|*.txt';
       SaveDialog.DefaultExt := 'txt';
+      SaveDialog.InitialDir := CarpetaDescargas;  // ← ABRE EN LA CARPETA
       SaveDialog.FileName := 'correo_' + IntToStr(Correo^.Id) + '_comprimido.txt';
 
       if SaveDialog.Execute then
@@ -5422,6 +5432,7 @@ begin
           MostrarMensaje('Éxito',
             '💾 Correo guardado (FORMATO TEXTO - Extensión .txt)' + LineEnding + LineEnding +
             '📄 Archivo: ' + ExtractFileName(SaveDialog.FileName) + LineEnding +
+            '📂 Ubicación: ' + ExtractFilePath(SaveDialog.FileName) + LineEnding +
             '📏 Tamaño original: ' + IntToStr(TamOriginal) + ' bytes' + LineEnding +
             '📝 Tamaño archivo: ' + IntToStr(TamComprimido) + ' bytes' + LineEnding +
             '📊 Cambio: ' + FormatFloat('+0.0;-0.0', Cambio) + '%' + LineEnding + LineEnding +

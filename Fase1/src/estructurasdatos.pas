@@ -276,25 +276,19 @@ end;
       function BuscarMinimoAVL(nodo: PNodoAVL): PNodoAVL;
 
 
-       function CalcularHashSHA256(Texto: String): String;
-  function CrearNodoMerkle: PNodoMerkle;
-  function CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
-  function CombinarHashesMerkle(HashIzq, HashDer: String): String;
-  function ConstruirArbolMerkle(Correos: array of PCorreo; Inicio, Fin: Integer): PNodoMerkle;
-  procedure RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
+      function CalcularHashSHA256(Texto: String): String;
+      function CrearNodoMerkle: PNodoMerkle;
+      function CrearHojaMerkle(Correo: PCorreo): PNodoMerkle;
+      function CombinarHashesMerkle(HashIzq, HashDer: String): String;
+      function ConstruirArbolMerkle(Correos: array of PCorreo; Inicio, Fin: Integer): PNodoMerkle;
+      procedure RecolectarCorreosMerkle(Nodo: PNodoMerkle; Lista: TList);
 
-  procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
+      procedure GenerarNodosMerkle(var Archivo: TextFile; Nodo: PNodoMerkle; var ContadorNodo: Integer);
 
-      // NUEVOS MÉTODOS PRIVADOS para MERKLE:
-    function ConstruirArbolMerkleBalanceado(ListaHojas: array of PNodoMerkle): PNodoMerkle;
-    procedure LiberarArbolMerkle(Nodo: PNodoMerkle);
-        function GenerarHashSHA256(Datos: String): String;
-
-
-
-
-
-
+          // NUEVOS MÉTODOS PRIVADOS para MERKLE:
+      function ConstruirArbolMerkleBalanceado(ListaHojas: array of PNodoMerkle): PNodoMerkle;
+      procedure LiberarArbolMerkle(Nodo: PNodoMerkle);
+      function GenerarHashSHA256(Datos: String): String;
 
     // Métodos para Blockchain
     function CrearBloqueGenesis: PBloqueBlockchain;
@@ -305,15 +299,10 @@ end;
     procedure LiberarBlockchain;
     function FormatearTimestamp: String;
 
-
       procedure InicializarMatriz;
-  procedure LiberarMatriz;
-  procedure LiberarArbolComunidades(var Raiz: PNodoBST);
-
-
+      procedure LiberarMatriz;
+      procedure LiberarArbolComunidades(var Raiz: PNodoBST);
       function BuscarUsuarioPorNombre(NombreUsuario: String): PUsuario;
-
-
 
     public
       constructor Create;
@@ -394,11 +383,9 @@ end;
 
       //FASE 3
 
-        procedure RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
-          function VerificarIntegridadMerkle(Usuario: PUsuario): Boolean;
-           procedure Merkle_ReconstruirDesdeArbolB(Usuario: PUsuario);  // Migración
-
-
+      procedure RecorrerFavoritosMerkle(Usuario: PUsuario; Lista: TStringList);
+      function VerificarIntegridadMerkle(Usuario: PUsuario): Boolean;
+      procedure Merkle_ReconstruirDesdeArbolB(Usuario: PUsuario);  // Migración
 
       // Recorridos del Árbol B
       procedure RecorridoInOrdenB(nodo: PNodoB; lista: TStringList);
@@ -414,11 +401,9 @@ end;
       function ActualizarBorrador(Usuario: PUsuario; Id: Integer;
         NuevoDestinatario, NuevoAsunto, NuevoCuerpo: String): Boolean;
 
-
     // ═══════════════════════════════════════════════════════
     // MÉTODOS FASE 3
     // ═══════════════════════════════════════════════════════
-
     // Logueo
     function ObtenerLogsDeLogueo: TStringList;
     function FiltrarLogsPorUsuario(Usuario: String): TStringList;
@@ -445,29 +430,18 @@ end;
 
     // Grafo de contactos
     procedure GenerarReporteGrafoContactos(RutaSalida: String);
-
     // Importación
     procedure CargarContactosDesdeJSON(RutaArchivo: String);
-
-
     // En la sección PUBLIC de TEDDMailSystem class:
-function ReaccionarAMensaje(nombreComunidad: String; idMensaje: Integer): Boolean;
-
-function GetArbolComunidades: PNodoBST;
-
-
+    function ReaccionarAMensaje(nombreComunidad: String; idMensaje: Integer): Boolean;
+    function GetArbolComunidades: PNodoBST;
     function BuscarComunidadPorNombre(Nombre: String): PNodoBST;
-
-        // NUEVO MÉTODO PÚBLICO:
+    // NUEVO MÉTODO PÚBLICO:
     procedure ConstruirArbolMerkleDesdeCorreos(Usuario: PUsuario);
-
-
      // Métodos para Blockchain
     procedure AgregarBloqueBlockchain(CorreoId: Integer; Remitente, Asunto, Mensaje: String);
     function VerificarIntegridadBlockchain: Boolean;
     function ObtenerTotalBloques: Integer;
-
-
     end;
 implementation
 
@@ -2667,11 +2641,11 @@ begin
   end;
 
   New(NuevoMensaje);
-  NuevoMensaje^.Id := Comunidad^.NumeroMensajes + 1;  // ← NUEVO: Asignar ID
+  NuevoMensaje^.Id := Comunidad^.NumeroMensajes + 1;  //  Asignar ID
   NuevoMensaje^.Correo := correoUsuario;
   NuevoMensaje^.Mensaje := mensaje;
   NuevoMensaje^.FechaPublicacion := FormatDateTime('dd/mm/yyyy hh:nn', Now);
-  NuevoMensaje^.Reacciones := 0;                       // ← NUEVO: Inicializar en 0
+  NuevoMensaje^.Reacciones := 0;                       //  Inicializar en 0
   NuevoMensaje^.Siguiente := Comunidad^.ListaMensajes;
 
   Comunidad^.ListaMensajes := NuevoMensaje;
@@ -2734,7 +2708,7 @@ begin
     if Usuario^.ArbolMerkleFavoritos <> nil then
       RecolectarCorreosMerkle(Usuario^.ArbolMerkleFavoritos, ListaCorreos);
 
-    // 4. ✅ AGREGAR EL NUEVO CORREO A LA LISTA
+    // 4. AGREGAR EL NUEVO CORREO A LA LISTA
     ListaCorreos.Add(Correo);
 
     // 5. Convertir a array de nodos Merkle
@@ -3694,7 +3668,7 @@ begin
 
     WriteLn('✅ Archivo .dot generado en: ', DotPath);
 
-    // ✅ GENERAR PNG usando TProcess
+    //  GENERAR PNG usando TProcess
     try
       Proceso := TProcess.Create(nil);
       try
@@ -4035,16 +4009,16 @@ begin
     AssignFile(Archivo, DotPath);
     Rewrite(Archivo);
 
-    // ✅ CAMBIO: Usar "graph" en lugar de "digraph"
+
     WriteLn(Archivo, 'graph GrafoContactos {');
     WriteLn(Archivo, '  label="Reporte de relación de usuarios con contactos (Grafos)";');
     WriteLn(Archivo, '  fontsize=16;');
     WriteLn(Archivo, '  fontname="Arial";');
     WriteLn(Archivo, '  rankdir=LR;');
-    WriteLn(Archivo, '  ranksep=2.0;');  // ✅ Más separación horizontal
-    WriteLn(Archivo, '  nodesep=0.8;');  // ✅ Más separación vertical
+    WriteLn(Archivo, '  ranksep=2.0;');
+    WriteLn(Archivo, '  nodesep=0.8;');
     WriteLn(Archivo, '  node [fontsize=11, fontname="Arial"];');
-    WriteLn(Archivo, '  edge [penwidth=1.5];');  // ✅ Líneas más gruesas
+    WriteLn(Archivo, '  edge [penwidth=1.5];');
     WriteLn(Archivo, '');
 
     // Listas para controlar duplicados
@@ -4130,7 +4104,7 @@ begin
 
           repeat
             ContactoIdLimpio := 'contact_' + IntToStr(Contacto^.Id);
-            // ✅ CAMBIO: Usar "--" en lugar de "->" para grafos no dirigidos
+
             WriteLn(Archivo, Format('  %s -- %s;', [UsuarioIdLimpio, ContactoIdLimpio]));
 
             Contacto := Contacto^.Siguiente;
@@ -4517,7 +4491,7 @@ begin
   begin
     if Nodo^.Correo <> nil then
     begin
-      // ✅ VERIFICAR SI YA ESTÁ EN LA LISTA (evitar duplicados)
+      //  VERIFICAR SI YA ESTÁ EN LA LISTA (evitar duplicados)
       YaExiste := False;
       for i := 0 to Lista.Count - 1 do
       begin
@@ -4663,7 +4637,7 @@ end;
        WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
      end;
 
-     // ✅ CRÍTICO: Solo procesar hijo derecho si es DIFERENTE del izquierdo
+     //  Solo procesar hijo derecho si es DIFERENTE del izquierdo
      if (Nodo^.Derecho <> nil) and (Nodo^.Derecho <> Nodo^.Izquierdo) then
      begin
        IdDer := ContadorNodo;
@@ -4672,7 +4646,7 @@ end;
      end
      else if (Nodo^.Derecho <> nil) and (Nodo^.Derecho = Nodo^.Izquierdo) then
      begin
-       // ✅ Si es el mismo nodo, reutilizar el ID del izquierdo
+       //  Si es el mismo nodo, reutilizar el ID del izquierdo
        WriteLn(Archivo, Format('    node%d -> node%d;', [IdActual, IdIzq]));
      end;
    end;
@@ -4731,8 +4705,8 @@ end;
        end
        else
        begin
-         // ✅ Si queda un nodo impar, duplicar la REFERENCIA (no el nodo)
-         // Esto es válido para árboles de Merkle
+         //  Si queda un nodo impar, duplicar la REFERENCIA (no el nodo)
+
          NodoPadre^.Derecho := NivelActual[i * 2];
          NodoPadre^.Hash := GenerarHashSHA256(
            NivelActual[i * 2]^.Hash + NivelActual[i * 2]^.Hash);
@@ -4754,10 +4728,10 @@ end;
 
    if not Nodo^.EsHoja then
    begin
-     // ✅ Solo liberar hijo izquierdo
+     // Solo libera hijo izquierdo
      LiberarArbolMerkle(Nodo^.Izquierdo);
 
-     // ✅ Solo liberar hijo derecho si es DIFERENTE del izquierdo
+     // Solo libera hijo derecho si es DIFERENTE del izquierdo
      if Nodo^.Derecho <> Nodo^.Izquierdo then
        LiberarArbolMerkle(Nodo^.Derecho);
    end;
@@ -4835,8 +4809,8 @@ var
   HashVal1, HashVal2: Cardinal;
   Temp: String;
 begin
-  // Algoritmo de hash simple pero efectivo para el árbol Merkle
-  HashVal1 := 5381;  // DJB2 hash
+
+  HashVal1 := 5381;
   HashVal2 := 0;
 
   for i := 1 to Length(Datos) do
@@ -4845,7 +4819,7 @@ begin
     HashVal2 := HashVal2 xor (Ord(Datos[i]) * 31);
   end;
 
-  // Generar string hexadecimal de 64 caracteres (simular SHA256)
+  // Generar string hexadecimal de 64 caracteres
   Temp := IntToHex(HashVal1, 8) + IntToHex(HashVal2, 8);
 
   // Extender a 64 caracteres

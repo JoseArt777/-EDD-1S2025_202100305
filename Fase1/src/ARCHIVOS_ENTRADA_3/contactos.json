@@ -1,0 +1,38 @@
+{
+  "Usuarios": [
+    {
+      "Usuario": "mitzep",
+      "Contactos": [
+        "lgarcia",
+        "gkroah-hartman",
+        "mshuttleworth",
+        "smejia",
+        "bfox",
+        "ksandler",
+        "ltorvalds",
+        "alovelace"
+      ]
+    },
+    {
+      "Usuario": "lgarcia",
+      "Contactos": [
+        "mitzep",
+        "gkroah-hartman",
+        "smejia",
+        "bfox",
+        "jcorbet",
+        "rstallman",
+        "imurdock"
+      ]
+    },
+    {
+      "Usuario": "smejia",
+      "Contactos": [
+        "mitzep",
+        "lgarcia",
+        "ksandler",
+        "ltorvalds"
+      ]
+    }
+    ]
+}
