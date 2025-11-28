@@ -1,42 +1,110 @@
-# Estructuras de Datos - Proyecto en Pascal
+# EDDMail – Sistema de Correo Electrónico académico en Pascal
 
-¡Bienvenido/a! Este repositorio corresponde al proyecto realizado para el curso **Estructuras de Datos** durante el primer semestre de 2025 en la Universidad.
+## Descripción del Proyecto
 
-## Descripción General
-
-El proyecto está completamente desarrollado en **Pascal**, y tiene como objetivo principal poner en práctica conceptos fundamentales de estructuras de datos: listas, pilas, colas, árboles y más. A través de este trabajo, se busca aplicar habilidades de lógica, organización de información y análisis algorítmico, resolviendo problemas reales y simulaciones académicas.
+EDDMail es una aplicación de escritorio desarrollada en Pascal que implementa un sistema de correo electrónico, integrando estructuras de datos avanzadas para la gestión eficiente de usuarios, contactos, mensajes y comunidades. La arquitectura demuestra la aplicación práctica de listas, árboles, grafos y blockchain en la organización y visualización de información.
 
 ## Características Principales
 
-- Implementaciones de diferentes estructuras de datos básicas y avanzadas.
-- Ejercicios y ejemplos prácticos para cada estructura.
-- Código limpio, comentado y organizado para facilitar el aprendizaje y la revisión.
-- Orientado a mejorar la eficiencia y comprensión en la manipulación de datos.
+- Registro y autenticación de usuarios.
+- Envío, recepción y almacenamiento de correos electrónicos.
+- Administración y gestión avanzada de contactos y comunidades.
+- Visualización de mensajes y relaciones de contacto mediante grafos y árboles binarios.
+- Generación de reportes y gráficos (blockchain de mensajes, grafo de contactos).
+- Interfaz gráfica con Lazarus/LCL (GTK).
+- Importación/exportación de datos en formato JSON y binario.
 
-## ¿Por qué este proyecto es relevante?
-
-- Demuestra mi capacidad para diseñar y desarrollar soluciones algorítmicas utilizando Pascal.
-- Refleja mi dominio en programación estructurada y manejo eficiente de información.
-- Permite visualizar mi evolución como programador y estudiante, mostrando buenas prácticas y dedicación en el trabajo realizado.
-
-## Tecnología utilizada
+## Tecnologías Utilizadas
 
 - **Lenguaje:** Pascal
-- **IDE recomendada:** Free Pascal IDE / Lazarus
+- **Framework:** Lazarus IDE / Free Pascal Compiler (FPC)
+- **Librerías:** fpjson (manejo de JSON), LCL, componentes estándar
+- **Persistencia:** Archivos binarios y JSON
+- **Herramientas complementarias:** Graphviz para visualización
 
-## ¿Quién debería revisar este proyecto?
+## Requisitos Previos
 
-- Reclutadores interesados en habilidades de lógica, resolución de problemas y programación estructurada.
-- Estudiantes que busquen ejemplos claros de implementación de estructuras de datos.
-- Colaboradores y docentes que deseen evaluar mi progreso y aportes académicos.
+- Lazarus IDE y/o Free Pascal Compiler instalados
+- Graphviz (opcional, para generación de reportes gráficos)
+- Sistema operativo: Windows, Linux o macOS
+- Conocimientos básicos en programación estructurada
 
-## Contacto
+## Instrucciones de Instalación y Ejecución
 
-Si te interesa mi perfil o tienes preguntas sobre el proyecto, no dudes en contactarme:
+1. **Clona el repositorio**
+   ```bash
+   git clone https://github.com/JoseArt777/-EDD-1S2025_202100305.git
+   ```
+2. **Abre el proyecto**
+   - Desde Lazarus IDE, abre `Fase1/src/EDDMail.lpr`.
+3. **Compila y ejecuta**
+   - Compila el proyecto o ejecuta con Free Pascal Compiler.
+   - Ingresa con las credenciales de ejemplo:
+     ```
+     Email: root@edd.com
+     Password: root123
+     ```
+4. **Importa datos si lo deseas:** Utiliza las opciones de la interfaz para cargar información desde archivos JSON.
 
-- **GitHub:** [JoseArt777](https://github.com/JoseArt777)
-- **Correo:** iosealexander40@gmail.com
+## Estructura del Proyecto
 
----
+- `Fase1/src/EDDMail.lpr`: Entrada principal de la aplicación.
+- `Fase1/src/backup/EDDMail.lpr`: Backup del sistema principal.
+- `Fase1/src/estructurasdatos.pas`: Implementación de estructuras de datos (listas, árboles, grafos, blockchain).
+- `Fase1/src/InterfazGTK.pas`: Interfaz gráfica.
+- `Fase1/src/CorreoManager.pas`: Lógica de correo electrónico.
+- `Tareas/`: Ejercicios y componentes del curso.
+- Otros archivos `.pas`, `.lpi`, `.lpr`: Módulos y recursos auxiliares.
 
-_¡Gracias por visitar mi repositorio!_
+## Endpoints
+
+Este sistema no expone endpoints HTTP/REST; funciona como aplicación de escritorio con interacción mediante interfaz gráfica y consola.
+
+## Capturas o Ejemplos de Uso
+
+### Ejemplo: Envío de correo
+```pascal
+CorreoManager.EnviarCorreo('origen@edd.com', 'destino@edd.com', 'Asunto', 'Mensaje de prueba');
+```
+
+### Ejemplo: Generación de gráficos de contactos
+```pascal
+EDDMailSystem.GenerarReporteGrafoContactos('contactos.dot');
+// Visualiza el resultado con Graphviz
+```
+
+### Pantalla de bienvenida
+```
+=================================
+    EDDMail - Sistema de Correo
+    Estructuras de Datos - USAC
+=================================
+Iniciando aplicación con Lazarus...
+
+Credenciales por defecto:
+Email: root@edd.com
+Password: root123
+```
+
+## Buenas Prácticas Implementadas
+
+- Modularidad: separación por responsabilidades.
+- Gestión eficiente de memoria.
+- Comentarios descriptivos y documentación interna.
+- Nomenclatura profesional y estructurada.
+- Control de flujo robusto y manejo de errores.
+
+## Aprendizajes Obtenidos
+
+El desarrollo de EDDMail presenta la aplicación de estructuras de datos en la gestión de información, el uso de formatos de persistencia, la integración de gráficos y la programación de interfaces de usuario en Pascal. Se exploró el diseño y optimización funcional de un sistema integral de comunicaciones.
+
+## Posibles Mejoras Futuras
+
+- Implementación de protocolos de red simulados (SMTP/POP/IMAP).
+- Optimización y ampliación de la interfaz gráfica.
+- Cifrado de información sensible.
+- Multiusuario y roles.
+- Búsqueda avanzada y filtros dinámicos.
+- Pruebas automatizadas.
+- Internacionalización de la interfaz.
+
